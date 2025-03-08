@@ -1,4 +1,14 @@
-# Mouse_setting_control_for_buttons_python_for_linux.py
+# Mouse_setting_control_for_buttons_python_for_linux
+
+Эти пакеты нужно установить установить.
+
+```
+pip install webdriver-manager
+pip install selenium
+pip install pynput
+pip install urllib3
+```
+
 
 Mouse_setting_control_for_buttons_python_for_linux.py — это элегантный и функциональный аналог популярной утилиты X-Mouse Button Control, созданный специально для пользователей Linux. Эта программа, написанная на Python, предоставляет возможность гибкой настройки кнопок мыши, позволяя переназначать их действия и адаптировать поведение под ваши потребности — всё это в духе свободы и открытости, присущих Linux. 
 Проект состоит из двух ключевых файлов:
