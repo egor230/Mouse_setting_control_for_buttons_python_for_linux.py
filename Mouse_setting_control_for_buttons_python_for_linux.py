@@ -355,67 +355,23 @@ def add_text(key, text_widget):
 def keyboard_scrypt(root, text_widget):
   window = Toplevel(root)  # основа
   window.title('Клавиатура')
-  window.geometry("1550x320+240+580")  # Используем geometry вместо setGeometry
+  window.geometry("1550x340+240+580")  # Используем geometry вместо setGeometry
   keyboard_layout = [
       ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'Delete', 'Home',
        'End', 'PgUp', 'PgDn']
       , ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0', '_\n-', '+\n=',
          'Backspace', 'Num Lock', '/', '*', '-']
-      , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', '7\nHome', '8\n↑', '9\nPgUp',
+      , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', ' 7\nHome', '8\n↑', '9\nPgUp',
          '+']
       , ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
       , ['Shift', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
-      , ['Ctrl', 'Windows', 'Alt', 'Space', 'Alt', 'Fn', 'Menu', 'Ctrl', 'up', '0\nIns', '.']
+      , ['Ctrl', 'Windows', 'Alt', 'Space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
+      , ['Left', 'Down', 'Right']
   ]
 
   style = ttk.Style()
   style.configure('TButton', background='lightgray')
   style.map('TButton', background=[('active', 'blue')])
-
-  for i, row in enumerate(keyboard_layout):
-   for j, key in enumerate(row):
-      x1 = 70 * j + 6
-      y1 = 50 * i + 6
-      if i == 5 and key == "Space":
-        button = ttk.Button(window, text=key, width=30, style='TButton',
-                            command=lambda k=key, t=text_widget: add_text(k, t))
-        button.place(x=x1, y=y1)
-      else:
-        button = ttk.Button(window, text=key, width=5, style='TButton',
-                            command=lambda k=key, t=text_widget: add_text(k, t))
-        if key == 'Backspace':  # Условие только для Backspace
-            button = ttk.Button(window, text=key, width=10, style='TButton',
-                                command=lambda k=key, t=text_widget: add_text(k, t))
-            button.place(x=x1, y=y1)
-        elif i == 1 and j > 13:  # Смещение кнопок NumPad после Backspace
-            button.place(x=x1 + 80, y=y1)  # Сдвигаем вправо на 80 пикселей
-        else:
-            button.place(x=x1, y=y1)
-        if key in ['7\nHome', '8\n↑', '9\nPgUp', '+']:
-            x2 = x1 + 60
-            button.place(x=x2, y=y1)
-            if key == "+":
-                button.config(text="\n\n" + key + "\n")
-        if key in ['4\n←', '5\n', '6\n→']:
-            x2 = x1 + 140
-            button.place(x=x2, y=y1)
-        if key in ['1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']:
-            x2 = x1 + 210
-            button.place(x=x2, y=y1)
-            if key == "KEnter":
-                button.config(text="\n\n" + key + "\n")
-        if key in ['0\nIns', '.']:
-            x2 = x1 + 420
-            button.place(x=x2, y=y1)
-        if key in ['Alt_r', 'Fn', 'Menu', 'Ctrl_r']:
-            x2 = x1 + 200
-            button.place(x=x2, y=y1)
-        if key in ['Up']:  # Исправлено с 'up' на 'Up' для соответствия раскладке
-            x2 = x1 + 320
-            button.place(x=x2, y=y1 - 8)
-        if key in ['Left', 'Down', 'Right']:
-            x2 = x1 + 810
-            button.place(x=x2, y=y1 - 18)
 
   mouse_key_left_button = ttk.Button(window, text="\n\nЛевая\n\n", width=5, style='TButton',
                                      command=lambda k="Левая", t=text_widget: add_text(k, t))
@@ -424,34 +380,89 @@ def keyboard_scrypt(root, text_widget):
                                       command=lambda k="Правая", t=text_widget: add_text(k, t))
   mouse_key_right_button.place(x=1430, y=100)
 
+  for i, row in enumerate(keyboard_layout):
+   for j, key in enumerate(row):
+      x1 = 70 * j + 6
+      y1 = 50 * i + 6
+      button = ttk.Button(window, text=key, width=5, style='TButton',
+                            command=lambda k=key, t=text_widget: add_text(k, t))
+      if key == 'Backspace':  # Условие только для Backspace
+          button = ttk.Button(window, text=key, width=10, style='TButton',
+                              command=lambda k=key, t=text_widget: add_text(k, t))
+          button.place(x=x1, y=y1)
+      elif i == 1 and j > 13:  # Смещение кнопок NumPad после Backspace
+          button.place(x=x1 + 80, y=y1)  # Сдвигаем вправо на 80 пикселей
+      else:
+          button.place(x=x1, y=y1)
+      if key in [' 7\nHome', '8\n↑', '9\nPgUp', '+']:
+          x2 = x1 + 69
+          button.place(x=x2, y=y1)
+          if key == "+":
+              button.config(text="\n\n" + key + "\n")
+      if key in ['4\n←', '5\n', '6\n→']:
+          x2 = x1 + 140
+          button.place(x=x2, y=y1)
+      if key in ['1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']:
+          x2 = x1 + 210
+          button.place(x=x2, y=y1)
+          if key == "KEnter":
+              button.config(text="\n\n" + key + "\n")
+      if i==5:
+       if key in ['Ctrl', 'Windows', 'Alt']:
+          button.place(x=x1, y=y1)
+       if key == "Space":
+        button = ttk.Button(window, text=key, width=30, style='TButton',
+                            command=lambda k=key, t=text_widget: add_text(k, t))
+        button.place(x=x1, y=y1)
+       elif key in ['Alt_r', 'Fn', 'Menu', 'Ctrl_r']:
+         x2 = x1 + 210
+         button.config(width=5)  # Устанавливаем ширину 15 для "0\nIns"
+         button.place(x=x2, y=y1)
+       elif key == 'up':
+         x2 = x1 + 280
+         button.config(width=5)
+         button.place(x=x2, y=y1)
+       elif key == "0\nIns":
+         x2 = x1 + 420
+         button.config(width=15)  # Устанавливаем ширину 15 для "0\nIns"
+         button.place(x=x2, y=y1)
+       elif key == ' . ':
+         x2 = x1 + 490
+         button.config(width=5)
+         button.place(x=x2, y=y1)
+      if i == 6:
+       if key in ['Left', 'Down', 'Right']:
+        x2 = x1 + 770
+        button.config(width=5)
+        button.place(x=x2, y=y1-9)
   return window
 def run_scrypt(i):
+  res= dict_save.return_jnson()
+  if "script_mouse" not in res:
+    res.setdefault("script_mouse", {})
+  if res["script_mouse"].get(dict_save.get_cur_app()) is None:
+      res["script_mouse"].setdefault(dict_save.get_cur_app(), {})
+
+  if res["script_mouse"][dict_save.get_cur_app()].get(defaut_list_mouse_buttons[i]) is None:
+      res["script_mouse"][dict_save.get_cur_app()].setdefault(defaut_list_mouse_buttons[i], "#!/bin/bash\n")
+
   root.title("Скрипт")
   notebook = ttk.Notebook(root)
   notebook.grid(row=0, column=0, sticky="nsew")
+
   # Создаем одну вкладку для текста
   tab1 = ttk.Frame(notebook)
-  notebook.add(tab1, text="Вкладка 1")
+  notebook.add(tab1, text="Редактор")
 
   # Добавляем виджет Text на вкладку для ввода текста
   text_widget = Text(tab1, wrap='word')
   text_widget.grid(row=0, column=0, sticky="nsew")
-
-  res= dict_save.return_jnson()
-  # print(res["script_mouse"])
-  if "script_mouse" not in res:
-    res.setdefault("script_mouse", {})
-  if res["script_mouse"].get(dict_save.get_cur_app()) is None:
-    res["script_mouse"].setdefault(dict_save.get_cur_app(), {})
-
-  if res["script_mouse"][dict_save.get_cur_app()].get(defaut_list_mouse_buttons[i]) is None:
-    res["script_mouse"][dict_save.get_cur_app()].setdefault(defaut_list_mouse_buttons[i], "#!/bin/bash\n")
   key_mouse_scrypt = res["script_mouse"][dict_save.get_cur_app()].get(defaut_list_mouse_buttons[i])
-  # print(key_mouse_scrypt)
-  if key_mouse_scrypt is not None:
-    text_widget.insert("end", key_mouse_scrypt)
-  # else:
-  #   text_widget.insert("end", "#!/bin/bash\n")
+  # Вставляем текст только если он не равен "#!/bin/bash\n"
+  if key_mouse_scrypt and key_mouse_scrypt != "#!/bin/bash\n":
+      text_widget.insert("end", key_mouse_scrypt)
+  else:
+      text_widget.insert("end", "#!/bin/bash\n")
     # Функция для закрытия окна
   def close_window(i, key_mouse_scrypt, win):
     text_content = text_widget.get("1.0", "end-1c")  # Извлекаем текст из text_widget
@@ -459,14 +470,16 @@ def run_scrypt(i):
     dict_save.save_jnson(res)
     notebook.destroy()  # Создаем вкладку с кнопкой "Закрыть"
     win.destroy()
-  close_tab = ttk.Frame(notebook)
-  notebook.add(close_tab, text="Закрыть")
 
-  win= keyboard_scrypt(root, text_widget)
+  # Создаем окно клавиатуры
+  win = keyboard_scrypt(root, text_widget)
+
+  # Установка обработчика закрытия окна
+  win.protocol("WM_DELETE_WINDOW", lambda: close_window(i, key_mouse_scrypt, win))
   # Создаем кнопку для закрытия окна на вкладке "Закрыть"
-  close_button = ttk.Button(close_tab, text="Закрыть", command=lambda i1=i, key_mouse_scrypt1=key_mouse_scrypt, win1=win
-  : close_window(i1, key_mouse_scrypt1, win1))
-  close_button.grid(row=0, column=0, sticky="w", pady=10)
+  # close_button = ttk.Button(close_tab, text="Закрыть", command=lambda i1=i, key_mouse_scrypt1=key_mouse_scrypt, win1=win
+  # : close_window(i1, key_mouse_scrypt1, win1))
+  # close_button.grid(row=0, column=0, sticky="w", pady=10)
 
 creat = 0  # Глобальная переменная для контроля создания кнопок
 a_scrypt = []  # Список для хранения созданных кнопок
@@ -652,6 +665,8 @@ root.protocol("WM_DELETE_WINDOW", on_close)
 process= threading.Thread(target=get_process, args=(dict_save, root,))
 process.start()
 Button(root, text="Показать список устройств", command=show_list_id_callback).place(x=710, y=220)
+
+# win = keyboard_scrypt(root, " ")
 if os.getgid() != 0:# if os.getgid() == 0:# start1() с root правами"
  box = Combobox(root, width=12, textvariable=id_value, values=id_list, state='readonly')  #
  box.grid(column=1, row=0, padx=10, pady=60,sticky=N)
