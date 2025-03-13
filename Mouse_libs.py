@@ -250,25 +250,166 @@ class save_dict:
             old[i] = k[int(old[i])]  # Преобразование списка обратно в строку
         # Обновление списка с заменой элементов из словаря
       return key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, game, list_buttons
-def remove_before_second_slash(path):
-  if path == 'C:/Windows/explorer.exe':
-    return path
-  parts = path.split('/', 3)    # Split the path at the first two slashes
-  if len(parts) >= 4:  # Check if there are at least two slashes
-    return '/' + parts[3]    # Return the part after the second slash with a leading slash
-  else:   # In case the path does not have two slashes, return an empty string
-    return 'C:/Windows/explorer.exe'
+
+def add_text(key, text_widget): # добавлять команды для клавиатуры и мысли в текстовое поле редактора.)
+  if key=="Ctrl":
+     key="ISO_Next_Group"
+  if key == "Левая":
+    sc = (f'xte "mousedown 1"\n'  # Нажатие левой кнопки мыши
+          f'sleep 0.23\n'  # Удержание 0.3 секунды
+          f'xte "mouseup 1"\n')  # Отпускание левой кнопки
+  elif key == "Правая":
+    sc = (f'xte "mousedown 3"\n'  # Нажатие правой кнопки мыши
+          f'sleep 0.23\n'  # Удержание 0.3 секунды
+          f'xte "mouseup 3"\n')  # Отпускание правой кнопки
+  else:
+   sc=(f'xte \"keydown {key}\"\n'
+       f'sleep 0.23\n'
+       f'xte \"keyup {key}\"\n')
+
+  # Вставляем текст в месте курсора
+  text_widget.insert(text_widget.index("insert"), sc)
+
+# Создаем главное окно
+def keyboard_scrypt(root, text_widget):
+  window = Toplevel(root)  # основа
+  window.title('Клавиатура')
+  window.geometry("1550x340+240+580")  # Используем geometry вместо setGeometry
+  keyboard_layout = [
+      ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'Delete', 'Home',
+       'End', 'PgUp', 'PgDn']
+      , ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0', '_\n-', '+\n=',
+         'Backspace', 'Num Lock', '/', '*', '-']
+      , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', ' 7\nHome', '8\n↑', '9\nPgUp',
+         '+']
+      , ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
+      , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
+      , ['Ctrl', 'Windows', 'Alt_L', 'Space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
+      , ['Left', 'Down', 'Right']
+  ]
+
+  style = ttk.Style()# При нажатии кнопка меняет свой цвет.
+  style.configure('TButton', background='lightgray')
+  style.map('TButton', background=[('active', 'blue')])
+  mouse_key_left_button = ttk.Button(window, text="\n\nЛевая\n\n", width=5, style='TButton',
+                                     command=lambda k="Левая", t=text_widget: add_text(k, t))
+  mouse_key_left_button.place(x=1340, y=100)
+  mouse_key_right_button = ttk.Button(window, text="\n\nПравая\n\n", width=5, style='TButton',
+                                      command=lambda k="Правая", t=text_widget: add_text(k, t))
+  mouse_key_right_button.place(x=1430, y=100)
+
+  for i, row in enumerate(keyboard_layout):# Создаем клавиатуру.
+   for j, key in enumerate(row):
+      x1 = 70 * j + 6
+      y1 = 50 * i + 6
+      button = ttk.Button(window, text=key, width=5, style='TButton',
+                            command=lambda k=key, t=text_widget: add_text(k, t))
+      if key == 'Backspace':  # Условие только для Backspace
+          button = ttk.Button(window, text=key, width=10, style='TButton',
+                              command=lambda k=key, t=text_widget: add_text(k, t))
+          button.place(x=x1, y=y1)
+      elif i == 1 and j > 13:  # Смещение кнопок NumPad после Backspace
+          button.place(x=x1 + 69, y=y1)  # Сдвигаем вправо на 80 пикселей
+      else:
+          button.place(x=x1, y=y1)
+      if key in [' 7\nHome', '8\n↑', '9\nPgUp', '+']:
+          x2 = x1 + 69
+          button.place(x=x2, y=y1)
+          if key == "+":
+              button.config(text="\n\n" + key + "\n")
+      if key in ['4\n←', '5\n', '6\n→']:
+          x2 = x1 + 140
+          button.place(x=x2, y=y1)
+      if key in ['1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']:
+          x2 = x1 + 210
+          button.place(x=x2, y=y1)
+          if key == "KEnter":
+              button.config(text="\n\n" + key + "\n")
+      if i==5:
+       if key in ['Ctrl', 'Windows', 'Alt']:
+          button.place(x=x1, y=y1)
+       if key == "Space":
+        button = ttk.Button(window, text=key, width=30, style='TButton',
+                            command=lambda k=key, t=text_widget: add_text(k, t))
+        button.place(x=x1, y=y1)
+       elif key in ['Alt_r', 'Fn', 'Menu', 'Ctrl_r']:
+         x2 = x1 + 210
+         button.config(width=5)  # Устанавливаем ширину 15 для "0\nIns"
+         button.place(x=x2, y=y1)
+       elif key == 'up':
+         x2 = x1 + 280
+         button.config(width=5)
+         button.place(x=x2, y=y1)
+       elif key == "0\nIns":
+         x2 = x1 + 420
+         button.config(width=15)  # Устанавливаем ширину 15 для "0\nIns"
+         button.place(x=x2, y=y1)
+       elif key == ' . ':
+         x2 = x1 + 490
+         button.config(width=5)
+         button.place(x=x2, y=y1)
+      if i == 6:
+       if key in ['Left', 'Down', 'Right']:
+        x2 = x1 + 770
+        button.config(width=5)
+        button.place(x=x2, y=y1-9)
+  return window
 def is_path_in_list(path, path_list):#проверяет, содержится ли путь в списке путей.
     return any(path in item for item in path_list)
 def get_index_of_path(path, path_list):
   index = next(index for index, item in enumerate(path_list) if path in item)
-  return index#находит индекс пути в списке путей и возвращает соответствующий элемент списка.
+  return index #находит индекс пути в списке путей и возвращает соответствующий элемент списка.
+def get_process_info():
+  process_info = {}
+  p=['wine', 'portpoton']
+  for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+    try:
+      pid = proc.info['pid']
+      name = proc.info['name']
+      cmdline = proc.info['cmdline']      # Проверка, что cmdline не является None
+      if cmdline is None:
+        continue      # Проверка, запущен ли процесс через Wine
+      exe_path = next((part for part in cmdline if part.endswith('.exe')), None)
+      if exe_path:       # Извлечение части пути, начинающейся с /mnt и включающей .exe
+       match = re.search(r'/mnt/.*?\.exe', exe_path)
+       if match:
+        exe_path = match.group(0)      # print(pid)         # print(exe_path)
+        process_info[pid]= exe_path
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+      continue
+  return process_info
+
+def replace_path_in_dict(d):
+  # Определяем новый префикс
+  new_prefix = next(('/'.join(value.split('/')[:4]) + '/' for value in d.values() if value.startswith('/mnt/')), None)
+  if new_prefix is None:
+    raise ValueError("Не удалось определить новый префикс.")
+
+  updated_dict = {}
+  for key, value in d.items():
+    if value.startswith('/mnt/'):    # Если путь уже начинается с /mnt/, оставляем как есть
+      updated_value = value
+    else:      # Заменяем X:/ на new_prefix
+      updated_value = re.sub(r'^[A-Z]:/', new_prefix, value, count=1)
+      # Убираем дублирование /games/games/ или других частей
+      parts = updated_value.split('/') # Удаляем повторяющиеся сегменты после new_prefix
+      unique_parts = []
+      for part in parts:
+        if not unique_parts or part != unique_parts[-1]:
+          unique_parts.append(part)
+      updated_value = '/'.join(unique_parts)
+    # Добавляем .exe, если его нет
+    if isinstance(updated_value, str) and not updated_value.lower().endswith('.exe'):
+      updated_value += '.exe'
+    updated_dict[key] = updated_value # Путей обновить значение путей.
+
+  return updated_dict
 get_user_name = f'''#!/bin/bash
 current_user=$(whoami);
 echo $current_user
 exit;# Завершаем выполнение скрипта
 '''
-user = subprocess.run(['bash'], input=get_user_name, stdout=subprocess.PIPE, text=True).stdout.strip()
+user = subprocess.run(['bash'], input=get_user_name, stdout=subprocess.PIPE, text=True).stdout.strip()# имя пользователя.
 get_main_id = '''#!/bin/bash # Получаем идентификатор активного окна
     active_window_id=$(xdotool getactivewindow 2>/dev/null)
     if [ -n "$active_window_id" ]; then
@@ -279,56 +420,35 @@ get_main_id = '''#!/bin/bash # Получаем идентификатор ак�
     fi
     exit'''
 def get_pid_and_path_window():# Получаем идентификатор активного окна
- try:
-    process_id = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
-    a = []
-    result = str(subprocess.run(['ps', 'aux'], stdout=subprocess.PIPE, text=True).stdout)  # # print(result)
-    lines = result.split('\n')
-    a = [line for line in lines if user in line]  # Убираем 'root' из условия
-    data_dict = {}
-    pattern = r"(/mnt/.*?\.exe)"  # Регулярное выражение для поиска полного пути, начинающегося с /mnt/
-    # Регулярное выражение для поиска полного пути, начинающегося с /mnt/
-    for i in a:
-      dir_process_name = i.split(maxsplit=10)[10].replace('\\', '/')  # Извлекаем нужную часть строки
-      match = re.search(pattern, dir_process_name)
+ try:   # Регулярное выражение для поиска путей к .exe файлам
+   pattern = re.compile(r'(/mnt/.*?\.exe)|([A-Z]:/.*?\.exe)', re.IGNORECASE)
+   data_dict = {}   # Один проход по всем процессам пользователя
+   for proc in psutil.process_iter(['pid', 'username', 'cmdline']):
+    if proc.info['username'] == user and proc.info['cmdline']:
+     cmdline = ' '.join(proc.info['cmdline']).replace('\\', '/')
+     match = pattern.search(cmdline)
+     if match:
+      file_path = match.group(0)       # Обработка пути: берём часть после .sh, если есть
+      file_path = file_path.split('.sh', 1)[-1].strip() if '.sh' in file_path else file_path       # Уточняем путь до /mnt/... (если требуется)
+      match_mnt = re.search(r'/mnt/[^ ]+', file_path)
+      if match_mnt:
+        file_path = match_mnt.group(0)
+      data_dict[proc.info['pid']] = file_path
 
-      if match:
-        file_path = match.group(1)  # Получаем полный путь
-        pid_id = int(i.split()[1])  # id потока
-        if ".exe" in file_path:# нужно добавить только те, что имеют exe
-          data_dict[pid_id] = file_path  # Добавляем в словарь pid и путь.
-    # Вариант 2 ещё один поиск
-    pattern = [r"(.*.exe)",r"(.*.EXE)"]
-    for i in a:
-     for p in pattern:      # print(i)
-      dir_process_name = i.split(maxsplit=10)[10].replace('\\', '/')  # Извлекаем нужную часть строки
-      match = re.search(p, dir_process_name)
-      if match:
-       file_path = match.group(1)  # Получаем полный путь
-       pid_id = int(i.split()[1])  # id потока
-       if ".exe" in file_path or ".EXE" in file_path:
-        # Разделим строку после .sh
-        file_path_after_sh = file_path.split('.sh', 1)[-1].strip()  # Получаем путь после .sh
-        data_dict[pid_id] = file_path_after_sh  # Сохраняем только путь после .sh
-    return data_dict
+   # Обновляем словарь с помощью внешних функций (если они есть)
+   data_dict1 = get_process_info()
+   data_dict.update(data_dict1)
+   updated_dict = replace_path_in_dict(data_dict)
+   return updated_dict# Обновленный словарь путей.
  except:
      pass
-def check_current_active_window(dict_save, games_checkmark_paths):# Получаем путь  активного окна
+def check_current_active_window(dict_save, games_checkmark_paths):# Получаем путь  активного ок
  try:
-  data_dict=dict_save.get_pid_and_path_window()
-  process_id_active=dict_save.get_process_id_active()  # print(data_dict)
-  games_checkmark_paths1 = [remove_before_second_slash(path) for path in games_checkmark_paths] # input() # print(data_dict)  print(games_checkmark_paths)
-  if data_dict[process_id_active]:
-    file_path=data_dict[process_id_active]#
-    mnt_index = file_path.rfind('/mnt')
-    if mnt_index != -1:    # Извлекаем часть строки от "/mnt" до конца
-        file_path = file_path[mnt_index:]
-
-    if is_path_in_list(file_path, games_checkmark_paths):  #     # print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")
+  data_dict=get_pid_and_path_window()
+  process_id_active=dict_save.get_process_id_active()
+  file_path=data_dict[process_id_active]#  # print(file_path)  # print(games_checkmark_paths)
+  if data_dict[process_id_active] and is_path_in_list(file_path, games_checkmark_paths):  #    print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")
      return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
-    file_path= file_path[1:].replace(':', '')  # Удаляем первую букву и ':\'    # print(file_path)    # print(games_checkmark_paths1)
-    if is_path_in_list(file_path, games_checkmark_paths1):  # Portproton     print("Portproton ")     # print(file_path)  #  print(games_checkmark_paths)
-     return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths1)]
   return dict_save.get_prev_game()# если мы ничего не нашли, вернуть предыдущую конфигурацию.
  except:
    return dict_save.get_prev_game()
@@ -379,7 +499,6 @@ LIST_MOUSE_BUTTONS=["Левая кнопка","Правая кнопка","Ср�
 LIST_KEYS = list(KEYS.keys())
 defaut_list_mouse_buttons=['LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'SCROLL_UP', 'SCROLL_DOWN', 'XBUTTON1', 'XBUTTON2']
 class ToolTip(object):
-
     def __init__(self, widget):
         self.widget = widget
         self.tipwindow = None
@@ -400,7 +519,6 @@ class ToolTip(object):
         label = Label(tw, text=self.text, justify=LEFT, background="#ffffe0", relief=SOLID, borderwidth=1,
                       font=("tahoma", "10", "normal"))
         label.pack(ipadx=1)
-
     def hidetip(self):
         tw = self.tipwindow
         self.tipwindow = None
@@ -435,19 +553,19 @@ class Job(threading.Thread):
   time.sleep(0.00001)
   while self.__running.is_set():
    self.__flag.wait() # return immediately when it is True, block until the internal flag is True when it is False
-   time.sleep(0.008)
+   time.sleep(0.08)
+   t=0.0035# задержка в прокрутке.
    if self.key== "SCROLL_UP":
      thread = threading.Thread(target= key_work.mouse_wheel_up)
-     thread.daemon = True  # Установка атрибута daemon в значение True
-     thread.start()      # key_work.mouse_wheel_up()
+     thread.start()  # key_work.mouse_wheel_donw()   # keybord_from.press(self.key)
+     time.sleep(t)
    if self.key== "SCROLL_DOWN":
      thread1 = threading.Thread(target= key_work.mouse_wheel_donw)
-     thread1.daemon = True  # Установка атрибута daemon в значение True
      thread1.start()      # key_work.mouse_wheel_donw()   # keybord_from.press(self.key)
+     time.sleep(t)    # thread1.join()
    # keybord_from.release(self.key)   # print(self.key)   # directinput.keyDown(str( self.key).lower())
  def pause(self):
   self.__flag.clear() # Set to False to block the thread
-
  def resume(self):
   self.__flag.set() # Set to True, let the thread stop blocking
  def stop(self):
@@ -517,18 +635,17 @@ class work_key:
     subprocess.call(['bash', '-c', mouse_wheel])
   def mouse_wheel_donw(self):  #
     mouse_wheel = '''#!/bin/bash
-        xdotool click  {0}    '''.format(5)
+        xdotool click  {0}   
+         '''.format(5)
     subprocess.call(['bash', '-c', mouse_wheel])
   def mouse_right_donw(self):  #Правая кнопки мыши
-
     # mouse_controller.click(mouse.Button.right)
     # pyautogui.click(button='right')
     mouse_right_donw1 = '''#!/bin/bash
         xdotool click  {0}    '''.format(3)
     subprocess.call(['bash', '-c', mouse_right_donw1])
   def mouse_middle_donw(self):  #Средняя.
-      # Нажимаем среднюю кнопку мыши
-      pyautogui.click(button='middle')
+      pyautogui.click(button='middle')      # Нажимаем среднюю кнопку мыши
       mouse_wheel = '''#!/bin/bash
           xdotool click  {0}    '''.format(2)
       # subprocess.call(['bash', '-c', mouse_wheel])
@@ -536,14 +653,12 @@ class work_key:
     press = '''#!/bin/bash
     xte 'keydown {0}'  '''
     if key in self.keys_list1:
-     thread1 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))
-     #thread1.daemon = True  # Установка атрибута daemon в значение True
+     thread1 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))    #thread1.daemon = True  # Установка атрибута daemon в значение True
      thread1.start()
      return 0
     key1= key.lower()    # print(key1)
     if key1 in self.keys_list:
-      thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))
-      #thread.daemon = True  # Установка атрибута daemon в значение True
+      thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))      #thread.daemon = True  # Установка атрибута daemon в значение True
       thread.start()     # print(key1)     # subprocess.call(['bash', '-c', press.format(key1)])
     else:
       keybord_from.press(KEYS[key[number_key]])
@@ -590,7 +705,6 @@ def show_tooltip(self, event):
 
   label = root.Label(self.tooltip, text=self.text, background="#ffffe0", relief="solid", borderwidth=1)
   label.pack()
-
     #    a.resume()
     # if pres == False:
     #     a.pause()
@@ -624,14 +738,9 @@ def mouse_key(key, number_key,press_button,list_mouse_button_names, pres, a):
      if str(key[number_key])=='RBUTTON':
       if sticking_right_mouse == False:# нет залипание.
          sticking_right_mouse = True
-
-         mouse_controller.press(mouse.Button.right)
-         #pyautogui.mouseDown(button='right')        # Нажимаем и удерживаем правую кнопку мыши
+         mouse_controller.press(mouse.Button.right) #  Нажимаем и удерживаем правую кнопку мыши pyautogui.mouseDown(button='right')
       else:        # print("re")
-        # Отпускаем правую кнопку мыши
-        mouse_controller.release(mouse.Button.right)
-
-        #pyautogui.mouseUp(button='right')
+        mouse_controller.release(mouse.Button.right) # Отпускаем правую кнопку мыши  pyautogui.mouseUp(button='right')
         sticking_right_mouse =False
  except Exception as e:   #save_dict.write_in_log(e)
    pass
@@ -649,7 +758,6 @@ def keyboard_press_button(key, pres, number_key, a, press_button):
       key_work.key_release(wk, number_key)		# keybord_from.release(KEYS[key[number_key]])  # print("reasle off")
 
   # поставлен флажок.
-
   if press_button[number_key] == True:    # print("ok")
     if pres == True and a.get_sw() == True:
       a.set_sw(False)
@@ -692,7 +800,6 @@ def start1(dict_save, root):# Запуск всего
      add_button_start["state"] = "disabled"# выкл кнопку старт.
      curr_name = dict_save.get_cur_app()  # получить значение текущей активной строки.     # dict_save.set_current_path_game(curr_name)
      prepare(root, dict_save, dictio, games_checkmark_paths)
-
  else: # Вывод ошибки.
    messagebox.showinfo("Ошибка", "Нужно выбрать приложенние")
 
@@ -714,11 +821,10 @@ def check_mouse_script(res, dict_save, defaut_list_mouse_buttons, number_key):
  except:
    return False
 def execute_script(script):
-    try:
-        # print(script)
-        result = subprocess.call(['bash', '-c', script])
-    except subprocess.CalledProcessError as e:
-        print(f"Ошибка при выполнении скрипта: {e}")
+  try:  # print(script)
+      result = subprocess.call(['bash', '-c', script])
+  except subprocess.CalledProcessError as e:
+      print(f"Ошибка при выполнении скрипта: {e}")
 def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_button, string_keys):
  # key - список клавиш, button - какая кнопка сейчас нажата, есть нажатие, словарь с называниями кнопкам с объектами,
  # как называется кнопка мыши для эмуляции, эту надо кнопку удерживать?
@@ -767,8 +873,7 @@ list_threads=[]
 def a(root, dict_save, key, list_buttons, press_button, string_keys, game, games_checkmark_paths):# Основная функция эмуляциии  print(key[1])# список ключей  меняется
   #print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
   def on_click(x, y, button, pres):  # print(button) # Button.left  print(key)#['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']    print(key[1])# список ключей  меняется
-    f2 = threading.Thread(target=func_mouse_press_button, args=(dict_save, key, button, pres, list_buttons, press_button, string_keys,))
-    # f2.daemon = True
+    f2 = threading.Thread(target=func_mouse_press_button, args=(dict_save, key, button, pres, list_buttons, press_button, string_keys,))    # f2.daemon = True
     list_threads.append(f2)
     f2.start()
     return True

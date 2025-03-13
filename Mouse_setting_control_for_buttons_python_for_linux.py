@@ -1,5 +1,66 @@
 from Mouse_libs import *
+def run_scrypt(i):
+  res= dict_save.return_jnson()
+  if "script_mouse" not in res:
+    res.setdefault("script_mouse", {})
+  if res["script_mouse"].get(dict_save.get_cur_app()) is None:
+      res["script_mouse"].setdefault(dict_save.get_cur_app(), {})
 
+  if res["script_mouse"][dict_save.get_cur_app()].get(defaut_list_mouse_buttons[i]) is None:
+      res["script_mouse"][dict_save.get_cur_app()].setdefault(defaut_list_mouse_buttons[i], "#!/bin/bash\n")
+
+  root.title("Скрипт")
+  notebook = ttk.Notebook(root)
+  notebook.grid(row=0, column=0, sticky="nsew")
+
+  tab1 = ttk.Frame(notebook)  # Создаем одну вкладку для текста
+  notebook.add(tab1, text="Редактор")
+
+  # Добавляем виджет Text на вкладку для ввода текста
+  text_widget = Text(tab1, wrap='word')
+  text_widget.grid(row=0, column=0, sticky="nsew")
+  key_mouse_scrypt = res["script_mouse"][dict_save.get_cur_app()].get(defaut_list_mouse_buttons[i])
+  # Вставляем текст только если он не равен "#!/bin/bash\n"
+  if key_mouse_scrypt and key_mouse_scrypt != "#!/bin/bash\n":
+      text_widget.insert("end", key_mouse_scrypt)
+  else:
+      text_widget.insert("end", "#!/bin/bash\n")
+    # Функция для закрытия окна
+  def close_window(i, key_mouse_scrypt, win):
+    text_content = text_widget.get("1.0", "end-1c")  # Извлекаем текст из text_widget
+    res["script_mouse"][dict_save.get_cur_app()][defaut_list_mouse_buttons[i]]=text_content
+    dict_save.save_jnson(res)
+    notebook.destroy()  # Создаем вкладку с кнопкой "Закрыть"
+    win.destroy()
+
+  # Создаем окно клавиатуры
+  win = keyboard_scrypt(root, text_widget)
+
+  # Установка обработчика закрытия окна
+  win.protocol("WM_DELETE_WINDOW", lambda: close_window(i, key_mouse_scrypt, win))
+creat = 0  # Глобальная переменная для контроля создания кнопок
+a_scrypt = []  # Список для хранения созданных кнопок
+
+def create_scrypt_buttons():
+  global creat
+  y_place = 23  # Начальная координата для кнопок
+  res = dict_save.return_jnson()  # Получение данных из dict_save
+  for i in range(7):
+    if creat == 0:    # Проверяем, нужно ли создавать кнопки
+      scrypt_button = Button( text=str(LIST_MOUSE_BUTTONS[i]),     # Создание кнопки
+        font=("Arial", 9),  width=10, height=1,        command=lambda i1=i: run_scrypt(i1)
+      )
+      scrypt_button.place(x=520, y=y_place)  # Размещение кнопки
+      a_scrypt.append(scrypt_button)  # Добавление кнопки в список
+
+    # Проверяем состояние кнопки и устанавливаем стиль
+    if i < len(a_scrypt) and check_mouse_script(res, dict_save, defaut_list_mouse_buttons, i):      # print("Кнопка активирована")
+      a_scrypt[i].config(relief=SUNKEN)  # Изменение стиля кнопки
+    else:
+      a_scrypt[i].config(relief=RAISED)
+    y_place += 31  # Увеличение координаты по вертикали
+
+  creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
 def update_buttons(event=0):# Изменение назначения кнопок.
   dict_save.set_current_path_game(" ")
   dict_save.set_default_id_value(add_button_start)
@@ -81,8 +142,7 @@ def change_name_label(event, count): #Изменить название игры
   window.configure(bg='DimGray')  # Цвет фона окна
   labels = dict_save.return_labels()
   res = dict_save.return_jnson()
-  old_name=res["paths"][list(res["paths"])[count]]
-
+  old_name=res["paths"][list(res["paths"])[count]]# Получить прежнее название игры
   new_name = StringVar()
   e = Entry(window, width=25, textvariable=new_name)
   e.grid(column=2, row=0, padx=50, pady=5)
@@ -177,7 +237,7 @@ def add_file(dict_save):# Добавить новые игры
 
  labels[len(labels)-1].config(background="#06c")  # текстовое поле и кнопка для добавления в список
 checkbutton_list=[]
-def fill_labes(res, name_games,labels,var_list, labels_with_checkmark):
+def fill_labes(res, name_games,labels,var_list, labels_with_checkmark):# Заполнение полей надписи и галочки.
   check_mark = res["games_checkmark"]
   d=res["paths"]
   for count, i in enumerate(d):    # print(count)
@@ -224,7 +284,6 @@ def filling_in_fields(res):# заполнения всех полей.
     dict_save.set_box_values(add_button_start)  # Установить значения выпадающего списка.
     dict_save.set_values_box()
 def start(root, dict_save):# запуск.
-
  data = dict_save.data  # файл настроек. print(data)
  if os.path.exists(data):  # есть ли этот файл.
    with open(data) as json_file:# загрузка настроек из файла.
@@ -277,6 +336,8 @@ def start(root, dict_save):# запуск.
 
  filling_in_fields(res) # заполнения всех полей.
  mouse_check_button(dict_save, res, curr_name) # флаг для удержания кнопки мыши.
+
+ create_scrypt_buttons()# создание углубление кнопок скрипта.
  # print("fill")
 def move_last_key_to_front(d):
    """
@@ -332,177 +393,7 @@ def on_close():# Функция закрытия программы.  # print("e
   root.destroy()
   exit()
   sys.exit()
-def add_text(key, text_widget):
-  # print(key)
-  if key == "Левая":
-    sc = (f'xte "mousedown 1"\n'  # Нажатие левой кнопки мыши
-          f'sleep 0.23\n'  # Удержание 0.3 секунды
-          f'xte "mouseup 1"\n')  # Отпускание левой кнопки
-  elif key == "Правая":
-    sc = (f'xte "mousedown 3"\n'  # Нажатие правой кнопки мыши
-          f'sleep 0.23\n'  # Удержание 0.3 секунды
-          f'xte "mouseup 3"\n')  # Отпускание правой кнопки
-  else:
-   sc=(f'xte \"keydown {key}\"\n'
-       f'sleep 0.3\n'
-       f'xte \"keyup {key}\"\n')
 
-  # Вставляем текст в месте курсора
-  text_widget.insert(text_widget.index("insert"), sc)
-
-  # print(key)
-# Создаем главное окно
-def keyboard_scrypt(root, text_widget):
-  window = Toplevel(root)  # основа
-  window.title('Клавиатура')
-  window.geometry("1550x340+240+580")  # Используем geometry вместо setGeometry
-  keyboard_layout = [
-      ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'Delete', 'Home',
-       'End', 'PgUp', 'PgDn']
-      , ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0', '_\n-', '+\n=',
-         'Backspace', 'Num Lock', '/', '*', '-']
-      , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', ' 7\nHome', '8\n↑', '9\nPgUp',
-         '+']
-      , ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
-      , ['Shift', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
-      , ['Ctrl', 'Windows', 'Alt', 'Space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
-      , ['Left', 'Down', 'Right']
-  ]
-
-  style = ttk.Style()
-  style.configure('TButton', background='lightgray')
-  style.map('TButton', background=[('active', 'blue')])
-
-  mouse_key_left_button = ttk.Button(window, text="\n\nЛевая\n\n", width=5, style='TButton',
-                                     command=lambda k="Левая", t=text_widget: add_text(k, t))
-  mouse_key_left_button.place(x=1340, y=100)
-  mouse_key_right_button = ttk.Button(window, text="\n\nПравая\n\n", width=5, style='TButton',
-                                      command=lambda k="Правая", t=text_widget: add_text(k, t))
-  mouse_key_right_button.place(x=1430, y=100)
-
-  for i, row in enumerate(keyboard_layout):
-   for j, key in enumerate(row):
-      x1 = 70 * j + 6
-      y1 = 50 * i + 6
-      button = ttk.Button(window, text=key, width=5, style='TButton',
-                            command=lambda k=key, t=text_widget: add_text(k, t))
-      if key == 'Backspace':  # Условие только для Backspace
-          button = ttk.Button(window, text=key, width=10, style='TButton',
-                              command=lambda k=key, t=text_widget: add_text(k, t))
-          button.place(x=x1, y=y1)
-      elif i == 1 and j > 13:  # Смещение кнопок NumPad после Backspace
-          button.place(x=x1 + 80, y=y1)  # Сдвигаем вправо на 80 пикселей
-      else:
-          button.place(x=x1, y=y1)
-      if key in [' 7\nHome', '8\n↑', '9\nPgUp', '+']:
-          x2 = x1 + 69
-          button.place(x=x2, y=y1)
-          if key == "+":
-              button.config(text="\n\n" + key + "\n")
-      if key in ['4\n←', '5\n', '6\n→']:
-          x2 = x1 + 140
-          button.place(x=x2, y=y1)
-      if key in ['1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']:
-          x2 = x1 + 210
-          button.place(x=x2, y=y1)
-          if key == "KEnter":
-              button.config(text="\n\n" + key + "\n")
-      if i==5:
-       if key in ['Ctrl', 'Windows', 'Alt']:
-          button.place(x=x1, y=y1)
-       if key == "Space":
-        button = ttk.Button(window, text=key, width=30, style='TButton',
-                            command=lambda k=key, t=text_widget: add_text(k, t))
-        button.place(x=x1, y=y1)
-       elif key in ['Alt_r', 'Fn', 'Menu', 'Ctrl_r']:
-         x2 = x1 + 210
-         button.config(width=5)  # Устанавливаем ширину 15 для "0\nIns"
-         button.place(x=x2, y=y1)
-       elif key == 'up':
-         x2 = x1 + 280
-         button.config(width=5)
-         button.place(x=x2, y=y1)
-       elif key == "0\nIns":
-         x2 = x1 + 420
-         button.config(width=15)  # Устанавливаем ширину 15 для "0\nIns"
-         button.place(x=x2, y=y1)
-       elif key == ' . ':
-         x2 = x1 + 490
-         button.config(width=5)
-         button.place(x=x2, y=y1)
-      if i == 6:
-       if key in ['Left', 'Down', 'Right']:
-        x2 = x1 + 770
-        button.config(width=5)
-        button.place(x=x2, y=y1-9)
-  return window
-def run_scrypt(i):
-  res= dict_save.return_jnson()
-  if "script_mouse" not in res:
-    res.setdefault("script_mouse", {})
-  if res["script_mouse"].get(dict_save.get_cur_app()) is None:
-      res["script_mouse"].setdefault(dict_save.get_cur_app(), {})
-
-  if res["script_mouse"][dict_save.get_cur_app()].get(defaut_list_mouse_buttons[i]) is None:
-      res["script_mouse"][dict_save.get_cur_app()].setdefault(defaut_list_mouse_buttons[i], "#!/bin/bash\n")
-
-  root.title("Скрипт")
-  notebook = ttk.Notebook(root)
-  notebook.grid(row=0, column=0, sticky="nsew")
-
-  # Создаем одну вкладку для текста
-  tab1 = ttk.Frame(notebook)
-  notebook.add(tab1, text="Редактор")
-
-  # Добавляем виджет Text на вкладку для ввода текста
-  text_widget = Text(tab1, wrap='word')
-  text_widget.grid(row=0, column=0, sticky="nsew")
-  key_mouse_scrypt = res["script_mouse"][dict_save.get_cur_app()].get(defaut_list_mouse_buttons[i])
-  # Вставляем текст только если он не равен "#!/bin/bash\n"
-  if key_mouse_scrypt and key_mouse_scrypt != "#!/bin/bash\n":
-      text_widget.insert("end", key_mouse_scrypt)
-  else:
-      text_widget.insert("end", "#!/bin/bash\n")
-    # Функция для закрытия окна
-  def close_window(i, key_mouse_scrypt, win):
-    text_content = text_widget.get("1.0", "end-1c")  # Извлекаем текст из text_widget
-    res["script_mouse"][dict_save.get_cur_app()][defaut_list_mouse_buttons[i]]=text_content
-    dict_save.save_jnson(res)
-    notebook.destroy()  # Создаем вкладку с кнопкой "Закрыть"
-    win.destroy()
-
-  # Создаем окно клавиатуры
-  win = keyboard_scrypt(root, text_widget)
-
-  # Установка обработчика закрытия окна
-  win.protocol("WM_DELETE_WINDOW", lambda: close_window(i, key_mouse_scrypt, win))
-  # Создаем кнопку для закрытия окна на вкладке "Закрыть"
-  # close_button = ttk.Button(close_tab, text="Закрыть", command=lambda i1=i, key_mouse_scrypt1=key_mouse_scrypt, win1=win
-  # : close_window(i1, key_mouse_scrypt1, win1))
-  # close_button.grid(row=0, column=0, sticky="w", pady=10)
-
-creat = 0  # Глобальная переменная для контроля создания кнопок
-a_scrypt = []  # Список для хранения созданных кнопок
-
-def create_scrypt_buttons():
-  global creat
-  y_place = 23  # Начальная координата для кнопок
-  res = dict_save.return_jnson()  # Получение данных из dict_save
-  for i in range(7):
-    if creat == 0:    # Проверяем, нужно ли создавать кнопки
-      scrypt_button = Button( text=str(LIST_MOUSE_BUTTONS[i]),     # Создание кнопки
-        font=("Arial", 9),  width=10, height=1,        command=lambda i1=i: run_scrypt(i1)
-      )
-      scrypt_button.place(x=520, y=y_place)  # Размещение кнопки
-      a_scrypt.append(scrypt_button)  # Добавление кнопки в список
-
-    # Проверяем состояние кнопки и устанавливаем стиль
-    if i < len(a_scrypt) and check_mouse_script(res, dict_save, defaut_list_mouse_buttons, i):      # print("Кнопка активирована")
-      a_scrypt[i].config(relief=SUNKEN)  # Изменение стиля кнопки
-
-    y_place += 31  # Увеличение координаты по вертикали
-
-  creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
 def delete(dict_save, root):# Удалить профиль.
  if dict_save.get_cur_app()=="C:/Windows/explorer.exe":# # получить id устройства.Если id устройство не выбрали.
      messagebox.showinfo("Ошибка", "Вы выбрали профиль по умолчанию")
@@ -634,7 +525,6 @@ root.resizable(width=False, height=False)
 f1.grid(column=0, row=0, padx=10, pady=10)
 container = Frame(root)
 canvas = Canvas(container,width=700, height=480)
-create_scrypt_buttons()
 canvas.create_window((0, 0), window=f1, anchor="n")
 container.grid()
 canvas.grid(sticky=N+W)
