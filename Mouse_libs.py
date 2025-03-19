@@ -6,7 +6,7 @@ from PIL._tkinter_finder import tk
 from tkinter import messagebox
 from tkinter import filedialog
 from os import path
-
+import tkinter as tk
 from apport import logging
 from deepdiff import DeepDiff
 import keyboard as keybord_from # Управление мышью
@@ -254,6 +254,8 @@ class save_dict:
 def add_text(key, text_widget): # добавлять команды для клавиатуры и мысли в текстовое поле редактора.)
   if key=="Ctrl":
      key="ISO_Next_Group"
+  if key=="Space":
+    key="space"
   if key == "Левая":
     sc = (f'xte "mousedown 1"\n'  # Нажатие левой кнопки мыши
           f'sleep 0.23\n'  # Удержание 0.3 секунды
@@ -361,7 +363,6 @@ def get_index_of_path(path, path_list):
   return index #находит индекс пути в списке путей и возвращает соответствующий элемент списка.
 def get_process_info():
   process_info = {}
-  p=['wine', 'portpoton']
   for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
     try:
       pid = proc.info['pid']
@@ -554,7 +555,7 @@ class Job(threading.Thread):
   while self.__running.is_set():
    self.__flag.wait() # return immediately when it is True, block until the internal flag is True when it is False
    time.sleep(0.08)
-   t=0.0035# задержка в прокрутке.
+   t=0.0015# задержка в прокрутке.
    if self.key== "SCROLL_UP":
      thread = threading.Thread(target= key_work.mouse_wheel_up)
      thread.start()  # key_work.mouse_wheel_donw()   # keybord_from.press(self.key)

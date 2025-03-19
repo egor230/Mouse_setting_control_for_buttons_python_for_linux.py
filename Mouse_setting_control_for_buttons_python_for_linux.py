@@ -511,8 +511,6 @@ def move_element(dict_save, root, direction='up'):
   labels[new_index].config(background="#06c")
   dict_save.save_jnson(res)
 
-
-
 dict_save=save_dict()
 root = Tk()
 id_value =  IntVar()
