@@ -1,4 +1,4 @@
-import time, json, os, copy, psutil, threading, re,  glob, subprocess, psutil, pyautogui
+import time, json, os, copy, psutil, threading, re,  glob, subprocess, psutil, pyautogui, signal
 from tkinter import *
 from tkinter.ttk import Combobox  # импортируем только то что надо
 from tkinter import ttk
@@ -34,7 +34,6 @@ class save_dict:
         self.dict_id_values = {}
         self.data="settings control mouse buttons.json"  # файл настроек.
         self.path_current_app='' # Текущий путь к игре.
-        self.add_button_start = 0
         self.process_id_active = 0 # id активного окна
         self.pid_and_path_window={} # Словарь игр и путей к ним.
         self.current_path_game = "" # Путь к запущенной к игре.
@@ -71,12 +70,6 @@ class save_dict:
 
     def get_id(self):
        return self.id
-
-    def get_add_button_start(self):# Получить кнопку.
-       return self.add_button_start
-
-    def set_add_button_start(self, add_button_start):# Установить кнопку.
-       self.add_button_start = add_button_start
 
     def get_current_app_path(self):# Получить путь текущего окна.
        return self.path_current_app
@@ -148,15 +141,13 @@ class save_dict:
      box_value=self.jnson["key_value"][self.cur_app]
      for i in range(len(self.box_values)):
        self.box_values[i].set(box_value[i])
-    def set_box_values(self, add_button_start):  # Установить значение для выпадающего списка.
+    def set_box_values(self):  # Установить значение для выпадающего списка.
       self.reset_id_value()
       res = self.jnson
       key_values = res["key_value"]
       d = list(res["paths"].keys())  # получить словарь путей и имен файлов.  # print(self.cur_app)    # print(self.count)      # print(d[self.count])
       self.set_cur_app(d[self.count])  # установить текущую активную строку.
       self.jnson["current_app"] = d[self.count]  # Сохранить текущую активную строку.
-      if add_button_start["state"] == "disabled":  # Если выкл кнопку старт.
-        add_button_start["state"] = "normal"  # вкл кнопку старт.       # print(self.jnson["current_app"])
       self.set_values_box()
       return self
     def write_to_file(self, new_data):
@@ -201,9 +192,8 @@ class save_dict:
     def get_state_thread(self):
        return self.thread
 
-    def set_default_id_value(self, add_button_start):# Вернуть значения по умолчанию
+    def set_default_id_value(self):# Вернуть значения по умолчанию
       self.thread = True  # Прервать выполнение потока обработчика нажатий.
-      add_button_start["state"] = "normal"  # выкл кнопку старт.
       for id in self.dict_id_values:
         st= str(self.dict_id_values[id])
         set_button_map = '''#!/bin/bash
@@ -362,22 +352,23 @@ def get_index_of_path(path, path_list):
   index = next(index for index, item in enumerate(path_list) if path in item)
   return index #находит индекс пути в списке путей и возвращает соответствующий элемент списка.
 def get_process_info():
+    # Обновляем словарь с помощью внешних функций (если они есть)
+    # data_dict1 = get_process_info()
+    # data_dict.update(data_dict1)
+    # updated_dict = replace_path_in_dict(data_dict)
   process_info = {}
-  for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-    try:
-      pid = proc.info['pid']
-      name = proc.info['name']
-      cmdline = proc.info['cmdline']      # Проверка, что cmdline не является None
-      if cmdline is None:
-        continue      # Проверка, запущен ли процесс через Wine
-      exe_path = next((part for part in cmdline if part.endswith('.exe')), None)
-      if exe_path:       # Извлечение части пути, начинающейся с /mnt и включающей .exe
-       match = re.search(r'/mnt/.*?\.exe', exe_path)
-       if match:
-        exe_path = match.group(0)      # print(pid)         # print(exe_path)
-        process_info[pid]= exe_path
-    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-      continue
+  pattern = re.compile(r'(/mnt/.*?\.exe)|([A-Z]:/.*?\.exe)', re.IGNORECASE)
+  try:
+   for proc in psutil.process_iter(['pid', 'username', 'cmdline']):
+    if proc.info['username'] == user and proc.info['cmdline']:
+     for arg in proc.info['cmdline']:
+      arg_clean = arg.replace('\\', '/').strip('"')  # Приводим к нормальному виду
+      match = pattern.search(arg_clean)
+      if match:
+       file_path = match.group(0)
+       process_info[proc.info['pid']] = file_path
+  except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+   pass
   return process_info
 
 def replace_path_in_dict(d):
@@ -411,48 +402,116 @@ echo $current_user
 exit;# Завершаем выполнение скрипта
 '''
 user = subprocess.run(['bash'], input=get_user_name, stdout=subprocess.PIPE, text=True).stdout.strip()# имя пользователя.
-get_main_id = '''#!/bin/bash # Получаем идентификатор активного окна
-    active_window_id=$(xdotool getactivewindow 2>/dev/null)
-    if [ -n "$active_window_id" ]; then
-        process_id_active=$(xdotool getwindowpid "$active_window_id" 2>/dev/null)
-        echo "$process_id_active"
-    else
-        echo "0"  # Или любое значение по умолчанию, если нет активного окна
-    fi
-    exit'''
 def get_pid_and_path_window():# Получаем идентификатор активного окна
  try:   # Регулярное выражение для поиска путей к .exe файлам
    pattern = re.compile(r'(/mnt/.*?\.exe)|([A-Z]:/.*?\.exe)', re.IGNORECASE)
    data_dict = {}   # Один проход по всем процессам пользователя
    for proc in psutil.process_iter(['pid', 'username', 'cmdline']):
     if proc.info['username'] == user and proc.info['cmdline']:
-     cmdline = ' '.join(proc.info['cmdline']).replace('\\', '/')
-     match = pattern.search(cmdline)
-     if match:
-      file_path = match.group(0)       # Обработка пути: берём часть после .sh, если есть
-      file_path = file_path.split('.sh', 1)[-1].strip() if '.sh' in file_path else file_path       # Уточняем путь до /mnt/... (если требуется)
-      match_mnt = re.search(r'/mnt/[^ ]+', file_path)
-      if match_mnt:
-        file_path = match_mnt.group(0)
-      data_dict[proc.info['pid']] = file_path
-
-   # Обновляем словарь с помощью внешних функций (если они есть)
-   data_dict1 = get_process_info()
-   data_dict.update(data_dict1)
-   updated_dict = replace_path_in_dict(data_dict)
-   return updated_dict# Обновленный словарь путей.
+     for arg in proc.info['cmdline']:
+      arg_clean = arg.replace('\\', '/').strip('"')  # Приводим к нормальному виду
+      match = pattern.search(arg_clean)
+      if match:
+       file_path = match.group(0)
+       data_dict[proc.info['pid']] = file_path
+   return data_dict# Обновленный словарь путей.
  except:
      pass
+
+def get_visible_active_pid():
+    try:
+        # Получаем ID активного окна в десятичном формате
+        window_id_dec = subprocess.run(
+            ['xdotool', 'getactivewindow'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
+        ).stdout.strip()
+
+        if not window_id_dec:
+            print("Не удалось получить ID активного окна")
+            return 0
+
+        # Преобразуем десятичное ID в шестнадцатеричное (например, 1234567 -> 0x01234567)
+        window_id_hex = hex(int(window_id_dec))
+
+        # Проверка: окно свернуто?
+        xprop_output = subprocess.run(
+            ['xprop', '-id', window_id_dec, '_NET_WM_STATE'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
+        ).stdout
+
+        if "_NET_WM_STATE_HIDDEN" in xprop_output:
+            print("Окно свернуто")
+            return 0  # Окно свернуто
+
+        # Получаем список окон с PID
+        wmctrl_output = subprocess.run(
+            ['wmctrl', '-lp'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
+        ).stdout
+
+        # Ищем строку с нужным ID окна
+        for line in wmctrl_output.splitlines():
+            parts = line.split()
+            print(parts)
+            if len(parts) >= 3 and parts[0] == window_id_hex:
+                pid = int(parts[2])  # PID — третий элемент
+                print(pid)
+                return pid
+        return 0  # PID не найден
+
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        return 0
+
+
+get_main_id = '''#!/bin/bash # Получаем идентификатор активного окна
+active_window_id=$(xdotool getactivewindow 2>/dev/null)
+if [ -n "$active_window_id" ]; then
+    process_id_active=$(xdotool getwindowpid "$active_window_id" 2>/dev/null)
+    echo "$process_id_active"
+else
+    echo "0"  # Или любое значение по умолчанию, если нет активного окна
+fi
+exit '''
+
+
+def is_window_minimized(window_id):
+ try:
+  xprop_output = subprocess.run(
+   ['xprop', '-id', window_id, '_NET_WM_STATE'],
+   stdout=subprocess.PIPE,
+   text=True
+  ).stdout
+  return "_NET_WM_STATE_HIDDEN" in xprop_output
+ except Exception:
+  return True  # Если ошибка, считаем окно свернутым
 def check_current_active_window(dict_save, games_checkmark_paths):# Получаем путь  активного ок
  try:
-  data_dict=get_pid_and_path_window()
-  process_id_active=dict_save.get_process_id_active()
-  file_path=data_dict[process_id_active]#  # print(file_path)  # print(games_checkmark_paths)
-  if data_dict[process_id_active] and is_path_in_list(file_path, games_checkmark_paths):  #    print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")
-     return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
-  return dict_save.get_prev_game()# если мы ничего не нашли, вернуть предыдущую конфигурацию.
+  data_dict=get_pid_and_path_window()# в котором есть директория игр
+  id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
+  if not is_window_minimized(id_active):
+   print("Игра в фокусе, включаем специальный режим")
+   return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
+  else:
+   file_path=data_dict[id_active]#  print(data_dict)  # print(games_checkmark_paths) #
+
+   # if file_path:
+   # print(file_path)
+   # print(data_dict[process_id_active] )
+   # print(id_active)
+   if data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  #  print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
+    return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
+   else:
+    # print(dict_save.get_prev_game())
+    return dict_save.get_prev_game()# если мы ничего не нашли, вернуть предыдущую конфигурацию.
  except:
-   return dict_save.get_prev_game()
+   return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
 def show_list_id_callback():
   show_list_id = f'''#!/bin/bash
    gnome-terminal -- bash -c 'xinput list;
@@ -786,24 +845,6 @@ def remove_profile_keys(d, profile):   # Создаем копию словар�
   # Удаляем собранные ключи
   for key in keys_to_delete:
     del d[key]
-
-def start1(dict_save, root):# Запуск всего
- if dict_save.get_id()==0:# # получить id устройства.Если id устройство не выбрали.
-     messagebox.showinfo("Ошибка", "Вы не выбрали устройство")
-     ok_button = Button(root, text="Ок", command=show_list_id_callback)
-     return
- dictio=dict_save.return_jnson()
- # Какие игры имеют галочку, получаем их список.
- games_checkmark_paths = [key for key, value in dictio['games_checkmark'].items() if value] # Получить список путей к играм
- gp=str(dict_save.get_cur_app())# текущая игра
- if gp in games_checkmark_paths:# Если текущая игра имеет галочку.  print("Lok")
-     add_button_start = dict_save.get_add_button_start()
-     add_button_start["state"] = "disabled"# выкл кнопку старт.
-     curr_name = dict_save.get_cur_app()  # получить значение текущей активной строки.     # dict_save.set_current_path_game(curr_name)
-     prepare(root, dict_save, dictio, games_checkmark_paths)
- else: # Вывод ошибки.
-   messagebox.showinfo("Ошибка", "Нужно выбрать приложенние")
-
 def check_mouse_script(res, dict_save, defaut_list_mouse_buttons, number_key):
  try:
   key_mouse_scrypt = res["script_mouse"][dict_save.get_cur_app()][defaut_list_mouse_buttons[number_key]]
@@ -854,24 +895,24 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
    save_dict.write_in_log(e)
    pass
 
-get_main_id = '''#!/bin/bash # Получаем идентификатор активного окна
-active_window_id=$(xdotool getactivewindow 2>/dev/null)
-if [ -n "$active_window_id" ]; then
-    process_id_active=$(xdotool getwindowpid "$active_window_id" 2>/dev/null)
-    echo "$process_id_active"
-else
-    echo "0"  # Или любое значение по умолчанию, если нет активного окна
-fi
-exit '''
-
 def start_startup_now(dict_save, root):# запустить после переключения окна
  res =dict_save.return_jnson()
- if res["start_startup"] :   # Если есть галочка запускать при старте.
-   # print("start_startup_now")
-   dict_save.reset_id_value()  # Сброс настроек текущего id устройства.   # time.sleep(0.3)
-   start1(dict_save, root)  # Запуск всего
+ dict_save.reset_id_value()  # Сброс настроек текущего id устройства.   # time.sleep(0.3)
+ if dict_save.get_id() == 0:  # # получить id устройства.Если id устройство не выбрали.
+  messagebox.showinfo("Ошибка", "Вы не выбрали устройство")
+  ok_button = Button(root, text="Ок", command=show_list_id_callback)
+  return
+ dictio = dict_save.return_jnson()  # Какие игры имеют галочку, получаем их список.
+ games_checkmark_paths = [key for key, value in dictio['games_checkmark'].items() if value]  # Получить список путей к играм
+ gp = str(dict_save.get_cur_app())  # текущая игра
+ dict_save.set_current_path_game(gp)
+ if gp in games_checkmark_paths:  # Если текущая игра имеет галочку.  print("Lok")
+  prepare(root, dict_save, dictio, games_checkmark_paths)
+ else:  # Вывод ошибки.
+  messagebox.showinfo("Ошибка", "Нужно выбрать приложенние")
+
 list_threads=[]
-def a(root, dict_save, key, list_buttons, press_button, string_keys, game, games_checkmark_paths):# Основная функция эмуляциии  print(key[1])# список ключей  меняется
+def a(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):# Основная функция эмуляциии  print(key[1])# список ключей  меняется
   #print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
   def on_click(x, y, button, pres):  # print(button) # Button.left  print(key)#['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']    print(key[1])# список ключей  меняется
     f2 = threading.Thread(target=func_mouse_press_button, args=(dict_save, key, button, pres, list_buttons, press_button, string_keys,))    # f2.daemon = True
@@ -879,41 +920,41 @@ def a(root, dict_save, key, list_buttons, press_button, string_keys, game, games
     f2.start()
     return True
   listener = mouse.Listener(on_click=on_click)
-  listener.start()  # Запуск слушателя  # print( game)#  print( dict_save.get_cur_app())
+  listener.start()  # Запуск слушателя  # print( game)#  print( dict_save.get_cur_app
+  game = dict_save.get_cur_app()# какая игра сейчас текущая по вкладке.
 
   while 1:   #time.sleep(3)   #print(dict_save.get_flag_thread())
-   game = dict_save.get_cur_app()
-   new_path_game = check_current_active_window(dict_save, games_checkmark_paths)  # Текущая директория активного окна игры.
-   # print(new_path_game)
-   if game != new_path_game:    # print(new_path_game)#
-    dict_save.set_cur_app(new_path_game)
+   new_path_game = check_current_active_window(dict_save, games_checkmark_paths) # Текущая директория активного окна игры.
+   # Если никакой игры не запущено мы возвращаем предыдущую конфигурацию это директория. # print(new_path_game)#
+   if game != new_path_game: # игра которая сейчас на активной вкладке активного окна    #
+    dict_save.set_cur_app(new_path_game)#
     # dict_save.set_current_path_game(new_path_game)
-   # if new_path_game != "": # если путь не пустой
-   #   game = new_path_game# game новый путь
-   # else:
-   #   game = dict_save.get_cur_app() # если путь пуст то game это последняя выбранная игра
    if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального
      # print("user")
+     # print(new_path_game)
      for t in list_threads:
        t.join()
        list_threads.remove(t)
-     dict_save.set_current_path_game(dict_save.get_cur_app()) #Остановить обработчик клави.  print("change", dict_save.get_cur_app(), sep=" = " )# если поток слушателя оставлен     #time.sleep(1.3)
-     break  # key_work.key_release(key, 0)
+     # print(dict_save.get_prev_game())# путь до предыдущей игры
+     #dict_save.set_prev_game(dict_save.get_current_path_game())
+     # dict_save.set_current_path_game(new_path_game) #Остановить обработчик клави.  print("change", dict_save.get_cur_app(), sep=" = " )# если поток слушателя оставлен     #time.sleep(1.3)
+     # dict_save.set_cur_app(new_path_game)#
+     break
   a=key_work.keys_list+key_work.keys_list1
-  for i in list(key):
-    if i in defaut_list_mouse_buttons:
-      if i=='RBUTTON':
-        mouse_controller.release(mouse.Button.right)
-        # pyautogui.mouseUp(button='right')
-      if i=='LBUTTON':
-        pyautogui.mouseUp(button='left')
-
-      if i=='WHEEL_MOUSE_BUTTON':
-        key_work.mouse_middle_donw()
-      if i in a:     # print(i)
-       release = '''#!/bin/bash
-       xte 'keyup {0}'    '''
-       subprocess.call(['bash', '-c', release.format(key)])
+  # for i in list(key):
+  #   if i in defaut_list_mouse_buttons:
+  #     if i=='RBUTTON':
+  #       mouse_controller.release(mouse.Button.right)
+  #       # pyautogui.mouseUp(button='right')
+  #     if i=='LBUTTON':
+  #       pyautogui.mouseUp(button='left')
+  #
+  #     if i=='WHEEL_MOUSE_BUTTON':
+  #       key_work.mouse_middle_donw()
+  #     if i in a:     # print(i)
+  #      release = '''#!/bin/bash
+  #      xte 'keyup {0}'    '''
+  #      subprocess.call(['bash', '-c', release.format(key)])
   listener.stop()
   listener.join()  # Ожидание завершения
   dict_save.set_thread(0)
@@ -922,32 +963,23 @@ def a(root, dict_save, key, list_buttons, press_button, string_keys, game, games
   t2.daemon = True
   t2.start()#  print("cll")
 def prepare(root, dict_save, dictio, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
-  key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, game, list_buttons = dict_save.preparation(dictio, games_checkmark_paths)
+  curr_name = dict_save.get_cur_app()  # получить значение текущей активной строки.     # dict_save.set_current_path_game(curr_name)
+
+  key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, path, list_buttons = dict_save.preparation(dictio, games_checkmark_paths)
   new = ' '.join(old)   #  print(new)  # print(list_buttons)  print( type(new)  ) print(id)
   string_keys = list(key for key in list_buttons.keys() if isinstance(key, str))
   set_button_map = '''#!/bin/bash\nsudo xinput set-button-map {0} {1} '''.format(id, new)
   subprocess.call(['bash', '-c', set_button_map])  # установить конфигурацию кнопок для мыши.   print(dict_save.get_state_thread())
-  dict_save.set_cur_app(game)# Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
-  t1= dict_save.get_thread()  # print(t1)
+  dict_save.set_cur_app(path)# Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
+  dict_save.set_current_path_game(path)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры
+  t1= dict_save.get_thread() # мы получаем поток от предыдущей функции ждем когда он закончится  # print(t1)
   if t1 != 0:
     t1.join()
+  # print(path)
   # print("threading")
-  t1 = threading.Thread(target=a, args =(root, dict_save, key, list_buttons, press_button, string_keys, game, games_checkmark_paths))  #t1.daemon = True
+  t1 = threading.Thread(target=a, args =(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths))  #t1.daemon = True
   t1.start()
   dict_save.set_thread(t1)# сохранить id посёлка потока
-def get_process(dict_save, root):# это функция получается активный процесс и pid игр.
- dict_save.set_current_path_game(dict_save.get_cur_app())
- while 1:
-   try:
-    time.sleep(0.1)
-    process_id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
-    dict_save.set_process_id_active(process_id_active)# текущий pid активного процесса.
-    dict_save.set_pid_and_path_window(get_pid_and_path_window()) # здесь мы получаем путь и pid процессов.
-    # print(dict_save.get_current_path_game())    # print( dict_save.get_cur_app())
-
-   except Exception as e:
-     #print(e)
-     pass
 def get_path_current_active(games_checkmark_paths):# Получаем идентификатор активного окна
 
  try:  # Получаем идентификатор процесса, связанного с активным окном

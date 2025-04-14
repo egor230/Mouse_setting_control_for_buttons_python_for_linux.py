@@ -48,8 +48,7 @@ def create_scrypt_buttons():
   for i in range(7):
     if creat == 0:    # Проверяем, нужно ли создавать кнопки
       scrypt_button = Button( text=str(LIST_MOUSE_BUTTONS[i]),     # Создание кнопки
-        font=("Arial", 9),  width=10, height=1,        command=lambda i1=i: run_scrypt(i1)
-      )
+        font=("Arial", 9),  width=10, height=1, command=lambda i1=i: run_scrypt(i1)     )
       scrypt_button.place(x=520, y=y_place)  # Размещение кнопки
       a_scrypt.append(scrypt_button)  # Добавление кнопки в список
 
@@ -62,10 +61,13 @@ def create_scrypt_buttons():
 
   creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
 def update_buttons(event=0):# Изменение назначения кнопок.
-  dict_save.set_current_path_game(" ")
-  dict_save.set_default_id_value(add_button_start)
-  box_value = dict_save.return_box_values() # Получить значения выпадающего списка
+  # dict_save.set_current_path_game(dict_save.get_cur_app())
+  # input()
+  dict_save.set_default_id_value()
   res=dict_save.return_jnson()
+  # print(res["current_app"])
+  # print(dict_save.get_cur_app())
+  box_value = dict_save.return_box_values() # Получить значения выпадающего списка
   box_values=[box_value[0].get(), box_value[1].get(), box_value[2].get(),
               box_value[3].get(),box_value[4].get(),box_value[5].get(),box_value[6].get()]
   res["key_value"][str(dict_save.get_cur_app())]=box_values
@@ -74,16 +76,51 @@ def update_buttons(event=0):# Изменение назначения кнопо
   res["current_app"]=str(dict_save.get_cur_app())  # add_button_start["state"] = "normal"
   res["id"]=id_value.get()
   dict_save.save_jnson(res)  # Сохранить новые настройки.  # print("change color label")
-  start_startup_now(dict_save, root)
+  # start_startup_now(dict_save, root)
 
-def update_check_button(event):# Галочка запускать при старте.
- dict_save.set_default_id_value(add_button_start)
- res= dict_save.return_jnson()
- if start_startup.get():
-  res["start_startup"]= False  #
+
+def run_in_thread(dict_save, game, event):
+ dict_save.set_prev_game(dict_save.get_cur_app())  # Сохранить предыдущую игру
+ dict_save.set_current_path_game(dict_save.get_cur_app())
+
+ while game != dict_save.get_cur_app():  # Получить значение текущей активной строки.
+  dict_save.set_cur_app(game)
+  time.sleep(1)  # Добавьте задержку, чтобы избежать чрезмерного использования процессора
+
+ update_buttons(event)  # Изменение назначения кнопок.
+
+ dict_save.set_box_values()
+ dict_save.set_values_box()  # Установить знач
+def check_label_changed(event, labels, count, var_list):# Когда мы переключаем вкладку актив текущей игры изменение цвета label
+ res=dict_save.return_jnson()
+ game=list(res['paths'].keys())[count]
+ if game== dict_save.get_cur_app():# Если нажата активная вкладка
+   return 0 # Выход
+ while game!=dict_save.get_cur_app(): # получить значение текущей активной строки.
+  dict_save.set_cur_app(game)
+
+ dict_save.set_prev_game(game)# Сохранить предыдущую игру
+ res['current_app'] = game# Выбранная игра.
+ set_colol_white_label_changed(labels)  # Установить белый цвет для всех label print(count)
+ if count != dict_save.get_count() :
+  dict_save.set_count(count)
+  res = labels[count].cget("background")
+  for i in range(len(labels)):
+   if i != count:
+    labels[i].config(background="white")
+   if str(res) =="white":
+     labels[count].config(background="#06c")
+     var_list[count].set(True)
  else:
-  res["start_startup"]= True  #
- dict_save.save_jnson(res)# Сохранить изменения
+     if "white" == labels[count].cget("background"):
+      labels[count].config(background="#06c")
+     else: # в белый
+      labels[count].config(background="white")
+
+ dict_save.set_box_values()
+ update_buttons(event)# Изменение назначения кнопок.
+ mouse_check_button(dict_save, res, dict_save.get_cur_app()) # флаг для удержания кнопки мыши.
+ create_scrypt_buttons()
 
 def checkbutton_changed(event, var_list, count, name_games, labels, curr_app):  # галочки
   dict_save.set_cur_app(curr_app)# Установить текущий путь к игре напротив галочки
@@ -98,7 +135,7 @@ def checkbutton_changed(event, var_list, count, name_games, labels, curr_app):  
   for i in range(len(labels)):
     if i != count:
       labels[i].config(background="white")
-
+  dict_save.save_jnson(res)
   update_buttons(event)# Обновить кнопки.
 
 def update_mouse_check_button(count):# сохранение после установки флажков.  print(count)
@@ -109,7 +146,7 @@ def update_mouse_check_button(count):# сохранение после уста�
     # Изменение значения на противоположное
     res["mouse_press"][curr_name][count] = not res["mouse_press"][curr_name][count]
     list_mouse_button_press = res["mouse_press"][curr_name]  # print(list_mouse_button_press)  # Обновить список флажков.
-    dict_save.set_default_id_value(add_button_start)
+    dict_save.set_default_id_value()
     dict_save.save_jnson(res)
 def mouse_check_button(dict_save, res,curr_name):
   list_mouse_button_press = list(res["mouse_press"][curr_name])#  print(d)
@@ -153,50 +190,16 @@ def change_name_label(event, count): #Изменить название игры
     .grid(column=2, row=1, padx=50, pady=30)  # кнопка, откроется новое окно.
   e.bind('<Return>', lambda event: change(event, window, new_name, old_name, res, count,labels))
 
-def check_label_changed(event, labels, count, var_list):# изменение цвета label
- set_colol_white_label_changed(labels)  # Установить белый цвет для всех label print(count)
- if count != dict_save.get_count() :
-  dict_save.set_count(count)
-  res = labels[count].cget("background")
-  for i in range(len(labels)):
-   if i != count:
-    labels[i].config(background="white")
-   if str(res) =="white":
-     labels[count].config(background="#06c")
-     var_list[count].set(True)
- else:
-     if "white" == labels[count].cget("background"):
-      labels[count].config(background="#06c")
-     else: # в белый
-      labels[count].config(background="white")
- res=dict_save.return_jnson()
- game=list(res['paths'].keys())[count]
- res['current_app'] = game# Выбранная игра.
- dict_save.set_prev_game(game)
- # print(game)
- while game!=dict_save.get_cur_app(): # получить значение текущей активной строки.
-    dict_save.set_cur_app(game)
-
- # dict_save.set_box_values(add_button_start)
- # update_buttons(event)# Изменение назначения кнопок.
- dict_save.set_values_box()# установить значения клавиш.
- # print(dict_save.get_cur_app())
- mouse_check_button(dict_save, res, dict_save.get_cur_app()) # флаг для удержания кнопки мыши.
- # print(dict_save.get_current_path_game()) # номер записи.
- # Если мы переключили надпись, стоит флажок запускать старте.
- # start_startup_now(dict_save, root)
- create_scrypt_buttons()
 def add_file(dict_save):# Добавить новые игры
  res=dict_save.return_jnson() # получаем настройки
  keys_values =res["key_value"][dict_save.get_cur_app()]# конфигурация кнопок от предыдущего профиля.
  mouse_press_old =res["mouse_press"][dict_save.get_cur_app()]# какие кнопки имеют залипания.
 
  # print(dict_save.get_current_app_path())
- cmd = ['zenity', '--file-selection', '--file-filter=EXE files | *.exe'] # Zenity команда для выбора одного exe файла
+ cmd = ['zenity', '--file-selection', '--file-filter=EXE files | *.exe | *.EXE'] # Zenity команда для выбора одного exe файла
  # Вызов zenity и получение выбранного пути
  result = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, text=True)
  path_to_file = result.stdout.strip()# новый путь к игре
-
  name_with_expansion = path.basename(path_to_file)# Получение базового имени файла с расширением из полного пути к файлу
  name = path.splitext(name_with_expansion)[0] # Отделение имени файла без расширения путем разбиения строки.
  li= list(res["paths"].keys())
@@ -213,7 +216,6 @@ def add_file(dict_save):# Добавить новые игры
      res["key_value"][path_to_file]=["LBUTTON","RBUTTON",  "WHEEL_MOUSE_BUTTON",
       "WHEEL_MOUSE_UP", "WHEEL_MOUSE_DOWN", 'XBUTTON1', 'XBUTTON2']
 
- dict_save.save_jnson(res)
  labels=dict_save.return_labels()
  for i in range(len(labels)):
    labels[i].destroy()
@@ -227,14 +229,23 @@ def add_file(dict_save):# Добавить новые игры
  labels_with_checkmark.clear()
  labels=dict_save.return_labels()
  dict_save.count=+1
- filling_in_fields(res)
+
+ res['current_app'] = path_to_file# Выбранная игра.
+ dict_save.set_cur_app(path_to_file)
+ dict_save.set_current_path_game(path_to_file)
+ dict_save.save_jnson(res)
  set_colol_white_label_changed(labels)  # Установить белый цвет для всех label
+ res = dict_save.return_jnson()
+ # print(res["current_app"])
+ # print(dict_save.get_cur_app())
+# update_buttons()
+ filling_in_fields(res)
 
  # keys_values= dict_save.return_box_values()
  # old_keys_values=[]
  # for i in range(len(keys_values)):
  #     old_keys_values.append(keys_values[i].get())
-
+ #
  labels[len(labels)-1].config(background="#06c")  # текстовое поле и кнопка для добавления в список
 checkbutton_list=[]
 def fill_labes(res, name_games,labels,var_list, labels_with_checkmark):# Заполнение полей надписи и галочки.
@@ -272,7 +283,7 @@ def fill_labes(res, name_games,labels,var_list, labels_with_checkmark):# Зап�
   #активное приложение.
   labels[index].config(background="#06c") # Установить cиний цвет.  print(index)
   dict_save.set_count(index)# Установить  индекс текущей игры.
-  dict_save.set_box_values(add_button_start)  # Установить значения выпадающего списка.
+  dict_save.set_box_values()  # Установить значения выпадающего списка.
   dict_save.set_values_box()
 def filling_in_fields(res):# заполнения всех полей.
     labels=dict_save.return_labels()
@@ -281,9 +292,9 @@ def filling_in_fields(res):# заполнения всех полей.
     labels_with_checkmark= dict_save.return_labels_with_checkmark()
     boxs = dict_save.return_box_values()
     fill_labes(res, name_games, labels, var_list, labels_with_checkmark)    # if dict_save.get_count()==0:    #    print("ok")    #  labels[dict_save.get_count()].config(background="#06c")
-    dict_save.set_box_values(add_button_start)  # Установить значения выпадающего списка.
+    dict_save.set_box_values()  # Установить значения выпадающего списка.
     dict_save.set_values_box()
-def start(root, dict_save):# запуск.
+def start(root, dict_save):# запуск всего.
  data = dict_save.data  # файл настроек. print(data)
  if os.path.exists(data):  # есть ли этот файл.
    with open(data) as json_file:# загрузка настроек из файла.
@@ -312,7 +323,6 @@ def start(root, dict_save):# запуск.
     res["id"] = int(subprocess.run(['bash', '-c', know_id], capture_output=True, text=True).stdout.strip())# print(type(res["id"])) print(res["id"])
 
  d = list(res["paths"].keys()) # получить словарь путей и имен файлов.
- start_startup.set(res["start_startup"]) # print(res['id']) # input()
  dict_save.save_old_data(res) # сохранить значения настроек из файла.
  dict_save.set_cur_app(res["current_app"])  # установить текущую активную строку.
 
@@ -336,7 +346,7 @@ def start(root, dict_save):# запуск.
 
  filling_in_fields(res) # заполнения всех полей.
  mouse_check_button(dict_save, res, curr_name) # флаг для удержания кнопки мыши.
-
+ start_startup_now(dict_save, root)
  create_scrypt_buttons()# создание углубление кнопок скрипта.
  # print("fill")
 def move_last_key_to_front(d):
@@ -373,23 +383,25 @@ def scrolling_list(event):# прокрутка списка игр.
    cb = Checkbutton(root, variable=var_list[i],  # создания галочек
                      onvalue=1, offvalue=0, state=ACTIVE)
    cb.place(x=7, y=a[i] - 2)
-
  res=dict_save.return_jnson()
-
- res = move_last_key_to_front(res)
- #print(res["games_checkmark"])
+ res = move_last_key_to_front(res) #print(res["games_checkmark"])
  dict_save.save_jnson(res)
 
 def on_close():# Функция закрытия программы.  # print("exit")
-  dict_save.set_default_id_value(add_button_start)
+  dict_save.set_default_id_value()
   old_data = dict_save.return_old_data()  # старые значения настроек.
   new_data = dict_save.return_jnson()  # новые значения настроек.
-  # print(new_data["key_value"]["C:/Windows/explorer.exe"])
-  #print(new_data["games_checkmark"])
+  # print(new_data["key_value"]["C:/Windows/explorer.exe"])  #print(new_data["games_checkmark"])
   if new_data != old_data or list(old_data["games_checkmark"].keys())[0] != list(new_data["games_checkmark"].keys())[0]:# Если ли какие-то изменения
    if (messagebox.askokcancel("Quit", "Do you want to save the changes?")):
         dict_save.write_to_file(new_data)  # записать настройки в файл.
   dict_save.reset_id_value()
+  target = "Mouse_setting_control_for_buttons_python_for_linux.py"
+  for p in psutil.process_iter(['pid', 'cmdline']):
+   if p.info['cmdline'] and target in ' '.join(p.info['cmdline']):
+    os.kill(p.info['pid'], signal.SIGTERM)
+    break
+
   root.destroy()
   exit()
   sys.exit()
@@ -430,8 +442,7 @@ def delete(dict_save, root):# Удалить профиль.
    del_index= del_index-1
    dict_save.save_jnson(res)  # Сохранить новые настройки.
    check_label_changed(0, labels, del_index, var_list)  # изменение цвета label
-   #current_app
-   # print(dict_save.return_jnson())
+   #current_app   # print(dict_save.return_jnson())
 
 def reorder_keys_in_dict(res, index, direction='up'):
   lst = list(res["paths"].keys())
@@ -444,15 +455,11 @@ def reorder_keys_in_dict(res, index, direction='up'):
   updated_paths = {key: res["paths"][key] for key in lst}
   res["paths"] = updated_paths
   return res
-def move_element(dict_save, root, direction='up'):
-  """
-  Перемещает текущий элемент (определяемый dict_save.get_cur_app())
-  вверх или вниз в списке, меняя положение виджетов и порядок ключей в JSON.
-
-  :param dict_save: Объект для работы с настройками (с методами get_cur_app, return_jnson, return_labels, set_cur_app, save_jnson)
-  :param root: Корневой виджет Tkinter (используется, если требуется)
-  :param direction: 'up' для перемещения вверх, 'down' для перемещения вниз
-  """
+def move_element(dict_save, root, direction='up'):  # Перемещает текущий элемент (определяемый dict_save.get_cur_app())
+  # вверх или вниз в списке, меняя положение виджетов и порядок ключей в JSON.
+  # :param dict_save: Объект для работы с настройками (с методами get_cur_app, return_jnson, return_labels, set_cur_app, save_jnson)
+  # :param root: Корневой виджет Tkinter (используется, если требуется)
+  # :param direction: 'up' для перемещения вверх, 'down' для перемещения вниз
   # Получаем текущий профиль и конфигурацию
   res = dict_save.return_jnson()
   profile = dict_save.get_cur_app()  # Текущая директория/приложение
@@ -514,7 +521,6 @@ def move_element(dict_save, root, direction='up'):
 dict_save=save_dict()
 root = Tk()
 id_value =  IntVar()
-start_startup = BooleanVar()# запускать при старте.
 f1 = Frame()
 root.title("Mouse setting control for buttons python")  # заголовок
 root.geometry("940x346+440+280")  # Первые 2 определяют ширину высоту. Пос 2 x и y координаты на экране.
@@ -533,41 +539,23 @@ canvas.configure(yscrollcommand=scrollbar.set)
 scrollbar.grid(column=0, row=0,sticky=N+S+E)# полоса прокрутки.
 scrollbar.bind("<ButtonRelease-1>", lambda event : scrolling_list(event))
 add_button_add = Button(text=" Добавить", command= lambda:add_file(dict_save)).grid(column=1, row=0, padx=25, pady=5,sticky=N)
-add_button_start = Button(text=" Пуск",  command= lambda:start1(dict_save, root))
-add_button_start.place(x=780, y=300)
 up_button = Button(text=" Вверх",  command= lambda:move_element(dict_save, root, 'up'))
 up_button.place(x=520, y=250)
 down_button = Button(text=" Вниз",  command= lambda:move_element(dict_save, root, 'down'))
 down_button.place(x=520, y=300)
-dict_save.set_add_button_start(add_button_start)
 id_list =dict_save.get_list_ids()
 start(root, dict_save)
 add_button_start = Button(text=" Удалить",  command= lambda:delete(dict_save, root))
 add_button_start.place(x=760, y=140)
-r1 = Checkbutton(variable=start_startup) # Галочка запускать при старте.
-r1.bind("<Button-1>", update_check_button)
-CreateToolTip(r1, text='Запускать при открытий')  # вывод надписи
-r1.place(x=720, y=105)
 root.protocol("WM_DELETE_WINDOW", on_close)
-
-process= threading.Thread(target=get_process, args=(dict_save, root,))
-process.start()
 Button(root, text="Показать список устройств", command=show_list_id_callback).place(x=710, y=220)
-
-# win = keyboard_scrypt(root, " ")
 if os.getgid() != 0:# if os.getgid() == 0:# start1() с root правами"
  box = Combobox(root, width=12, textvariable=id_value, values=id_list, state='readonly')  #
  box.grid(column=1, row=0, padx=10, pady=60,sticky=N)
  box.bind('<<ComboboxSelected>>', update_buttons)# Если изменяется значения id.
  CreateToolTip(box, text='Выбор id устройства')  # вывод надписи
- if start_startup.get()==True:# Если галочка стоит запускать
-  root.iconify()  # Свернуть окно
+ root.iconify()  # Свернуть окно
   # root.withdraw()# свернуть панель подсказок.
-  t2 =  threading.Thread(target=start1, args=(dict_save, root, ))
-  t2.start()
-else:
- show_message()# Создание кнопки "Ок"
- ok_button = Button(root, text="Ок", command=on_close())
 root.mainloop()
 
 # Get the ID of the main window
