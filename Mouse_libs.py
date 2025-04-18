@@ -19,249 +19,265 @@ def show_message1(): # Вызов функции для отображения �
   messagebox.showinfo("Ошибка", "Программа уже запущена")
 
 class save_dict:
-    def __init__(self):
-        self.jnson = {}  # новые настройки.
-        self.old_data = {} #старые настройки.
-        self.name_games = []  # названия игр
-        self.labels = []  # надписи.
-        self.var_list = []  # галочки
-        self.labels_with_checkmark = {} # словарь надписи с галочками
-        self.box_values = [] # Значения боковых кнопок
-        self.cur_app=""# Текущая игра.
-        self.count=0 # Индекс текущей игры.
-        self.id=0 # id устройство.
-        self.mouse_button_press = []  # какие кнопки должны быть удержены.
-        self.dict_id_values = {}
-        self.data="settings control mouse buttons.json"  # файл настроек.
-        self.path_current_app='' # Текущий путь к игре.
-        self.process_id_active = 0 # id активного окна
-        self.pid_and_path_window={} # Словарь игр и путей к ним.
-        self.current_path_game = "" # Путь к запущенной к игре.
-        self.prev_game = ""
-        self.thr=0
-    def get_thread(self):  # Сохранить текущий путь к игре
-      return self.thr
+  def __init__(self):
+      self.jnson = {}  # новые настройки.
+      self.old_data = {} #старые настройки.
+      self.name_games = []  # названия игр
+      self.labels = []  # надписи.
+      self.var_list = []  # галочки
+      self.labels_with_checkmark = {} # словарь надписи с галочками
+      self.box_values = [] # Значения боковых кнопок
+      self.cur_app=""# Текущая игра.
+      self.count=0 # Индекс текущей игры.
+      self.id=0 # id устройство.
+      self.mouse_button_press = []  # какие кнопки должны быть удержены.
+      self.dict_id_values = {}
+      self.data="settings control mouse buttons.json"  # файл настроек.
+      self.path_current_app='' # Текущий путь к игре.
+      self.process_id_active = 0 # id активного окна
+      self.pid_and_path_window={} # Словарь игр и путей к ним.
+      self.current_path_game = "" # Путь к запущенной к игре.
+      self.last_key_keyboard_script = ""
+      self.thr=0
 
-    def set_thread(self, thr1):
-      self.thr= thr1
+  def get_last_key_keyboard_script(self):  #
+    return self.last_key_keyboard_script
 
-    def get_current_path_game(self):  # Сохранить текущий путь к игре
-      return self.current_path_game
+  def set_last_key_keyboard_script(self, last_key_keyboard_script1):
+    self.last_key_keyboard_script= last_key_keyboard_script1
 
-    def set_current_path_game(self, current_path_game):
-      self.current_path_game= current_path_game
+  def get_thread(self):  #
+    return self.thr
 
-    def get_prev_game(self):  # Сохранить текущий путь к игре
-      return self.prev_game
+  def set_thread(self, thr1):
+    self.thr= thr1
 
-    def set_prev_game(self, prev_game):
-      self.prev_game= prev_game
-    def get_pid_and_path_window(self):#
-      return self.pid_and_path_window
+  def get_current_path_game(self):  # Сохранить текущий путь к игре
+    return self.current_path_game
 
-    def set_pid_and_path_window(self, pid_and_path_window):  #
-      self.pid_and_path_window = pid_and_path_window
+  def set_current_path_game(self, current_path_game):
+    self.current_path_game= current_path_game
 
-    def get_process_id_active(self):
-      return self.process_id_active
+  def get_prev_game(self):  # Сохранить текущий путь к игре
+    return self.prev_game
 
-    def set_process_id_active(self, process_id_active):  #
-      self.process_id_active = process_id_active
+  def set_prev_game(self, prev_game):
+    self.prev_game= prev_game
+  def get_pid_and_path_window(self):#
+    return self.pid_and_path_window
 
-    def get_id(self):
-       return self.id
+  def set_pid_and_path_window(self, pid_and_path_window):  #
+    self.pid_and_path_window = pid_and_path_window
 
-    def get_current_app_path(self):# Получить путь текущего окна.
-       return self.path_current_app
+  def get_process_id_active(self):
+    return self.process_id_active
 
-    def set_current_app_path(self, app):# Установить путь текущего окна.
-       self.path_current_app = app
-    def return_name_games(self):  # Вернуть список названия игр.
-        name_games =self.name_games
-        return self.name_games
+  def set_process_id_active(self, process_id_active):  #
+    self.process_id_active = process_id_active
 
-    def return_mouse_button_press(self):
-       return self.mouse_button_press
+  def get_id(self):
+     return self.id
 
-    def return_labels(self):
-       return self.labels
+  def get_current_app_path(self):# Получить путь текущего окна.
+     return self.path_current_app
 
-    def return_var_list(self):
-       return self.var_list
+  def set_current_app_path(self, app):# Установить путь текущего окна.
+     self.path_current_app = app
+  def return_name_games(self):  # Вернуть список названия игр.
+      name_games =self.name_games
+      return self.name_games
 
-    def return_labels_with_checkmark(self):
-       return self.labels_with_checkmark
+  def return_mouse_button_press(self):
+     return self.mouse_button_press
 
-    def return_box_values(self):
-       return self.box_values
+  def return_labels(self):
+     return self.labels
 
-    def return_list_mouse_button_press(self): # какие кнопки должны быть удержанны для текущий игры.
-     return list(self.jnson["mouse_press"][self.cur_app])
+  def return_var_list(self):
+     return self.var_list
 
-    def save_mouse_button_press(self, list_mouse_button_press=None,  mouse_button_press=None):
-      if mouse_button_press == None:
-        mouse_button_press= self.mouse_button_press
-      self.mouse_button_press=mouse_button_press
-      if list_mouse_button_press == None:
-       list_mouse_button_press=[] # Сохранить список какие кнопки должны быть удержанны.
-       for i in range(len(mouse_button_press)):
-         list_mouse_button_press.append(mouse_button_press[i].get())
+  def return_labels_with_checkmark(self):
+     return self.labels_with_checkmark
 
-      self.jnson["mouse_press"][self.cur_app]= list(list_mouse_button_press)
+  def return_box_values(self):
+     return self.box_values
 
-    def save_jnson(self, jn):# сохранить  новые настройки
-     self.jnson= jn
+  def return_list_mouse_button_press(self): # какие кнопки должны быть удержанны для текущий игры.
+   return list(self.jnson["mouse_press"][self.cur_app])
 
-    def save_old_data(self, jnson):# сохранить начальные настройки.
-      self.old_data= copy.deepcopy(jnson)
-      self.jnson = jnson
+  def save_mouse_button_press(self, list_mouse_button_press=None,  mouse_button_press=None):
+    if mouse_button_press == None:
+      mouse_button_press= self.mouse_button_press
+    self.mouse_button_press=mouse_button_press
+    if list_mouse_button_press == None:
+     list_mouse_button_press=[] # Сохранить список какие кнопки должны быть удержанны.
+     for i in range(len(mouse_button_press)):
+       list_mouse_button_press.append(mouse_button_press[i].get())
 
-    def return_jnson(self):# Вернуть новые настройки.
-       return self.jnson
+    self.jnson["mouse_press"][self.cur_app]= list(list_mouse_button_press)
 
-    def return_old_data(self):
-       return self.old_data
+  def save_jnson(self, jn):# сохранить новые настройки
+   self.jnson= jn
 
-    def set_cur_app(self, cur_app):# установить текущего игру
-     self.cur_app=str(cur_app)
-     self.jnson["current_app"]=self.cur_app
+  def save_old_data(self, jnson):# сохранить начальные настройки.
+    self.old_data= copy.deepcopy(jnson)
+    self.jnson = jnson
 
-    def get_cur_app(self):
-       return self.cur_app
+  def return_jnson(self):# Вернуть новые настройки.
+     return self.jnson
 
-    def set_count(self, count):
-        self.count=count
-        return self.count
-    def get_count(self):
-       return self.count
+  def return_old_data(self):
+     return self.old_data
 
-    def set_id(self, id):
-        self.id=id
-    def set_values_box(self):
-     box_value=self.jnson["key_value"][self.cur_app]
-     for i in range(len(self.box_values)):
-       self.box_values[i].set(box_value[i])
-    def set_box_values(self):  # Установить значение для выпадающего списка.
-      self.reset_id_value()
-      res = self.jnson
-      key_values = res["key_value"]
-      d = list(res["paths"].keys())  # получить словарь путей и имен файлов.  # print(self.cur_app)    # print(self.count)      # print(d[self.count])
-      self.set_cur_app(d[self.count])  # установить текущую активную строку.
-      self.jnson["current_app"] = d[self.count]  # Сохранить текущую активную строку.
-      self.set_values_box()
-      return self
-    def write_to_file(self, new_data):
-     json_string = json.dumps(new_data, ensure_ascii=False, indent=2)   #self.data # файл настроек.
-     with open(self.data, "w", encoding="UTF-8") as w:
-       w.write(json_string)  # сохранить изменения в файле настроек.
-     #data1=self.data.replace(' ','\ ')# Преобразовать путь до файл настроек.
-     file_relus = '''#!/bin/bash\n
-                     chmod a+rw \"{0}\" '''.format(self.data)
-     subprocess.call(['bash', '-c', file_relus])# Дать доступ на чтение и запись любому
-     return self
+  def set_cur_app(self, cur_app):# установить текущего игру
+   self.cur_app=str(cur_app)
+   self.jnson["current_app"]=self.cur_app
 
-    def get_list_ids(self):# Получение списка id устройств.
-      # Команда shell для получения списка идентификаторов устройств ввода (мышей), которые подключены к системе.
-      get_ids = '''#!/bin/bash
-      ids=$(xinput list | grep -Ei "id=[0-9]+" | grep -oE "id=[0-9]+" | cut -d= -f2)
-       for id in $ids; do
-        output=$(xinput get-button-map "$id" 2>&1)
-        # Исключаем сообщения об ошибках, добавляя проверки на наличие ошибок
-        if [[ $output != *"device has no buttons"* && $output != *"X Error of failed request:"* ]]; then
-            echo "$id:$output"
-        fi
-       done'''
+  def get_cur_app(self):
+     return str(self.cur_app)
 
-      # Выполнение вышеуказанной команды shell в подпроцессе и декодирование результата в строку.
-      id_list = subprocess.check_output(['bash', '-c', get_ids]).decode().splitlines()
-      button_map = {}      # Создание словаря для хранения соответствия между идентификаторами устройств и их кнопками.
+  def set_count(self, count):
+      self.count=count
+      return self.count
+  def get_count(self):
+     return self.count
 
-      # Перебор всех элементов в списке id устройств.
-      for item in id_list:        # Разделение элемента на ключ (id устройства) и значение (кнопок).
-        key, value = item.split(':', 1)
-        button_map[int(key)] = value.strip()
+  def set_id(self, id):
+      self.id=id
+  def set_values_box(self):
+   box_value=self.jnson["key_value"][self.cur_app]
+   for i in range(len(self.box_values)):
+     self.box_values[i].set(box_value[i])
+  def set_box_values(self):  # Установить значение для выпадающего списка.
+    self.reset_id_value()
+    res = self.jnson
+    key_values = res["key_value"]
+    d = list(res["paths"].keys())  # получить словарь путей и имен файлов.  # print(self.cur_app)    # print(self.count)      # print(d[self.count])
+    self.set_cur_app(d[self.count])  # установить текущую активную строку.
+    self.jnson["current_app"] = d[self.count]  # Сохранить текущую активную строку.
+    self.set_values_box()
+    return self
+  def write_to_file(self, new_data):
+   json_string = json.dumps(new_data, ensure_ascii=False, indent=2)   #self.data # файл настроек.
+   with open(self.data, "w", encoding="UTF-8") as w:
+     w.write(json_string)  # сохранить изменения в файле настроек.
+   #data1=self.data.replace(' ','\ ')# Преобразовать путь до файл настроек.
+   file_relus = '''#!/bin/bash\n
+                   chmod a+rw \"{0}\" '''.format(self.data)
+   subprocess.call(['bash', '-c', file_relus])# Дать доступ на чтение и запись любому
+   return self
 
-     # Добавление в словарь button_map кнопок устройства с соответствующим идентификатором.
+  def get_list_ids(self):# Получение списка id устройств.
+    # Команда shell для получения списка идентификаторов устройств ввода (мышей), которые подключены к системе.
+    get_ids = '''#!/bin/bash
+    ids=$(xinput list | grep -Ei "id=[0-9]+" | grep -oE "id=[0-9]+" | cut -d= -f2)
+     for id in $ids; do
+      output=$(xinput get-button-map "$id" 2>&1)
+      # Исключаем сообщения об ошибках, добавляя проверки на наличие ошибок
+      if [[ $output != *"device has no buttons"* && $output != *"X Error of failed request:"* ]]; then
+          echo "$id:$output"
+      fi
+     done'''
 
-      self.dict_id_values = button_map      # Сохранение карты кнопок в атрибут объекта.
-      id_list = list(button_map.keys())      # Сохранение списка идентификаторов в переменной id_list.
-      self.id = id_list[0]    # Установка первого устройства в списке как текущего id для использования.
-      id_list=sorted(id_list)
-      return id_list      # Возвращение списка id устройств для дальнейшего использования.
+    # Выполнение вышеуказанной команды shell в подпроцессе и декодирование результата в строку.
+    id_list = subprocess.check_output(['bash', '-c', get_ids]).decode().splitlines()
+    button_map = {}      # Создание словаря для хранения соответствия между идентификаторами устройств и их кнопками.
 
-    def get_state_thread(self):
-       return self.thread
+    # Перебор всех элементов в списке id устройств.
+    for item in id_list:        # Разделение элемента на ключ (id устройства) и значение (кнопок).
+      key, value = item.split(':', 1)
+      button_map[int(key)] = value.strip()
 
-    def set_default_id_value(self):# Вернуть значения по умолчанию
-      self.thread = True  # Прервать выполнение потока обработчика нажатий.
-      for id in self.dict_id_values:
-        st= str(self.dict_id_values[id])
-        set_button_map = '''#!/bin/bash
-          sudo xinput set-button-map {0} {1}
-          '''.format(id, st)
-        subprocess.call(['bash', '-c', set_button_map])
+   # Добавление в словарь button_map кнопок устройства с соответствующим идентификатором.
 
-    def reset_id_value(self):  # Сброс настроек текущего id устройства.       #  print(self.id)
-      d = '1 2 3 4 5 6 7 8 9'  #      print("reset_id_value")
+    self.dict_id_values = button_map      # Сохранение карты кнопок в атрибут объекта.
+    id_list = list(button_map.keys())      # Сохранение списка идентификаторов в переменной id_list.
+    self.id = id_list[0]    # Установка первого устройства в списке как текущего id для использования.
+    id_list=sorted(id_list)
+    return id_list      # Возвращение списка id устройств для дальнейшего использования.
+
+  def get_state_thread(self):
+     return self.thread
+
+  def set_default_id_value(self):# Вернуть значения по умолчанию
+    self.thread = True  # Прервать выполнение потока обработчика нажатий.
+    for id in self.dict_id_values:
+      st= str(self.dict_id_values[id])
       set_button_map = '''#!/bin/bash
-          sudo xinput set-button-map {0} {1}
-          '''.format(self.id, d)
+        sudo xinput set-button-map {0} {1}
+        '''.format(id, st)
       subprocess.call(['bash', '-c', set_button_map])
 
-    def get_default_id_value(self):#
-      d = self.dict_id_values[self.get_id()]
-      d_copy = copy.deepcopy(d)
-      d='1 2 3 4 5 6 7 8 9'
-      return d
-    def write_in_log(self, text=" error"):# Запись ошибок.
-       with open("log.txt", "a") as f:
-         f.write(str(text)+"\n")
+  def reset_id_value(self):  # Сброс настроек текущего id устройства.       #  print(self.id)
+    d = '1 2 3 4 5 6 7 8 9'  #      print("reset_id_value")
+    set_button_map = '''#!/bin/bash
+        sudo xinput set-button-map {0} {1}
+        '''.format(self.id, d)
+    subprocess.call(['bash', '-c', set_button_map])
 
-       file_relus = '''#!/bin/bash
-                     chmod a+rw {}   '''.format("log.txt")
-       subprocess.call(['bash', '-c', file_relus])# Дать доступ на чтение и запись любому
+  def get_default_id_value(self):#
+    d = self.dict_id_values[self.get_id()]
+    d_copy = copy.deepcopy(d)
+    d='1 2 3 4 5 6 7 8 9'
+    return d
+  def write_in_log(self, text=" error"):# Запись ошибок.
+     with open("log.txt", "a") as f:
+       f.write(str(text)+"\n")
 
-    def preparation(self, dictio, games_checkmark_paths):  # games_checkmark_paths  список путей к играм
-      id = self.get_id()  # Получаем id устройства
-      old = self.get_default_id_value().split()  # Получить конфигурацию по умолчанию
-      game = str(self.get_cur_app())
+     file_relus = '''#!/bin/bash
+                   chmod a+rw {}   '''.format("log.txt")
+     subprocess.call(['bash', '-c', file_relus])# Дать доступ на чтение и запись любому
 
-      key = dictio["key_value"][game]
-      a1, a2, a3, a4, a5, a6, k = get_keys_buttons(key)
-      list_mouse_check_button = self.return_mouse_button_press()  # print(key)  # какие кнопки будут работать.
-      press_button = dictio['mouse_press'][game]
-      self.reset_id_value()  # Сброс настроек текущего id устройства.
-      list_buttons = {"Button.button11": a1, a1: 1, "Button.button12": a2, a2: 2,  # Правая и средняя кнопка на мыши.
-                      "Button.button13": a3, a3: 3, "Button.button14": a4, a4: 4,  # Колёсико мыши вверх и вниз.
-                      "Button.button16": a5, a5: 5, "Button.button15": a6, a6: 6}  # , "Button.button11"]
-      if key != defaut_list_mouse_buttons:  # словарь называния кнопок мыши их значения для эмуляции
-        for i in range(len(old)):
-          if int(old[i]) in k:
-            old[i] = k[int(old[i])]  # Преобразование списка обратно в строку
-        # Обновление списка с заменой элементов из словаря
-      return key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, game, list_buttons
+  def preparation(self, dictio, games_checkmark_paths):  # games_checkmark_paths  список путей к играм
+    id = self.get_id()  # Получаем id устройства
+    old = self.get_default_id_value().split()  # Получить конфигурацию по умолчанию
+    game = str(self.get_cur_app())
+
+    key = dictio["key_value"][game]
+    a1, a2, a3, a4, a5, a6, k = get_keys_buttons(key)
+    list_mouse_check_button = self.return_mouse_button_press()  # print(key)  # какие кнопки будут работать.
+    press_button = dictio['mouse_press'][game]
+    self.reset_id_value()  # Сброс настроек текущего id устройства.
+    list_buttons = {"Button.button11": a1, a1: 1, "Button.button12": a2, a2: 2,  # Правая и средняя кнопка на мыши.
+                    "Button.button13": a3, a3: 3, "Button.button14": a4, a4: 4,  # Колёсико мыши вверх и вниз.
+                    "Button.button16": a5, a5: 5, "Button.button15": a6, a6: 6}  # , "Button.button11"]
+    if key != defaut_list_mouse_buttons:  # словарь называния кнопок мыши их значения для эмуляции
+      for i in range(len(old)):
+        if int(old[i]) in k:
+          old[i] = k[int(old[i])]  # Преобразование списка обратно в строку
+      # Обновление списка с заменой элементов из словаря
+    return key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, game, list_buttons
 
 def add_text(key, text_widget): # добавлять команды для клавиатуры и мысли в текстовое поле редактора.)
-  if key=="Ctrl":
-     key="ISO_Next_Group"
-  if key=="Space":
-    key="space"
-  if key == "Левая":
-    sc = (f'xte "mousedown 1"\n'  # Нажатие левой кнопки мыши
-          f'sleep 0.23\n'  # Удержание 0.3 секунды
-          f'xte "mouseup 1"\n')  # Отпускание левой кнопки
-  elif key == "Правая":
-    sc = (f'xte "mousedown 3"\n'  # Нажатие правой кнопки мыши
-          f'sleep 0.23\n'  # Удержание 0.3 секунды
-          f'xte "mouseup 3"\n')  # Отпускание правой кнопки
-  else:
-   sc=(f'xte \"keydown {key}\"\n'
-       f'sleep 0.23\n'
-       f'xte \"keyup {key}\"\n')
 
+  if key == "Ctrl":
+      key = "ISO_Next_Group"
+  if key == "Левая":
+      sc = (f'xte "mousedown 1"\n'
+            f'sleep 0.23\n'
+            f'xte "mouseup 1"\n')
+  elif key == "Правая":
+      sc = (f'xte "mousedown 3"\n'
+            f'sleep 0.23\n'
+            f'xte "mouseup 3"\n')
+  elif key == "wheel_up":
+      sc = (f'xte "mousedown 4"\n'
+            f'sleep 0.23\n'
+            f'xte "mouseup 4"\n')
+  elif key == "mouse_middie":
+      sc = (f'xte "mousedown 2"\n'
+            f'sleep 0.23\n'
+            f'xte "mouseup 2"\n')
+  elif key == "wheel_down":
+      sc = (f'xte "mousedown 5"\n'
+            f'sleep 0.23\n'
+            f'xte "mouseup 5"\n')
+  else:
+      sc = (f'xte "keydown {key}"\n'
+            f'sleep 0.23\n'
+            f'xte "keyup {key}"\n')
   # Вставляем текст в месте курсора
   text_widget.insert(text_widget.index("insert"), sc)
-
 # Создаем главное окно
 def keyboard_scrypt(root, text_widget):
   window = Toplevel(root)  # основа
@@ -276,7 +292,7 @@ def keyboard_scrypt(root, text_widget):
          '+']
       , ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
       , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
-      , ['Ctrl', 'Windows', 'Alt_L', 'Space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
+      , ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
       , ['Left', 'Down', 'Right']
   ]
 
@@ -320,7 +336,7 @@ def keyboard_scrypt(root, text_widget):
       if i==5:
        if key in ['Ctrl', 'Windows', 'Alt']:
           button.place(x=x1, y=y1)
-       if key == "Space":
+       if key == "space":
         button = ttk.Button(window, text=key, width=30, style='TButton',
                             command=lambda k=key, t=text_widget: add_text(k, t))
         button.place(x=x1, y=y1)
@@ -469,7 +485,6 @@ def get_visible_active_pid():
         print(f"Ошибка: {e}")
         return 0
 
-
 get_main_id = '''#!/bin/bash # Получаем идентификатор активного окна
 active_window_id=$(xdotool getactivewindow 2>/dev/null)
 if [ -n "$active_window_id" ]; then
@@ -479,7 +494,6 @@ else
     echo "0"  # Или любое значение по умолчанию, если нет активного окна
 fi
 exit '''
-
 
 def is_window_minimized(window_id):
  try:
@@ -496,15 +510,9 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
   data_dict=get_pid_and_path_window()# в котором есть директория игр
   id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
   if not is_window_minimized(id_active):
-   print("Игра в фокусе, включаем специальный режим")
    return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
   else:
    file_path=data_dict[id_active]#  print(data_dict)  # print(games_checkmark_paths) #
-
-   # if file_path:
-   # print(file_path)
-   # print(data_dict[process_id_active] )
-   # print(id_active)
    if data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  #  print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
     return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
    else:
@@ -518,6 +526,16 @@ def show_list_id_callback():
    read;   exec bash' '''#показать список устройств в терминале
   subprocess.run(['bash', '-c', show_list_id])
 
+# Создаем словари
+en_to_ru = { 'a': 'ф', 'A': 'Ф', 'b': 'и', 'B': 'И', 'c': 'с', 'C': 'С', 'd': 'в', 'D': 'В', 'e': 'у', 'E': 'У', 'f': 'а', 'F': 'А', 'g': 'п', 'G': 'П',
+             'h': 'р', 'H': 'Р', 'i': 'ш', 'I': 'Ш', 'j': 'о', 'J': 'О', 'k': 'л', 'K': 'Л',
+    'l': 'д', 'L': 'Д', 'm': 'ь', 'M': 'Ь', 'n': 'т', 'N': 'Т', 'o': 'щ', 'O': 'Щ', 'p': 'з', 'P': 'З', 'q': 'й', 'Q': 'Й', 'r': 'к', 'R': 'К', 's': 'ы', 'S': 'Ы', 't': 'е', 'T': 'Е', 'u': 'г', 'U': 'Г', 'v': 'м', 'V': 'М',
+    'w': 'ц', 'W': 'Ц', 'x': 'ч', 'X': 'Ч', 'y': 'н', 'Y': 'Н', 'z': 'я', 'Z': 'Я', '.': '-', ',': '+', ' ': ' '}
+
+ru_to_en = { 'ф': 'a', 'Ф': 'A', 'и': 'b', 'И': 'B', 'с': 'c', 'С': 'C', 'в': 'd', 'В': 'D', 'у': 'e', 'У': 'E', 'а': 'f', 'А': 'F', 'п': 'g', 'П': 'G', 'р': 'h', 'Р': 'H', 'ш': 'i', 'Ш': 'I', 'о': 'j', 'О': 'J', 'л': 'k', 'Л': 'K',
+             'д': 'l', 'Д': 'L', 'ь': 'm', 'Ь': 'M', 'т': 'n', 'Т': 'N', 'щ': 'o', 'Щ': 'O', 'з': 'p', 'З': 'P', 'й': 'q',
+    'Й': 'Q', 'к': 'r', 'К': 'R', 'ы': 's', 'Ы': 'S', 'е': 't', 'Е': 'T', 'г': 'u', 'Г': 'U', 'м': 'v', 'М': 'V',
+    'ц': 'w', 'Ц': 'W', 'ч': 'x', 'Ч': 'X', 'н': 'y', 'Н': 'Y', 'я': 'z', 'Я': 'Z', '-': '.', '+': ',', ' ': ' '}
 KEYS = {" ": 0x0,"LBUTTON": 'mouse left', "RBUTTON": 'mouse right', "WHEEL_MOUSE_BUTTON": "mouse middle",
         "WHEEL_MOUSE_UP" : "WHEEL_MOUSE_UP", "MBUTTON": 0x04, "SCROLL_UP": "scroll_up",
         "SCROLL_DOWN" : "scroll_down", "XBUTTON1": 0x05, "XBUTTON2": 0x06, "BACKSPACE": "BackSpace",
@@ -559,31 +577,31 @@ LIST_MOUSE_BUTTONS=["Левая кнопка","Правая кнопка","Ср�
 LIST_KEYS = list(KEYS.keys())
 defaut_list_mouse_buttons=['LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'SCROLL_UP', 'SCROLL_DOWN', 'XBUTTON1', 'XBUTTON2']
 class ToolTip(object):
-    def __init__(self, widget):
-        self.widget = widget
-        self.tipwindow = None
-        self.id = None
-        self.x = self.y = 0
+  def __init__(self, widget):
+      self.widget = widget
+      self.tipwindow = None
+      self.id = None
+      self.x = self.y = 0
 
-    def showtip(self, text):
-        "Display text in tooltip window"
-        self.text = text
-        if self.tipwindow or not self.text:
-            return
-        x, y, cx, cy = self.widget.bbox("insert")
-        x = x + self.widget.winfo_rootx() + 27
-        y = y + cy + self.widget.winfo_rooty() +7
-        self.tipwindow = tw = Toplevel(self.widget)
-        tw.wm_overrideredirect(1)
-        tw.wm_geometry("+%d+%d" % (x, y))
-        label = Label(tw, text=self.text, justify=LEFT, background="#ffffe0", relief=SOLID, borderwidth=1,
-                      font=("tahoma", "10", "normal"))
-        label.pack(ipadx=1)
-    def hidetip(self):
-        tw = self.tipwindow
-        self.tipwindow = None
-        if tw:
-            tw.destroy()
+  def showtip(self, text):
+      "Display text in tooltip window"
+      self.text = text
+      if self.tipwindow or not self.text:
+          return
+      x, y, cx, cy = self.widget.bbox("insert")
+      x = x + self.widget.winfo_rootx() + 27
+      y = y + cy + self.widget.winfo_rooty() +7
+      self.tipwindow = tw = Toplevel(self.widget)
+      tw.wm_overrideredirect(1)
+      tw.wm_geometry("+%d+%d" % (x, y))
+      label = Label(tw, text=self.text, justify=LEFT, background="#ffffe0", relief=SOLID, borderwidth=1,
+                    font=("tahoma", "10", "normal"))
+      label.pack(ipadx=1)
+  def hidetip(self):
+      tw = self.tipwindow
+      self.tipwindow = None
+      if tw:
+          tw.destroy()
 
 def CreateToolTip(widget, text):
     toolTip = ToolTip(widget)
@@ -912,6 +930,7 @@ def start_startup_now(dict_save, root):# запустить после пере�
   messagebox.showinfo("Ошибка", "Нужно выбрать приложенние")
 
 list_threads=[]
+
 def a(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):# Основная функция эмуляциии  print(key[1])# список ключей  меняется
   #print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
   def on_click(x, y, button, pres):  # print(button) # Button.left  print(key)#['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']    print(key[1])# список ключей  меняется
@@ -935,10 +954,6 @@ def a(root, dict_save, key, list_buttons, press_button, string_keys, games_check
      for t in list_threads:
        t.join()
        list_threads.remove(t)
-     # print(dict_save.get_prev_game())# путь до предыдущей игры
-     #dict_save.set_prev_game(dict_save.get_current_path_game())
-     # dict_save.set_current_path_game(new_path_game) #Остановить обработчик клави.  print("change", dict_save.get_cur_app(), sep=" = " )# если поток слушателя оставлен     #time.sleep(1.3)
-     # dict_save.set_cur_app(new_path_game)#
      break
   a=key_work.keys_list+key_work.keys_list1
   # for i in list(key):

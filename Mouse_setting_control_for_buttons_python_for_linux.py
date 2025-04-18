@@ -38,13 +38,14 @@ def run_scrypt(i):
 
   # Установка обработчика закрытия окна
   win.protocol("WM_DELETE_WINDOW", lambda: close_window(i, key_mouse_scrypt, win))
+
 creat = 0  # Глобальная переменная для контроля создания кнопок
 a_scrypt = []  # Список для хранения созданных кнопок
 
 def create_scrypt_buttons():
   global creat
   y_place = 23  # Начальная координата для кнопок
-  res = dict_save.return_jnson()  # Получение данных из dict_save
+  res = dict_save.return_jnson()  # Получение данных из dict_saveуу
   for i in range(7):
     if creat == 0:    # Проверяем, нужно ли создавать кнопки
       scrypt_button = Button( text=str(LIST_MOUSE_BUTTONS[i]),     # Создание кнопки
@@ -76,8 +77,6 @@ def update_buttons(event=0):# Изменение назначения кнопо
   res["current_app"]=str(dict_save.get_cur_app())  # add_button_start["state"] = "normal"
   res["id"]=id_value.get()
   dict_save.save_jnson(res)  # Сохранить новые настройки.  # print("change color label")
-  # start_startup_now(dict_save, root)
-
 
 def run_in_thread(dict_save, game, event):
  dict_save.set_prev_game(dict_save.get_cur_app())  # Сохранить предыдущую игру
@@ -119,7 +118,7 @@ def check_label_changed(event, labels, count, var_list):# Когда мы пер
 
  dict_save.set_box_values()
  update_buttons(event)# Изменение назначения кнопок.
- mouse_check_button(dict_save, res, dict_save.get_cur_app()) # флаг для удержания кнопки мыши.
+ mouse_check_button(dict_save) # флаг для удержания кнопки мыши.
  create_scrypt_buttons()
 
 def checkbutton_changed(event, var_list, count, name_games, labels, curr_app):  # галочки
@@ -142,13 +141,15 @@ def update_mouse_check_button(count):# сохранение после уста�
   res=dict_save.return_jnson()
   curr_name=dict_save.get_cur_app()#  print(count)  print(len(res["mouse_press"][curr_name]))
   # Проверка наличия ключа перед его обновлением
-  if curr_name in res["mouse_press"]:
-    # Изменение значения на противоположное
+  if curr_name in res["mouse_press"]:    # Изменение значения на противоположное
     res["mouse_press"][curr_name][count] = not res["mouse_press"][curr_name][count]
     list_mouse_button_press = res["mouse_press"][curr_name]  # print(list_mouse_button_press)  # Обновить список флажков.
     dict_save.set_default_id_value()
     dict_save.save_jnson(res)
-def mouse_check_button(dict_save, res,curr_name):
+def mouse_check_button(dict_save):
+  curr_name=dict_save.get_cur_app()#
+  res=dict_save.return_jnson()
+  # print(res["mouse_press"][curr_name])
   list_mouse_button_press = list(res["mouse_press"][curr_name])#  print(d)
   mouse_press_button = []# список нажатых кнопок.
   cd1_y = 30
@@ -229,15 +230,12 @@ def add_file(dict_save):# Добавить новые игры
  labels_with_checkmark.clear()
  labels=dict_save.return_labels()
  dict_save.count=+1
-
  res['current_app'] = path_to_file# Выбранная игра.
  dict_save.set_cur_app(path_to_file)
  dict_save.set_current_path_game(path_to_file)
  dict_save.save_jnson(res)
  set_colol_white_label_changed(labels)  # Установить белый цвет для всех label
  res = dict_save.return_jnson()
- # print(res["current_app"])
- # print(dict_save.get_cur_app())
 # update_buttons()
  filling_in_fields(res)
 
@@ -306,7 +304,6 @@ def start(root, dict_save):# запуск всего.
                  'SCROLL_DOWN', 'SCROLL_UP', 'SCROLL_DOWN']   },
    "mouse_press": {  "C:/Windows/explorer.exe": [ False, False,
      False, False, False, False, False ] },
-   "start_startup" : False,# Флаг запускать при старте.
    "id": 0, # Какой id устройства
    "current_app" : 'C:/Windows/explorer.exe'}
 
@@ -345,15 +342,13 @@ def start(root, dict_save):# запуск всего.
   box.bind('<<ComboboxSelected>>', update_buttons)# Если изменяется значения кнопок
 
  filling_in_fields(res) # заполнения всех полей.
- mouse_check_button(dict_save, res, curr_name) # флаг для удержания кнопки мыши.
+ mouse_check_button(dict_save) # флаг для удержания кнопки мыши.
  start_startup_now(dict_save, root)
  create_scrypt_buttons()# создание углубление кнопок скрипта.
  # print("fill")
-def move_last_key_to_front(d):
-   """
-   Рекурсивно перемещает последний ключ словаря в начало.
-   Если значение является словарём, функция применяется и к нему.
-   """
+def move_last_key_to_front(d):# Рекурсивно перемещает последний ключ словаря в начало.
+   #Если значение является словарём, функция применяется и к нему.
+
    # Если d не словарь – возвращаем как есть
    if not isinstance(d, dict):
      return d
@@ -386,7 +381,25 @@ def scrolling_list(event):# прокрутка списка игр.
  res=dict_save.return_jnson()
  res = move_last_key_to_front(res) #print(res["games_checkmark"])
  dict_save.save_jnson(res)
+def add_buttons_keyboard(buttons, window):
+ mouse_key_left_button = ttk.Button(window, text="\n\nЛевая\n\n", width=6, style='TButton')
+ mouse_key_left_button.place(x=1340, y=100)
+ buttons[mouse_key_left_button] = "Левая"
 
+ mouse_wheel_up = ttk.Button(window, text="wheel_up", width=11, style='TButton')
+ mouse_wheel_up.place(x=1410, y=50)
+ buttons[mouse_wheel_up] = "wheel_up" #
+ mouse_key_middie_button = ttk.Button(window, text="mouse_middie", width=11, style='TButton')
+ mouse_key_middie_button.place(x=1410, y=140)
+ buttons[mouse_key_middie_button] = "mouse_middie"
+
+ mouse_wheel_down = ttk.Button(window, text="wheel_down", width=11, style='TButton')
+ mouse_wheel_down.place(x=1410, y=220)
+ buttons[mouse_wheel_down] = "wheel_down"
+
+ mouse_key_right_button = ttk.Button(window, text="\n\nПравая\n\n", width=6, style='TButton')
+ mouse_key_right_button.place(x=1530, y=100)
+ buttons[mouse_key_right_button] = "Правая"
 def on_close():# Функция закрытия программы.  # print("exit")
   dict_save.set_default_id_value()
   old_data = dict_save.return_old_data()  # старые значения настроек.
@@ -406,6 +419,163 @@ def on_close():# Функция закрытия программы.  # print("e
   exit()
   sys.exit()
 
+def create_virtial_keyboard():# создать виртуальную клавиатуру
+  window = Toplevel(root)  # основа
+  window.geometry("1350x340+240+580")  # Используем geometry вместо setGeometry
+  keyboard_layout = [
+   ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'Delete', 'Home',
+    'End', 'PgUp', 'PgDn']
+   , ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0', '_\n-', '+\n=',
+      'Backspace', 'Num Lock', '/', '*', '-']
+   , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', ' 7\nHome', '8\n↑', '9\nPgUp',
+      '+']
+   , ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
+   , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
+   , ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
+   , ['Left', 'Down', 'Right']
+  ]
+  buttons={}
+  style = ttk.Style()  # При нажатии кнопка меняет свой цвет.
+  style.configure('TButton', background='lightgray')
+  style.map('TButton', background=[('active', 'blue')])
+  for i, row in enumerate(keyboard_layout):  # Создаем клавиатуру.
+   for j, key in enumerate(row):
+    x1 = 70 * j + 6
+    y1 = 50 * i + 6
+    button = ttk.Button(window, text=key, width=5, style='TButton')
+    buttons[button]=key
+    if key == 'Backspace':  # Условие только для Backspace
+     button = ttk.Button(window, text=key, width=10, style='TButton')
+     buttons[button]=key
+     button.place(x=x1, y=y1)
+    elif i == 1 and j > 13:  # Смещение кнопок NumPad после Backspace
+     button.place(x=x1 + 69, y=y1)  # Сдвигаем вправо на 80 пикселей
+    else:
+     button.place(x=x1, y=y1)
+    if key in [' 7\nHome', '8\n↑', '9\nPgUp', '+']:
+     x2 = x1 + 69
+     button.place(x=x2, y=y1)
+     if key == "+":
+      button.config(text="\n\n" + key + "\n")
+    if key in ['4\n←', '5\n', '6\n→']:
+     x2 = x1 + 140
+     button.place(x=x2, y=y1)
+    if key in ['1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']:
+     x2 = x1 + 210
+     button.place(x=x2, y=y1)
+     if key == "KEnter":
+      button.config(text="\n\n" + key + "\n")
+    if i == 5:
+     if key in ['Ctrl', 'Windows', 'Alt']:
+      button.place(x=x1, y=y1)
+     if key == "space":
+      button = ttk.Button(window, text=key, width=30, style='TButton')
+      button.place(x=x1, y=y1)
+      buttons[button] = key
+     elif key in ['Alt_r', 'Fn', 'Menu', 'Ctrl_r']:
+      x2 = x1 + 210
+      button.config(width=5)  # Устанавливаем ширину 15 для "0\nIns"
+      button.place(x=x2, y=y1)
+     elif key == 'up':
+      x2 = x1 + 280
+      button.config(width=5)
+      button.place(x=x2, y=y1)
+     elif key == "0\nIns":
+      x2 = x1 + 420
+      button.config(width=15)  # Устанавливаем ширину 15 для "0\nIns"
+      button.place(x=x2, y=y1)
+     elif key == ' . ':
+      x2 = x1 + 490
+      button.config(width=5)
+      button.place(x=x2, y=y1)
+    if i == 6:
+     if key in ['Left', 'Down', 'Right']:
+      x2 = x1 + 770
+      button.config(width=5)
+      button.place(x=x2, y=y1 - 9)
+  return window, buttons
+
+def add_key_text(key, text_widget):
+  add_text(key, text_widget)
+  current_app = dict_save.get_cur_app()  # Получаем текущую игру
+  res = dict_save.return_jnson()  # Получение настроек.
+  curr_key=dict_save.get_last_key_keyboard_script()
+  keyboard_script = res["keyboard_script"][current_app]["keys"]
+  if text_widget.get("1.0", "end-1c"):
+   keyboard_script[curr_key]=text_widget.get("1.0", "end-1c")  # Извлекаем текст из text_widget""
+  dict_save.save_jnson(res)
+def kill_notebook(w, n, text_widget):
+  current_app = dict_save.get_cur_app()  # Получаем текущую игру
+  res = dict_save.return_jnson()  # Получение настроек.
+  curr_key=dict_save.get_last_key_keyboard_script()
+
+  keyboard_script = res["keyboard_script"][current_app]["keys"]
+  sc = text_widget.get("1.0", "end-1c")
+  if sc =="": # Удаляем ключ, если он существует
+   if curr_key in keyboard_script:
+    del keyboard_script[curr_key]
+  w.destroy()  # Закрываем предыдущую клавиатуру.
+  n.destroy()
+  create_keyboard()# Создаем виртуальную клавиатуру
+def kill_keyboard(w, n, text_widget):
+ kill_notebook(w, n, text_widget)
+
+def record_marcross(key,w):# здесь мы записываем макрос
+ w.destroy()  # Закрываем предыдущую клавиатуру.
+ dict_save.set_last_key_keyboard_script(key)#  сохранить кнопку, которая нажата
+ current_app = dict_save.get_cur_app()  # Получаем текущую игру
+ res= dict_save.return_jnson()# Получение настроек.
+
+ res.setdefault("keyboard_script", {}).setdefault(current_app, {}).setdefault("keys", {})
+ keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
+
+ window, buttons = create_virtial_keyboard()# Создаем виртуальную клавиатуру
+ window.title(f"Запись макроса для клавиши {key}")  # Устанавливаем заголовок окна
+ window.geometry("1610x340+140+480")  # Используем geometry вместо setGeometry
+ add_buttons_keyboard(buttons, window) # это меняет клавиатуру до записи макросов
+ note = Toplevel(window)  # основа
+ note.title("Скрипт")# Заголовок блокнота
+
+ notebook = ttk.Notebook(note)
+ notebook.grid(row=0, column=0, sticky="nsew")
+
+ tab1 = ttk.Frame(notebook)
+ notebook.add(tab1, text="Окно редактора скрипта")
+ keyboard_script=dict_save.return_jnson()["keyboard_script"]
+ text_widget = Text(tab1, wrap='word') # Текстовый редактор
+ text_widget.grid(row=0, column=0, sticky="nsew")
+ note.protocol("WM_DELETE_WINDOW", lambda: kill_notebook(window, note, text_widget))# Если мы закрываем блокнот
+ if key in keys_active:# Если кнопку которую мы нажали уже имеет какую-то привязку
+  text_content =keyboard_script[current_app]["keys"][key]
+  text_widget.insert('end', text_content)
+ window.protocol("WM_DELETE_WINDOW", lambda: kill_keyboard(window, note, text_widget))
+ for button, key in buttons.items():# каждой клавише присваиваем свою функци.
+  button.configure(command=lambda k=key, t=text_widget: add_key_text(k, t))
+
+def create_keyboard():# Функция создания клавиатуры.
+  res= dict_save.return_jnson()# Получение настроек.
+  current_app = dict_save.get_cur_app()  # Получаем текущую игру
+  if res.get("keyboard_script") is None:
+    res["keyboard_script"] = {}# если нет ключа для клавиатуры
+  if current_app not in res.get("keyboard_script", {}):  # Проверяем наличие ключа
+   res["keyboard_script"][current_app] = {}  # Если ключ отсутствует, создаем его] = {}  # Если ключ отсутствует, создаем его
+  key = dict_save.get_last_key_keyboard_script()
+  window, buttons = create_virtial_keyboard() # создаем окно с клавиатурой. Надо нажать 1 кнопку
+  window.title("Выбор клавиш")# на которой мы запишем макро
+
+  if "keys" in res["keyboard_script"][current_app]:
+   keys_active = list(res["keyboard_script"][current_app]["keys"].keys())  #
+  else:
+   keys_active=[]
+  for button, key in buttons.items():  # Прикрепляем функцию record_marcross к каждой кнопке
+   button.configure(command=lambda k=key, w=window: record_marcross(k, w))  # при нажатии любой кнопка выходит новая клавиатура с редактором
+   if key !="" and key in keys_active and len(keys_active)>0:# какие кнопка уже назаченные.
+     style = ttk.Style() # Меняем цвет тех кнопок которые уже были назначены.
+     style.configure("Custom.TButton", background="blue", foreground="white")
+     button.configure(style="Custom.TButton")
+
+  dict_save.save_jnson(res)
+  # print(res["keyboard_script"])
 def delete(dict_save, root):# Удалить профиль.
  if dict_save.get_cur_app()=="C:/Windows/explorer.exe":# # получить id устройства.Если id устройство не выбрали.
      messagebox.showinfo("Ошибка", "Вы выбрали профиль по умолчанию")
@@ -519,6 +689,37 @@ def move_element(dict_save, root, direction='up'):  # Перемещает те�
   dict_save.save_jnson(res)
 
 dict_save=save_dict()
+
+def on_press(key):  # обработчик клави.  # print(key )
+  current_app = dict_save.get_cur_app()  # Получаем текущую игру
+  res=dict_save.return_jnson()
+
+  # Проверяем наличие текущего приложения в "keyboard_script"
+  if "keys" not in res["keyboard_script"][current_app]["keys"]:
+    keys_active = res["keyboard_script"][current_app]["keys"].keys()
+    key = str(key).replace(" ", "").replace('\'', '').replace("Key.","").lower()  # Очищаем от ненужного
+    for i in list(keys_active):  # Получаем клавиши которые являются макросами.
+     i = str(i)
+     if key in ru_to_en.keys():  # нужно перевести нужно перевести русскую клавишу в английскую.
+      key = ru_to_en[key]
+     if key == i.lower():  # теперь нужно перевести ее в нижней регистр.
+      script = res["keyboard_script"][current_app]["keys"][key]
+      print(script)
+      listener.stop()
+      t = threading.Thread(target=lambda: subprocess.call(['bash', '-c', script]))
+      t.start()
+      t.join()
+      start_listener()
+def on_release(key):
+ pass
+ return True
+
+def start_listener():
+ global listener
+ listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+ listener.start()
+
+start_listener()# Запускаем слушатель
 root = Tk()
 id_value =  IntVar()
 f1 = Frame()
@@ -544,11 +745,13 @@ up_button.place(x=520, y=250)
 down_button = Button(text=" Вниз",  command= lambda:move_element(dict_save, root, 'down'))
 down_button.place(x=520, y=300)
 id_list =dict_save.get_list_ids()
-start(root, dict_save)
 add_button_start = Button(text=" Удалить",  command= lambda:delete(dict_save, root))
-add_button_start.place(x=760, y=140)
+add_button_start.place(x=770, y=120)
+add_button_create_keyboard = Button(text="Клавиатура",  command= lambda:create_keyboard())# Создаем  клавиатуру
+add_button_create_keyboard.place(x=760, y=200)
 root.protocol("WM_DELETE_WINDOW", on_close)
-Button(root, text="Показать список устройств", command=show_list_id_callback).place(x=710, y=220)
+Button(root, text="Показать список устройств", command=show_list_id_callback).place(x=710, y=280)
+start(root, dict_save) # Запуск всего
 if os.getgid() != 0:# if os.getgid() == 0:# start1() с root правами"
  box = Combobox(root, width=12, textvariable=id_value, values=id_list, state='readonly')  #
  box.grid(column=1, row=0, padx=10, pady=60,sticky=N)
@@ -557,8 +760,6 @@ if os.getgid() != 0:# if os.getgid() == 0:# start1() с root правами"
  root.iconify()  # Свернуть окно
   # root.withdraw()# свернуть панель подсказок.
 root.mainloop()
-
-# Get the ID of the main window
-main_window_id = root.winfo_id()
+main_window_id = root.winfo_id()# Get the ID of the main window
 
 
