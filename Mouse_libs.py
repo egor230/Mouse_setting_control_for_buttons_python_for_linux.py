@@ -278,90 +278,83 @@ def add_text(key, text_widget): # добавлять команды для кл�
             f'xte "keyup {key}"\n')
   # Вставляем текст в месте курсора
   text_widget.insert(text_widget.index("insert"), sc)
-# Создаем главное окно
-def keyboard_scrypt(root, text_widget):
-  window = Toplevel(root)  # основа
-  window.title('Клавиатура')
-  window.geometry("1550x340+240+580")  # Используем geometry вместо setGeometry
-  keyboard_layout = [
-      ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'Delete', 'Home',
-       'End', 'PgUp', 'PgDn']
-      , ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0', '_\n-', '+\n=',
-         'Backspace', 'Num Lock', '/', '*', '-']
-      , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', ' 7\nHome', '8\n↑', '9\nPgUp',
-         '+']
-      , ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
-      , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
-      , ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
-      , ['Left', 'Down', 'Right']
-  ]
 
-  style = ttk.Style()# При нажатии кнопка меняет свой цвет.
+def create_virtial_keyboard(root):# создать виртуальную клавиатуру
+  window = Toplevel(root)  # основа
+  window.geometry("1350x340+240+580")  # Используем geometry вместо setGeometry
+  keyboard_layout = [
+   ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'Delete', 'Home',
+    'End', 'PgUp', 'PgDn']
+   , ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0', '_\n-', '+\n=',
+      'Backspace', 'Num Lock', '/', '*', '-']
+   , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', ' 7\nHome', '8\n↑', '9\nPgUp',
+      '+']
+   , ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
+   , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
+   , ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
+   , ['Left', 'Down', 'Right']
+  ]
+  buttons={}
+  style = ttk.Style()  # При нажатии кнопка меняет свой цвет.
   style.configure('TButton', background='lightgray')
   style.map('TButton', background=[('active', 'blue')])
-  mouse_key_left_button = ttk.Button(window, text="\n\nЛевая\n\n", width=5, style='TButton',
-                                     command=lambda k="Левая", t=text_widget: add_text(k, t))
-  mouse_key_left_button.place(x=1340, y=100)
-  mouse_key_right_button = ttk.Button(window, text="\n\nПравая\n\n", width=5, style='TButton',
-                                      command=lambda k="Правая", t=text_widget: add_text(k, t))
-  mouse_key_right_button.place(x=1430, y=100)
-
-  for i, row in enumerate(keyboard_layout):# Создаем клавиатуру.
+  for i, row in enumerate(keyboard_layout):  # Создаем клавиатуру.
    for j, key in enumerate(row):
-      x1 = 70 * j + 6
-      y1 = 50 * i + 6
-      button = ttk.Button(window, text=key, width=5, style='TButton',
-                            command=lambda k=key, t=text_widget: add_text(k, t))
-      if key == 'Backspace':  # Условие только для Backspace
-          button = ttk.Button(window, text=key, width=10, style='TButton',
-                              command=lambda k=key, t=text_widget: add_text(k, t))
-          button.place(x=x1, y=y1)
-      elif i == 1 and j > 13:  # Смещение кнопок NumPad после Backspace
-          button.place(x=x1 + 69, y=y1)  # Сдвигаем вправо на 80 пикселей
-      else:
-          button.place(x=x1, y=y1)
-      if key in [' 7\nHome', '8\n↑', '9\nPgUp', '+']:
-          x2 = x1 + 69
-          button.place(x=x2, y=y1)
-          if key == "+":
-              button.config(text="\n\n" + key + "\n")
-      if key in ['4\n←', '5\n', '6\n→']:
-          x2 = x1 + 140
-          button.place(x=x2, y=y1)
-      if key in ['1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']:
-          x2 = x1 + 210
-          button.place(x=x2, y=y1)
-          if key == "KEnter":
-              button.config(text="\n\n" + key + "\n")
-      if i==5:
-       if key in ['Ctrl', 'Windows', 'Alt']:
-          button.place(x=x1, y=y1)
-       if key == "space":
-        button = ttk.Button(window, text=key, width=30, style='TButton',
-                            command=lambda k=key, t=text_widget: add_text(k, t))
-        button.place(x=x1, y=y1)
-       elif key in ['Alt_r', 'Fn', 'Menu', 'Ctrl_r']:
-         x2 = x1 + 210
-         button.config(width=5)  # Устанавливаем ширину 15 для "0\nIns"
-         button.place(x=x2, y=y1)
-       elif key == 'up':
-         x2 = x1 + 280
-         button.config(width=5)
-         button.place(x=x2, y=y1)
-       elif key == "0\nIns":
-         x2 = x1 + 420
-         button.config(width=15)  # Устанавливаем ширину 15 для "0\nIns"
-         button.place(x=x2, y=y1)
-       elif key == ' . ':
-         x2 = x1 + 490
-         button.config(width=5)
-         button.place(x=x2, y=y1)
-      if i == 6:
-       if key in ['Left', 'Down', 'Right']:
-        x2 = x1 + 770
-        button.config(width=5)
-        button.place(x=x2, y=y1-9)
-  return window
+    x1 = 70 * j + 6
+    y1 = 50 * i + 6
+    button = ttk.Button(window, text=key, width=5, style='TButton')
+    buttons[button]=key
+    if key == 'Backspace':  # Условие только для Backspace
+     button = ttk.Button(window, text=key, width=10, style='TButton')
+     buttons[button]=key
+     button.place(x=x1, y=y1)
+    elif i == 1 and j > 13:  # Смещение кнопок NumPad после Backspace
+     button.place(x=x1 + 69, y=y1)  # Сдвигаем вправо на 80 пикселей
+    else:
+     button.place(x=x1, y=y1)
+    if key in [' 7\nHome', '8\n↑', '9\nPgUp', '+']:
+     x2 = x1 + 69
+     button.place(x=x2, y=y1)
+     if key == "+":
+      button.config(text="\n\n" + key + "\n")
+    if key in ['4\n←', '5\n', '6\n→']:
+     x2 = x1 + 140
+     button.place(x=x2, y=y1)
+    if key in ['1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']:
+     x2 = x1 + 210
+     button.place(x=x2, y=y1)
+     if key == "KEnter":
+      button.config(text="\n\n" + key + "\n")
+    if i == 5:
+     if key in ['Ctrl', 'Windows', 'Alt']:
+      button.place(x=x1, y=y1)
+     if key == "space":
+      button = ttk.Button(window, text=key, width=30, style='TButton')
+      button.place(x=x1, y=y1)
+      buttons[button] = key
+     elif key in ['Alt_r', 'Fn', 'Menu', 'Ctrl_r']:
+      x2 = x1 + 210
+      button.config(width=5)  # Устанавливаем ширину 15 для "0\nIns"
+      button.place(x=x2, y=y1)
+     elif key == 'up':
+      x2 = x1 + 280
+      button.config(width=5)
+      button.place(x=x2, y=y1)
+     elif key == "0\nIns":
+      x2 = x1 + 420
+      button.config(width=15)  # Устанавливаем ширину 15 для "0\nIns"
+      button.place(x=x2, y=y1)
+     elif key == ' . ':
+      x2 = x1 + 490
+      button.config(width=5)
+      button.place(x=x2, y=y1)
+    if i == 6:
+     if key in ['Left', 'Down', 'Right']:
+      x2 = x1 + 770
+      button.config(width=5)
+      button.place(x=x2, y=y1 - 9)
+  return window, buttons
+
 def is_path_in_list(path, path_list):#проверяет, содержится ли путь в списке путей.
     return any(path in item for item in path_list)
 def get_index_of_path(path, path_list):

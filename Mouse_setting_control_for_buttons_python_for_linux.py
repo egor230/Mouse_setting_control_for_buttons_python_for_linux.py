@@ -33,8 +33,7 @@ def run_scrypt(i):
     notebook.destroy()  # Создаем вкладку с кнопкой "Закрыть"
     win.destroy()
 
-  # Создаем окно клавиатуры
-  win = keyboard_scrypt(root, text_widget)
+  win, buttons = create_virtial_keyboard()  # Создаем окно клавиатуры
 
   # Установка обработчика закрытия окна
   win.protocol("WM_DELETE_WINDOW", lambda: close_window(i, key_mouse_scrypt, win))
@@ -419,89 +418,13 @@ def on_close():# Функция закрытия программы.  # print("e
   exit()
   sys.exit()
 
-def create_virtial_keyboard():# создать виртуальную клавиатуру
-  window = Toplevel(root)  # основа
-  window.geometry("1350x340+240+580")  # Используем geometry вместо setGeometry
-  keyboard_layout = [
-   ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'Delete', 'Home',
-    'End', 'PgUp', 'PgDn']
-   , ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0', '_\n-', '+\n=',
-      'Backspace', 'Num Lock', '/', '*', '-']
-   , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', ' 7\nHome', '8\n↑', '9\nPgUp',
-      '+']
-   , ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
-   , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
-   , ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
-   , ['Left', 'Down', 'Right']
-  ]
-  buttons={}
-  style = ttk.Style()  # При нажатии кнопка меняет свой цвет.
-  style.configure('TButton', background='lightgray')
-  style.map('TButton', background=[('active', 'blue')])
-  for i, row in enumerate(keyboard_layout):  # Создаем клавиатуру.
-   for j, key in enumerate(row):
-    x1 = 70 * j + 6
-    y1 = 50 * i + 6
-    button = ttk.Button(window, text=key, width=5, style='TButton')
-    buttons[button]=key
-    if key == 'Backspace':  # Условие только для Backspace
-     button = ttk.Button(window, text=key, width=10, style='TButton')
-     buttons[button]=key
-     button.place(x=x1, y=y1)
-    elif i == 1 and j > 13:  # Смещение кнопок NumPad после Backspace
-     button.place(x=x1 + 69, y=y1)  # Сдвигаем вправо на 80 пикселей
-    else:
-     button.place(x=x1, y=y1)
-    if key in [' 7\nHome', '8\n↑', '9\nPgUp', '+']:
-     x2 = x1 + 69
-     button.place(x=x2, y=y1)
-     if key == "+":
-      button.config(text="\n\n" + key + "\n")
-    if key in ['4\n←', '5\n', '6\n→']:
-     x2 = x1 + 140
-     button.place(x=x2, y=y1)
-    if key in ['1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']:
-     x2 = x1 + 210
-     button.place(x=x2, y=y1)
-     if key == "KEnter":
-      button.config(text="\n\n" + key + "\n")
-    if i == 5:
-     if key in ['Ctrl', 'Windows', 'Alt']:
-      button.place(x=x1, y=y1)
-     if key == "space":
-      button = ttk.Button(window, text=key, width=30, style='TButton')
-      button.place(x=x1, y=y1)
-      buttons[button] = key
-     elif key in ['Alt_r', 'Fn', 'Menu', 'Ctrl_r']:
-      x2 = x1 + 210
-      button.config(width=5)  # Устанавливаем ширину 15 для "0\nIns"
-      button.place(x=x2, y=y1)
-     elif key == 'up':
-      x2 = x1 + 280
-      button.config(width=5)
-      button.place(x=x2, y=y1)
-     elif key == "0\nIns":
-      x2 = x1 + 420
-      button.config(width=15)  # Устанавливаем ширину 15 для "0\nIns"
-      button.place(x=x2, y=y1)
-     elif key == ' . ':
-      x2 = x1 + 490
-      button.config(width=5)
-      button.place(x=x2, y=y1)
-    if i == 6:
-     if key in ['Left', 'Down', 'Right']:
-      x2 = x1 + 770
-      button.config(width=5)
-      button.place(x=x2, y=y1 - 9)
-  return window, buttons
-
 def add_key_text(key, text_widget):
   add_text(key, text_widget)
   current_app = dict_save.get_cur_app()  # Получаем текущую игру
   res = dict_save.return_jnson()  # Получение настроек.
   curr_key=dict_save.get_last_key_keyboard_script()
-  keyboard_script = res["keyboard_script"][current_app]["keys"]
-  if text_widget.get("1.0", "end-1c"):
+  keyboard_script = res["keyboard_script"][current_app]["keys"]# Ключ скрипта для этой клавиши.
+  if text_widget.get("1.0", "end-1c"):# если блокнот не пуст тогда добавляем ключ
    keyboard_script[curr_key]=text_widget.get("1.0", "end-1c")  # Извлекаем текст из text_widget""
   dict_save.save_jnson(res)
 def kill_notebook(w, n, text_widget):
@@ -510,14 +433,15 @@ def kill_notebook(w, n, text_widget):
   curr_key=dict_save.get_last_key_keyboard_script()
 
   keyboard_script = res["keyboard_script"][current_app]["keys"]
-  sc = text_widget.get("1.0", "end-1c")
+  sc = text_widget.get("1.0", "end-1c")# Если блокнот пусть удаляем ключ
   if sc =="": # Удаляем ключ, если он существует
    if curr_key in keyboard_script:
     del keyboard_script[curr_key]
   w.destroy()  # Закрываем предыдущую клавиатуру.
   n.destroy()
+  dict_save.save_jnson(res)
   create_keyboard()# Создаем виртуальную клавиатуру
-def kill_keyboard(w, n, text_widget):
+def kill_keyboard(w, n, text_widget):# когда закрываем клавиатуру, закрывается блокнот.
  kill_notebook(w, n, text_widget)
 
 def record_marcross(key,w):# здесь мы записываем макрос
@@ -529,7 +453,7 @@ def record_marcross(key,w):# здесь мы записываем макрос
  res.setdefault("keyboard_script", {}).setdefault(current_app, {}).setdefault("keys", {})
  keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
 
- window, buttons = create_virtial_keyboard()# Создаем виртуальную клавиатуру
+ window, buttons = create_virtial_keyboard(root)# Создаем виртуальную клавиатуру
  window.title(f"Запись макроса для клавиши {key}")  # Устанавливаем заголовок окна
  window.geometry("1610x340+140+480")  # Используем geometry вместо setGeometry
  add_buttons_keyboard(buttons, window) # это меняет клавиатуру до записи макросов
@@ -560,13 +484,13 @@ def create_keyboard():# Функция создания клавиатуры.
   if current_app not in res.get("keyboard_script", {}):  # Проверяем наличие ключа
    res["keyboard_script"][current_app] = {}  # Если ключ отсутствует, создаем его] = {}  # Если ключ отсутствует, создаем его
   key = dict_save.get_last_key_keyboard_script()
-  window, buttons = create_virtial_keyboard() # создаем окно с клавиатурой. Надо нажать 1 кнопку
+  window, buttons = create_virtial_keyboard(root) # создаем окно с клавиатурой. Надо нажать 1 кнопку
   window.title("Выбор клавиш")# на которой мы запишем макро
 
-  if "keys" in res["keyboard_script"][current_app]:
+  if "keys" in res["keyboard_script"][current_app]:# идет идет проверка если ключи до клавиш
    keys_active = list(res["keyboard_script"][current_app]["keys"].keys())  #
   else:
-   keys_active=[]
+   keys_active=[]#Если их нету никакие клавиши не будут синие
   for button, key in buttons.items():  # Прикрепляем функцию record_marcross к каждой кнопке
    button.configure(command=lambda k=key, w=window: record_marcross(k, w))  # при нажатии любой кнопка выходит новая клавиатура с редактором
    if key !="" and key in keys_active and len(keys_active)>0:# какие кнопка уже назаченные.
@@ -574,8 +498,7 @@ def create_keyboard():# Функция создания клавиатуры.
      style.configure("Custom.TButton", background="blue", foreground="white")
      button.configure(style="Custom.TButton")
 
-  dict_save.save_jnson(res)
-  # print(res["keyboard_script"])
+  dict_save.save_jnson(res)# идет сохранение настроек
 def delete(dict_save, root):# Удалить профиль.
  if dict_save.get_cur_app()=="C:/Windows/explorer.exe":# # получить id устройства.Если id устройство не выбрали.
      messagebox.showinfo("Ошибка", "Вы выбрали профиль по умолчанию")
