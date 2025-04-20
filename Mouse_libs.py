@@ -290,7 +290,7 @@ def create_virtial_keyboard(root):# создать виртуальную кла
    , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', ' 7\nHome', '8\n↑', '9\nPgUp',
       '+']
    , ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
-   , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
+   , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift_R', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
    , ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
    , ['Left', 'Down', 'Right']
   ]
@@ -466,11 +466,9 @@ def get_visible_active_pid():
 
         # Ищем строку с нужным ID окна
         for line in wmctrl_output.splitlines():
-            parts = line.split()
-            print(parts)
+            parts = line.split()#            print(parts)
             if len(parts) >= 3 and parts[0] == window_id_hex:
-                pid = int(parts[2])  # PID — третий элемент
-                print(pid)
+                pid = int(parts[2])  # PID — третий элемент#                print(pid)
                 return pid
         return 0  # PID не найден
 

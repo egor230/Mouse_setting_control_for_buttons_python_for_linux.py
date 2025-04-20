@@ -1,5 +1,5 @@
 from Mouse_libs import *
-def run_scrypt(i):
+def run_scrypt(i,root):
   res= dict_save.return_jnson()
   if "script_mouse" not in res:
     res.setdefault("script_mouse", {})
@@ -26,29 +26,31 @@ def run_scrypt(i):
   else:
       text_widget.insert("end", "#!/bin/bash\n")
     # Функция для закрытия окна
-  def close_window(i, key_mouse_scrypt, win):
-    text_content = text_widget.get("1.0", "end-1c")  # Извлекаем текст из text_widget
+  def close_window1(i, key_mouse_scrypt, win):
+    text_content = text_widget.get("1.0", "end-1c")  # Извлекаем текст из text_widgete
     res["script_mouse"][dict_save.get_cur_app()][defaut_list_mouse_buttons[i]]=text_content
     dict_save.save_jnson(res)
     notebook.destroy()  # Создаем вкладку с кнопкой "Закрыть"
     win.destroy()
 
-  win, buttons = create_virtial_keyboard()  # Создаем окно клавиатуры
+  win, buttons = create_virtial_keyboard(root)  # Создаем окно клавиатуры
 
+  for button, key in buttons.items():  # каждой клавише присваиваем свою функци.
+   button.configure(command=lambda k=key, t=text_widget: add_text(k, t))
   # Установка обработчика закрытия окна
-  win.protocol("WM_DELETE_WINDOW", lambda: close_window(i, key_mouse_scrypt, win))
+  win.protocol("WM_DELETE_WINDOW", lambda: close_window1(i, key_mouse_scrypt, win))
 
 creat = 0  # Глобальная переменная для контроля создания кнопок
 a_scrypt = []  # Список для хранения созданных кнопок
 
-def create_scrypt_buttons():
+def create_scrypt_buttons(root):
   global creat
   y_place = 23  # Начальная координата для кнопок
   res = dict_save.return_jnson()  # Получение данных из dict_saveуу
   for i in range(7):
     if creat == 0:    # Проверяем, нужно ли создавать кнопки
       scrypt_button = Button( text=str(LIST_MOUSE_BUTTONS[i]),     # Создание кнопки
-        font=("Arial", 9),  width=10, height=1, command=lambda i1=i: run_scrypt(i1)     )
+        font=("Arial", 9),  width=10, height=1, command=lambda i1=i, r1=root: run_scrypt(i1, r1))
       scrypt_button.place(x=520, y=y_place)  # Размещение кнопки
       a_scrypt.append(scrypt_button)  # Добавление кнопки в список
 
@@ -118,7 +120,7 @@ def check_label_changed(event, labels, count, var_list):# Когда мы пер
  dict_save.set_box_values()
  update_buttons(event)# Изменение назначения кнопок.
  mouse_check_button(dict_save) # флаг для удержания кнопки мыши.
- create_scrypt_buttons()
+ create_scrypt_buttons(root)
 
 def checkbutton_changed(event, var_list, count, name_games, labels, curr_app):  # галочки
   dict_save.set_cur_app(curr_app)# Установить текущий путь к игре напротив галочки
@@ -343,7 +345,7 @@ def start(root, dict_save):# запуск всего.
  filling_in_fields(res) # заполнения всех полей.
  mouse_check_button(dict_save) # флаг для удержания кнопки мыши.
  start_startup_now(dict_save, root)
- create_scrypt_buttons()# создание углубление кнопок скрипта.
+ create_scrypt_buttons(root)# создание углубление кнопок скрипта.
  # print("fill")
 def move_last_key_to_front(d):# Рекурсивно перемещает последний ключ словаря в начало.
    #Если значение является словарём, функция применяется и к нему.
