@@ -1,7 +1,8 @@
-import time, json, os, copy, psutil, threading, re,  glob, subprocess, psutil, pyautogui, signal
+import time, json, os, copy, psutil, threading, re, glob, subprocess, psutil, pyautogui, signal, pystray
 from tkinter import *
 from tkinter.ttk import Combobox  # импортируем только то что надо
 from tkinter import ttk
+from PIL import Image
 from PIL._tkinter_finder import tk
 from tkinter import messagebox
 from tkinter import filedialog
@@ -249,35 +250,54 @@ class save_dict:
     return key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, game, list_buttons
 
 def add_text(key, text_widget): # добавлять команды для клавиатуры и мысли в текстовое поле редактора.)
-
-  if key == "Ctrl":
-      key = "ISO_Next_Group"
-  if key == "Левая":
+ 
+ if key == "7\nHome":
+  key = "KP_Home"
+ elif key == "8\n↑":
+  key = "KP_Up"
+ elif key == "9\nPgUp":
+  key = "KP_Prior"
+ elif key == "4\n←":
+  key = "KP_Left"
+ elif key == "5\n":
+  key = "KP_Begin"
+ elif key == "6\n→":
+  key = "KP_Right"
+ elif key == "1\nEnd":
+  key = "KP_End"
+ elif key == "2\n↓":
+  key = "KP_Down"
+ elif key == "3\nPgDn":
+  key = "KP_Next"
+ elif key == "Ctrl":
+  key = "ISO_Next_Group"
+ 
+ if key == "Левая":
       sc = (f'xte "mousedown 1"\n'
             f'sleep 0.23\n'
             f'xte "mouseup 1"\n')
-  elif key == "Правая":
+ elif key == "Правая":
       sc = (f'xte "mousedown 3"\n'
             f'sleep 0.23\n'
             f'xte "mouseup 3"\n')
-  elif key == "wheel_up":
+ elif key == "wheel_up":
       sc = (f'xte "mousedown 4"\n'
             f'sleep 0.23\n'
             f'xte "mouseup 4"\n')
-  elif key == "mouse_middie":
+ elif key == "mouse_middie":
       sc = (f'xte "mousedown 2"\n'
             f'sleep 0.23\n'
             f'xte "mouseup 2"\n')
-  elif key == "wheel_down":
+ elif key == "wheel_down":
       sc = (f'xte "mousedown 5"\n'
             f'sleep 0.23\n'
             f'xte "mouseup 5"\n')
-  else:
+ else:
       sc = (f'xte "keydown {key}"\n'
             f'sleep 0.23\n'
             f'xte "keyup {key}"\n')
   # Вставляем текст в месте курсора
-  text_widget.insert(text_widget.index("insert"), sc)
+ text_widget.insert(text_widget.index("insert"), sc)
 
 def create_virtial_keyboard(root):# создать виртуальную клавиатуру
   window = Toplevel(root)  # основа
@@ -428,53 +448,53 @@ def get_pid_and_path_window():# Получаем идентификатор ак
      pass
 
 def get_visible_active_pid():
-    try:
-        # Получаем ID активного окна в десятичном формате
-        window_id_dec = subprocess.run(
-            ['xdotool', 'getactivewindow'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True
-        ).stdout.strip()
-
-        if not window_id_dec:
-            print("Не удалось получить ID активного окна")
-            return 0
-
-        # Преобразуем десятичное ID в шестнадцатеричное (например, 1234567 -> 0x01234567)
-        window_id_hex = hex(int(window_id_dec))
-
-        # Проверка: окно свернуто?
-        xprop_output = subprocess.run(
-            ['xprop', '-id', window_id_dec, '_NET_WM_STATE'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True
-        ).stdout
-
-        if "_NET_WM_STATE_HIDDEN" in xprop_output:
-            print("Окно свернуто")
-            return 0  # Окно свернуто
-
-        # Получаем список окон с PID
-        wmctrl_output = subprocess.run(
-            ['wmctrl', '-lp'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True
-        ).stdout
-
-        # Ищем строку с нужным ID окна
-        for line in wmctrl_output.splitlines():
-            parts = line.split()#            print(parts)
-            if len(parts) >= 3 and parts[0] == window_id_hex:
-                pid = int(parts[2])  # PID — третий элемент#                print(pid)
-                return pid
-        return 0  # PID не найден
-
-    except Exception as e:
-        print(f"Ошибка: {e}")
+ try:
+    # Получаем ID активного окна в десятичном формате
+    window_id_dec = subprocess.run(
+        ['xdotool', 'getactivewindow'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True
+    ).stdout.strip()
+ 
+    if not window_id_dec:
+        print("Не удалось получить ID активного окна")
         return 0
+ 
+    # Преобразуем десятичное ID в шестнадцатеричное (например, 1234567 -> 0x01234567)
+    window_id_hex = hex(int(window_id_dec))
+ 
+    # Проверка: окно свернуто?
+    xprop_output = subprocess.run(
+        ['xprop', '-id', window_id_dec, '_NET_WM_STATE'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True
+    ).stdout
+ 
+    if "_NET_WM_STATE_HIDDEN" in xprop_output:
+        print("Окно свернуто")
+        return 0  # Окно свернуто
+ 
+    # Получаем список окон с PID
+    wmctrl_output = subprocess.run(
+        ['wmctrl', '-lp'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True
+    ).stdout
+ 
+    # Ищем строку с нужным ID окна
+    for line in wmctrl_output.splitlines():
+        parts = line.split()#            print(parts)
+        if len(parts) >= 3 and parts[0] == window_id_hex:
+            pid = int(parts[2])  # PID — третий элемент#                print(pid)
+            return pid
+    return 0  # PID не найден
+ 
+ except Exception as e:
+    print(f"Ошибка: {e}")
+    return 0
 
 get_main_id = '''#!/bin/bash # Получаем идентификатор активного окна
 active_window_id=$(xdotool getactivewindow 2>/dev/null)
@@ -1016,6 +1036,13 @@ def check_star():
  except psutil.NoSuchProcess:
     pass
 
+
+def hide_window():# Функция для сворачивания окна в трей
+ root.withdraw()  # Скрываем окно
+ icon.run()  # Запускаем значок в трее
+def quit_app(icon, item):# Функция для выхода из приложения
+ icon.stop()  # Останавливаем значок
+ root.destroy()  # Закрываем приложение
 
 # def run_check_current_active_window(root, t1, dict_save, game, games_checkmark_paths):  # print(game)
 #   while 1:

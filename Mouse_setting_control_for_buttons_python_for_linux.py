@@ -439,6 +439,8 @@ def kill_notebook(w, n, text_widget):
   if sc =="": # Удаляем ключ, если он существует
    if curr_key in keyboard_script:
     del keyboard_script[curr_key]
+  else:
+   res["keyboard_script"][current_app]["keys"][curr_key]=sc
   w.destroy()  # Закрываем предыдущую клавиатуру.
   n.destroy()
   dict_save.save_jnson(res)
@@ -591,7 +593,6 @@ def move_element(dict_save, root, direction='up'):  # Перемещает те�
   element = labels.pop(index)
   labels.insert(new_index, element)
 
-
   info_current = checkbutton_list[index].place_info()
   info_neighbor = checkbutton_list[new_index].place_info()
   y_current = int(info_current.get("y", 0))
@@ -627,9 +628,8 @@ def on_press(key):  # обработчик клави.  # print(key )
      i = str(i)
      if key in ru_to_en.keys():  # нужно перевести нужно перевести русскую клавишу в английскую.
       key = ru_to_en[key]
-     if key == i.lower():  # теперь нужно перевести ее в нижней регистр.
-      script = res["keyboard_script"][current_app]["keys"][key]
-      print(script)
+     if key.lower() == i.lower():  # теперь нужно перевести ее в нижней регистр.
+      script = res["keyboard_script"][current_app]["keys"][i]#      print(script)
       listener.stop()
       t = threading.Thread(target=lambda: subprocess.call(['bash', '-c', script]))
       t.start()
@@ -677,14 +677,34 @@ add_button_create_keyboard.place(x=760, y=200)
 root.protocol("WM_DELETE_WINDOW", on_close)
 Button(root, text="Показать список устройств", command=show_list_id_callback).place(x=710, y=280)
 start(root, dict_save) # Запуск всего
+root.withdraw()  # Сначала скрываем окно
+
+# Переключение видимости окна
+def toggle_window():
+  if root.state() == 'withdrawn':
+    root.deiconify()
+    root.overrideredirect(True)  # Убирает рамку
+    root.lift()
+    root.focus_force()
+  else:
+   root.withdraw()
+
+# Настройка системного трея
+def setup_tray():
+ icon_image = Image.open("/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/mouse/X-Mouse-Button-Control-Logo.png")
+ icon = pystray.Icon("MouseSettingControl", icon_image, "Mouse Setting Control", menu=pystray.Menu( pystray.MenuItem("Показать или скрыть", toggle_window) ))
+ icon.run()
+ # Назначение функции-обработчика для левого клика
+ icon.left_click = toggle_window
 if os.getgid() != 0:# if os.getgid() == 0:# start1() с root правами"
  box = Combobox(root, width=12, textvariable=id_value, values=id_list, state='readonly')  #
  box.grid(column=1, row=0, padx=10, pady=60,sticky=N)
  box.bind('<<ComboboxSelected>>', update_buttons)# Если изменяется значения id.
  CreateToolTip(box, text='Выбор id устройства')  # вывод надписи
- root.iconify()  # Свернуть окно
-  # root.withdraw()# свернуть панель подсказок.
+ # Запуск иконки в системном трее в отдельном потоке
+ threading.Thread(target=setup_tray, daemon=True).start()
 root.mainloop()
 main_window_id = root.winfo_id()# Get the ID of the main window
 
-
+# root.iconify()  # Свернуть окно
+# root.withdraw()# свернуть панель подсказок.
