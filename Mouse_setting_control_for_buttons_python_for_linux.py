@@ -63,11 +63,8 @@ def create_scrypt_buttons(root):
 
   creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
 def update_buttons(event=0):# Изменение назначения кнопок.
-  # dict_save.set_current_path_game(dict_save.get_cur_app())
-  # input()
   dict_save.set_default_id_value()
-  res=dict_save.return_jnson()
-  # print(res["current_app"])
+  res=dict_save.return_jnson()  # print(res["current_app"])
   # print(dict_save.get_cur_app())
   box_value = dict_save.return_box_values() # Получить значения выпадающего списка
   box_values=[box_value[0].get(), box_value[1].get(), box_value[2].get(),
@@ -116,7 +113,11 @@ def check_label_changed(event, labels, count, var_list):# Когда мы пер
       labels[count].config(background="#06c")
      else: # в белый
       labels[count].config(background="white")
-
+ res = dict_save.return_jnson()
+ if res.get("keyboard_script", {}).get(game, {}).get("keys"):
+  add_button_create_keyboard.config(relief=SUNKEN)  # Изменение стиля кнопки
+ else:
+  add_button_create_keyboard.config(relief=RAISED)
  dict_save.set_box_values()
  update_buttons(event)# Изменение назначения кнопок.
  mouse_check_button(dict_save) # флаг для удержания кнопки мыши.
@@ -149,8 +150,7 @@ def update_mouse_check_button(count):# сохранение после уста�
     dict_save.save_jnson(res)
 def mouse_check_button(dict_save):
   curr_name=dict_save.get_cur_app()#
-  res=dict_save.return_jnson()
-  # print(res["mouse_press"][curr_name])
+  res=dict_save.return_jnson()  # print(res["mouse_press"][curr_name])
   list_mouse_button_press = list(res["mouse_press"][curr_name])#  print(d)
   mouse_press_button = []# список нажатых кнопок.
   cd1_y = 30
@@ -349,11 +349,9 @@ def start(root, dict_save):# запуск всего.
  # print("fill")
 def move_last_key_to_front(d):# Рекурсивно перемещает последний ключ словаря в начало.
    #Если значение является словарём, функция применяется и к нему.
-
    # Если d не словарь – возвращаем как есть
    if not isinstance(d, dict):
      return d
-
    keys = list(d.keys())
    if not keys:
      return d
@@ -472,10 +470,13 @@ def record_marcross(key,w):# здесь мы записываем макрос
  keyboard_script=dict_save.return_jnson()["keyboard_script"]
  text_widget = Text(tab1, wrap='word') # Текстовый редактор
  text_widget.grid(row=0, column=0, sticky="nsew")
+ 
  note.protocol("WM_DELETE_WINDOW", lambda: kill_notebook(window, note, text_widget))# Если мы закрываем блокнот
  if key in keys_active:# Если кнопку которую мы нажали уже имеет какую-то привязку
   text_content =keyboard_script[current_app]["keys"][key]
   text_widget.insert('end', text_content)
+ else:
+   text_widget.insert("end", "#!/bin/bash\n")
  window.protocol("WM_DELETE_WINDOW", lambda: kill_keyboard(window, note, text_widget))
  for button, key in buttons.items():# каждой клавише присваиваем свою функци.
   button.configure(command=lambda k=key, t=text_widget: add_key_text(k, t))
@@ -520,14 +521,12 @@ def delete(dict_save, root):# Удалить профиль.
       info = labels[i].place_info()
       info2= checkbutton_list[i].place_info()
       old_y = int(info["y"])
-
       old_y2 = int(info2["y"])
      if i > del_index:# индекс больше удалённого
        info = labels[i].place_info()
        new_y = int(info["y"])
        labels[i].place(x=labels[i].winfo_x(), y=old_y)
        old_y=new_y
-
        info2 = checkbutton_list[i].place_info()
        new_y2 = int(info2["y"])
        checkbutton_list[i].place(x=checkbutton_list[i].winfo_x(), y=old_y2)
@@ -619,9 +618,8 @@ dict_save=save_dict()
 def on_press(key):  # обработчик клави.  # print(key )
   current_app = dict_save.get_cur_app()  # Получаем текущую игру
   res=dict_save.return_jnson()
-
   # Проверяем наличие текущего приложения в "keyboard_script"
-  if "keys" not in res.get("keyboard_script", {}).get(current_app, {}).get("keys", {}):
+  if "keys" in res.get("keyboard_script", {}).get(current_app, {}):
    keys_active = res["keyboard_script"][current_app]["keys"].keys()
    key = str(key).replace(" ", "").replace('\'', '').replace("Key.","").lower()  # Очищаем от ненужного
    for i in list(keys_active):  # Получаем клавиши которые являются макросами.
@@ -677,16 +675,17 @@ add_button_create_keyboard.place(x=760, y=200)
 root.protocol("WM_DELETE_WINDOW", on_close)
 Button(root, text="Показать список устройств", command=show_list_id_callback).place(x=710, y=280)
 start(root, dict_save) # Запуск всего
-root.withdraw()  # Сначала скрываем окно
+#root.withdraw()  # Сначала скрываем окно
 
 # Переключение видимости окна
-def toggle_window():
+def toggle_window(event=None):
   if root.state() == 'withdrawn':
     root.deiconify()
     root.lift()
     root.focus_force()
   else:
    root.withdraw()
+
 
 # Настройка системного трея
 def setup_tray():
@@ -704,6 +703,3 @@ if os.getgid() != 0:# if os.getgid() == 0:# start1() с root правами"
  threading.Thread(target=setup_tray, daemon=True).start()
 root.mainloop()
 main_window_id = root.winfo_id()# Get the ID of the main window
-
-# root.iconify()  # Свернуть окно
-# root.withdraw()# свернуть панель подсказок.
