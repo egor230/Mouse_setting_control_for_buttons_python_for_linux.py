@@ -381,10 +381,6 @@ def get_index_of_path(path, path_list):
   index = next(index for index, item in enumerate(path_list) if path in item)
   return index #находит индекс пути в списке путей и возвращает соответствующий элемент списка.
 def get_process_info():
-    # Обновляем словарь с помощью внешних функций (если они есть)
-    # data_dict1 = get_process_info()
-    # data_dict.update(data_dict1)
-    # updated_dict = replace_path_in_dict(data_dict)
   process_info = {}
   pattern = re.compile(r'(/mnt/.*?\.exe)|([A-Z]:/.*?\.exe)', re.IGNORECASE)
   try:
@@ -423,7 +419,6 @@ def replace_path_in_dict(d):
     if isinstance(updated_value, str) and not updated_value.lower().endswith('.exe'):
       updated_value += '.exe'
     updated_dict[key] = updated_value # Путей обновить значение путей.
-
   return updated_dict
 get_user_name = f'''#!/bin/bash
 current_user=$(whoami);
@@ -431,31 +426,11 @@ echo $current_user
 exit;# Завершаем выполнение скрипта
 '''
 user = subprocess.run(['bash'], input=get_user_name, stdout=subprocess.PIPE, text=True).stdout.strip()# имя пользователя.
-def get_pid_and_path_window():# Получаем идентификатор активного окна
- try:   # Регулярное выражение для поиска путей к .exe файлам
-   pattern = re.compile(r'(/mnt/.*?\.exe)|([A-Z]:/.*?\.exe)', re.IGNORECASE)
-   data_dict = {}   # Один проход по всем процессам пользователя
-   for proc in psutil.process_iter(['pid', 'username', 'cmdline']):
-    if proc.info['username'] == user and proc.info['cmdline']:
-     for arg in proc.info['cmdline']:
-      arg_clean = arg.replace('\\', '/').strip('"')  # Приводим к нормальному виду
-      match = pattern.search(arg_clean)
-      if match:
-       file_path = match.group(0)
-       data_dict[proc.info['pid']] = file_path
-   return data_dict# Обновленный словарь путей.
- except:
-     pass
 
 def get_visible_active_pid():
- try:
-    # Получаем ID активного окна в десятичном формате
-    window_id_dec = subprocess.run(
-        ['xdotool', 'getactivewindow'],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True
-    ).stdout.strip()
+ try:  # Получаем ID активного окна в десятичном формате
+    window_id_dec = subprocess.run(['xdotool', 'getactivewindow'],
+    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,  text=True    ).stdout.strip()
  
     if not window_id_dec:
         print("Не удалось получить ID активного окна")
@@ -465,31 +440,24 @@ def get_visible_active_pid():
     window_id_hex = hex(int(window_id_dec))
  
     # Проверка: окно свернуто?
-    xprop_output = subprocess.run(
-        ['xprop', '-id', window_id_dec, '_NET_WM_STATE'],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True
-    ).stdout
+    xprop_output = subprocess.run( ['xprop', '-id', window_id_dec, '_NET_WM_STATE'],
+        stdout=subprocess.PIPE,  stderr=subprocess.DEVNULL,   text=True    ).stdout
  
     if "_NET_WM_STATE_HIDDEN" in xprop_output:
         print("Окно свернуто")
         return 0  # Окно свернуто
  
     # Получаем список окон с PID
-    wmctrl_output = subprocess.run(
-        ['wmctrl', '-lp'],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True
-    ).stdout
+    wmctrl_output = subprocess.run(    ['wmctrl', '-lp'],
+        stdout=subprocess.PIPE,   stderr=subprocess.DEVNULL,
+        text=True   ).stdout
  
     # Ищем строку с нужным ID окна
     for line in wmctrl_output.splitlines():
-        parts = line.split()#            print(parts)
-        if len(parts) >= 3 and parts[0] == window_id_hex:
-            pid = int(parts[2])  # PID — третий элемент#                print(pid)
-            return pid
+      parts = line.split()#            print(parts)
+      if len(parts) >= 3 and parts[0] == window_id_hex:
+       pid = int(parts[2])  # PID — третий элемент#                print(pid)
+       return pid
     return 0  # PID не найден
  
  except Exception as e:
@@ -508,14 +476,28 @@ exit '''
 
 def is_window_minimized(window_id):
  try:
-  xprop_output = subprocess.run(
-   ['xprop', '-id', window_id, '_NET_WM_STATE'],
-   stdout=subprocess.PIPE,
-   text=True
-  ).stdout
+  xprop_output = subprocess.run( ['xprop', '-id', window_id, '_NET_WM_STATE'],
+   stdout=subprocess.PIPE, text=True  ).stdout
   return "_NET_WM_STATE_HIDDEN" in xprop_output
  except Exception:
   return True  # Если ошибка, считаем окно свернутым
+def get_pid_and_path_window():# Получаем идентификатор активного окна
+ try:   # Регулярное выражение для поиска путей к .exe файлам
+   pattern = re.compile(r'(/mnt/.*?\.exe)|([A-Z]:/.*?\.exe)', re.IGNORECASE)
+   data_dict = {}   # Один проход по всем процессам пользователя
+   for proc in psutil.process_iter(['pid', 'username', 'cmdline']):
+    if proc.info['username'] == user and proc.info['cmdline']:
+     for arg in proc.info['cmdline']:
+      arg_clean = arg.replace('\\', '/').strip('"')  # Приводим к нормальному виду
+      match = pattern.search(arg_clean)
+      if match:
+       file_path = match.group(0)
+       data_dict[proc.info['pid']] = file_path
+   update_dict= replace_path_in_dict(data_dict) # Обновляем словарь с помощью внешних функций (если они есть)
+   return update_dict# Обновленный словарь путей.
+ except:
+     pass
+
 def check_current_active_window(dict_save, games_checkmark_paths):# Получаем путь  активного ок
  try:
   data_dict=get_pid_and_path_window()# в котором есть директория игр

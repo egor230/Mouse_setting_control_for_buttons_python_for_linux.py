@@ -621,14 +621,14 @@ def on_press(key):  # обработчик клави.  # print(key )
   res=dict_save.return_jnson()
 
   # Проверяем наличие текущего приложения в "keyboard_script"
-  if "keys" not in res["keyboard_script"][current_app]["keys"]:
-    keys_active = res["keyboard_script"][current_app]["keys"].keys()
-    key = str(key).replace(" ", "").replace('\'', '').replace("Key.","").lower()  # Очищаем от ненужного
-    for i in list(keys_active):  # Получаем клавиши которые являются макросами.
-     i = str(i)
-     if key in ru_to_en.keys():  # нужно перевести нужно перевести русскую клавишу в английскую.
+  if "keys" not in res.get("keyboard_script", {}).get(current_app, {}).get("keys", {}):
+   keys_active = res["keyboard_script"][current_app]["keys"].keys()
+   key = str(key).replace(" ", "").replace('\'', '').replace("Key.","").lower()  # Очищаем от ненужного
+   for i in list(keys_active):  # Получаем клавиши которые являются макросами.
+    i = str(i)
+    if key in ru_to_en.keys():  # нужно перевести нужно перевести русскую клавишу в английскую.
       key = ru_to_en[key]
-     if key.lower() == i.lower():  # теперь нужно перевести ее в нижней регистр.
+    if key.lower() == i.lower():  # теперь нужно перевести ее в нижней регистр.
       script = res["keyboard_script"][current_app]["keys"][i]#      print(script)
       listener.stop()
       t = threading.Thread(target=lambda: subprocess.call(['bash', '-c', script]))
@@ -683,7 +683,6 @@ root.withdraw()  # Сначала скрываем окно
 def toggle_window():
   if root.state() == 'withdrawn':
     root.deiconify()
-    root.overrideredirect(True)  # Убирает рамку
     root.lift()
     root.focus_force()
   else:
