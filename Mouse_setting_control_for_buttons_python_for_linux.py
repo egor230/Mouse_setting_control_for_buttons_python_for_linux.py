@@ -48,18 +48,18 @@ def create_scrypt_buttons(root):
   y_place = 23  # Начальная координата для кнопок
   res = dict_save.return_jnson()  # Получение данных из dict_saveуу
   for i in range(7):
-    if creat == 0:    # Проверяем, нужно ли создавать кнопки
-      scrypt_button = Button( text=str(LIST_MOUSE_BUTTONS[i]),     # Создание кнопки
-        font=("Arial", 9),  width=10, height=1, command=lambda i1=i, r1=root: run_scrypt(i1, r1))
-      scrypt_button.place(x=520, y=y_place)  # Размещение кнопки
-      a_scrypt.append(scrypt_button)  # Добавление кнопки в список
+   if creat == 0:    # Проверяем, нужно ли создавать кнопки
+     scrypt_button = Button( text=str(LIST_MOUSE_BUTTONS[i]),     # Создание кнопки
+       font=("Arial", 9),  width=10, height=1, command=lambda i1=i, r1=root: run_scrypt(i1, r1))
+     scrypt_button.place(x=520, y=y_place)  # Размещение кнопки
+     a_scrypt.append(scrypt_button)  # Добавление кнопки в список
 
-    # Проверяем состояние кнопки и устанавливаем стиль
-    if i < len(a_scrypt) and check_mouse_script(res, dict_save, defaut_list_mouse_buttons, i):      # print("Кнопка активирована")
-      a_scrypt[i].config(relief=SUNKEN)  # Изменение стиля кнопки
-    else:
-      a_scrypt[i].config(relief=RAISED)
-    y_place += 31  # Увеличение координаты по вертикали
+   # Проверяем состояние кнопки и устанавливаем стиль
+   if i < len(a_scrypt) and check_mouse_script(res, dict_save, defaut_list_mouse_buttons, i):      # print("Кнопка активирована")
+     a_scrypt[i].config(relief=SUNKEN)  # Изменение стиля кнопки
+   else:
+     a_scrypt[i].config(relief=RAISED)
+   y_place += 31  # Увеличение координаты по вертикали
 
   creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
 def update_buttons(event=0):# Изменение назначения кнопок.
@@ -614,13 +614,31 @@ def move_element(dict_save, root, direction='up'):  # Перемещает те�
   dict_save.save_jnson(res)
 
 dict_save=save_dict()
+board = None
+devices = [InputDevice(path) for path in list_devices()]
+for dev in devices:
+ if "Keyboard\"" in str(dev) and ' phys ' in str(dev):
+  board = dev
+  break
 
 def on_press(key):  # обработчик клави.  # print(key )
   current_app = dict_save.get_cur_app()  # Получаем текущую игру
   res=dict_save.return_jnson()
+  for event in board.read_loop(): # Подписываемся на события
+   if event.type == ecodes.EV_KEY:
+    key_event = categorize(event)
+    if key_event.keystate == key_event.key_down:
+     # Получаем название клавиши и преобразуем его
+     key_name = key_event.keycode
+     simple_name = simple_key_map.get(key_name, key_name)  # Если клавиша не в словаре, оставляем как есть
+     if simple_name in ["7\nHome", "8\n↑", "9\nPgUp", "4\n←", "5\n", "6\n→", "1\nEnd",  "2\n↓", "KP_Down"
+     "3\nPgDn"]:
+      key = simple_name
+      break
   # Проверяем наличие текущего приложения в "keyboard_script"
   if "keys" in res.get("keyboard_script", {}).get(current_app, {}):
    keys_active = res["keyboard_script"][current_app]["keys"].keys()
+   # Получаем полное имя клавиши без нормализации
    key = str(key).replace(" ", "").replace('\'', '').replace("Key.","").lower()  # Очищаем от ненужного
    for i in list(keys_active):  # Получаем клавиши которые являются макросами.
     i = str(i)
@@ -675,7 +693,7 @@ add_button_create_keyboard.place(x=760, y=200)
 root.protocol("WM_DELETE_WINDOW", on_close)
 Button(root, text="Показать список устройств", command=show_list_id_callback).place(x=710, y=280)
 start(root, dict_save) # Запуск всего
-#root.withdraw()  # Сначала скрываем окно
+root.withdraw()  # Сначала скрываем окно
 
 # Переключение видимости окна
 def toggle_window(event=None):
@@ -685,10 +703,8 @@ def toggle_window(event=None):
     root.focus_force()
   else:
    root.withdraw()
-
-
-# Настройка системного трея
-def setup_tray():
+   
+def setup_tray():# Настройка системного трея
  icon_image = Image.open("/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/mouse/X-Mouse-Button-Control-Logo.png")
  icon = pystray.Icon("MouseSettingControl", icon_image, "Mouse Setting Control", menu=pystray.Menu( pystray.MenuItem("Показать или скрыть", toggle_window) ))
  icon.run()

@@ -163,6 +163,13 @@
       "keys": {
         "J": "#!/bin/sh\nfor i in {1..4};do\n for k in W S A D;do\n  for i in {1..20};do\n   xte \"keydown $k\"\n   sleep 0.05\n   xte \"keyup $k\"\n  done\n done\ndone"
       }
+    },
+    "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": {
+      "keys": {
+        "L": "#!/bin/bash\nxte \"keydown space\"",
+        "Shift_R": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n",
+        "1\nEnd": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n"
+      }
     }
   }
 }
