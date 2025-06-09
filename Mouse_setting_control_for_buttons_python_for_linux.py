@@ -402,9 +402,11 @@ def add_buttons_keyboard(buttons, window):
 def on_close():# Функция закрытия программы.  # print("exit")
   dict_save.set_default_id_value()
   old_data = dict_save.return_old_data()  # старые значения настроек.
-  new_data = dict_save.return_jnson()  # новые значения настроек.
-  # print(new_data["key_value"]["C:/Windows/explorer.exe"])  #print(new_data["games_checkmark"])
-  if new_data != old_data or list(old_data["games_checkmark"].keys())[0] != list(new_data["games_checkmark"].keys())[0]:# Если ли какие-то изменения
+  new_data = dict_save.return_jnson()  # новые значения настроек.  # print(new_data["key_value"]["C:/Windows/explorer.exe"])  #print(new_data["games_checkmark"])
+  
+  print(old_data["games_checkmark"].keys())
+  print(new_data["games_checkmark"].keys())
+  if new_data != old_data or list(old_data["games_checkmark"].keys()) != list(new_data["games_checkmark"].keys()):# Если ли какие-то изменения
    if (messagebox.askokcancel("Quit", "Do you want to save the changes?")):
         dict_save.write_to_file(new_data)  # записать настройки в файл.
   dict_save.reset_id_value()
@@ -539,33 +541,33 @@ def delete(dict_save, root):# Удалить профиль.
    dict_save.save_jnson(res)  # Сохранить новые настройки.
    check_label_changed(0, labels, del_index, var_list)  # изменение цвета label
    #current_app   # print(dict_save.return_jnson())
-
 def reorder_keys_in_dict(res, index, direction='up'):
-  lst = list(res["paths"].keys())
-  if direction == 'up' and 0 < index < len(lst):
-    lst[index], lst[index - 1] = lst[index - 1], lst[index]
-  elif direction == 'down' and 0 <= index < len(lst) - 1:
-    lst[index], lst[index + 1] = lst[index + 1], lst[index]
-  else:
-    return res
-  updated_paths = {key: res["paths"][key] for key in lst}
-  res["paths"] = updated_paths
-  return res
+ def move_key(d):
+  keys = list(d)
+  i = index + (-1 if direction == 'up' else 1)
+  if 0 <= index < len(keys) and 0 <= i < len(keys):
+   keys[index], keys[i] = keys[i], keys[index]
+   return {k: d[k] for k in keys}
+  return d
+
+ res['paths'] = move_key(res['paths'])
+ res['games_checkmark'] = move_key(res['games_checkmark'])
+ return res
+
+
 def move_element(dict_save, root, direction='up'):  # Перемещает текущий элемент (определяемый dict_save.get_cur_app())
   # вверх или вниз в списке, меняя положение виджетов и порядок ключей в JSON.
   # :param dict_save: Объект для работы с настройками (с методами get_cur_app, return_jnson, return_labels, set_cur_app, save_jnson)
   # :param root: Корневой виджет Tkinter (используется, если требуется)
   # :param direction: 'up' для перемещения вверх, 'down' для перемещения вниз
-  # Получаем текущий профиль и конфигурацию
-  res = dict_save.return_jnson()
+  res = dict_save.return_jnson()  # Получаем текущий профиль и конфигурацию
   profile = dict_save.get_cur_app()  # Текущая директория/приложение
   list_paths = list(res["paths"].keys())
 
   try:
     index = list_paths.index(profile)
   except ValueError:
-    # Если профиль не найден, выходим
-    return
+    return    # Если профиль не найден, выходим
   labels = dict_save.return_labels()
 
   # Проверяем границы для перемещения
@@ -603,7 +605,7 @@ def move_element(dict_save, root, direction='up'):  # Перемещает те�
   # Меняем порядок элементов в списке labels
   element = checkbutton_list.pop(index)
   checkbutton_list.insert(new_index, element)
-  res =reorder_keys_in_dict(res, index, direction)  # Меняем порядок в списке
+  res1 =reorder_keys_in_dict(res, index, direction)  # Меняем порядок в списке
   # Обновляем текущий профиль в соответствии с новым порядком
 
   list_paths = list(res["paths"].keys())
@@ -693,7 +695,7 @@ add_button_create_keyboard.place(x=760, y=200)
 root.protocol("WM_DELETE_WINDOW", on_close)
 Button(root, text="Показать список устройств", command=show_list_id_callback).place(x=710, y=280)
 start(root, dict_save) # Запуск всего
-root.withdraw()  # Сначала скрываем окно
+#root.withdraw()  # Сначала скрываем окно
 
 # Переключение видимости окна
 def toggle_window(event=None):
@@ -708,8 +710,7 @@ def setup_tray():# Настройка системного трея
  icon_image = Image.open("/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/mouse/X-Mouse-Button-Control-Logo.png")
  icon = pystray.Icon("MouseSettingControl", icon_image, "Mouse Setting Control", menu=pystray.Menu( pystray.MenuItem("Показать или скрыть", toggle_window) ))
  icon.run()
- # Назначение функции-обработчика для левого клика
- icon.left_click = toggle_window
+ icon.left_click = toggle_window # Назначение функции-обработчика для левого клика
 if os.getgid() != 0:# if os.getgid() == 0:# start1() с root правами"
  box = Combobox(root, width=12, textvariable=id_value, values=id_list, state='readonly')  #
  box.grid(column=1, row=0, padx=10, pady=60,sticky=N)
