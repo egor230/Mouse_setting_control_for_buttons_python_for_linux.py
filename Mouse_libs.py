@@ -14,6 +14,7 @@ import keyboard as keybord_from # Управление мышью
 from pynput import mouse, keyboard
 from pynput.mouse import Button as Button_Controller, Controller
 from pynput.keyboard import Key, Listener # Создаем экземпляр класса Controller для управления мышью
+from evdev import InputDevice, categorize, ecodes, list_devices
 def show_message(): # Вызов функции для отображения окна
   messagebox.showinfo("Ошибка", "Требуется запустить с root правами")
 def show_message1(): # Вызов функции для отображения окна
@@ -499,8 +500,9 @@ def get_pid_and_path_window():# Получаем идентификатор ак
      pass
 
 def check_current_active_window(dict_save, games_checkmark_paths):# Получаем путь  активного ок
+ 
+ data_dict = get_pid_and_path_window()  # в котором есть директория игр
  try:
-  data_dict=get_pid_and_path_window()# в котором есть директория игр
   id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
   if not is_window_minimized(id_active):
    return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
@@ -512,6 +514,11 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
     # print(dict_save.get_prev_game())
     return dict_save.get_prev_game()# если мы ничего не нашли, вернуть предыдущую конфигурацию.
  except:
+   if isinstance(data_dict, dict) and data_dict:
+    key_paths = list(data_dict.values())
+    file_path = next((p for p in games_checkmark_paths if p in key_paths), None)
+    if file_path:
+     return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
    return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
 def show_list_id_callback():
   show_list_id = f'''#!/bin/bash
@@ -1025,6 +1032,12 @@ def hide_window():# Функция для сворачивания окна в �
 def quit_app(icon, item):# Функция для выхода из приложения
  icon.stop()  # Останавливаем значок
  root.destroy()  # Закрываем приложение
+
+simple_key_map = {
+    'KEY_KP7': ' 7\nHome', 'KEY_KP8': '8\n↑', 'KEY_KP9': '9\nPgUp',
+    'KEY_KP4': '4\n←', 'KEY_KP5': '5\n', 'KEY_KP6': '6\n→',
+    'KEY_KP1': '1\nEnd', 'KEY_KP2': '2\n↓', 'KEY_KP3': '3\nPgDn'
+}
 
 # def run_check_current_active_window(root, t1, dict_save, game, games_checkmark_paths):  # print(game)
 #   while 1:
