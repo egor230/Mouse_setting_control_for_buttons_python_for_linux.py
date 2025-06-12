@@ -498,7 +498,22 @@ def get_pid_and_path_window():# Получаем идентификатор ак
    return update_dict# Обновленный словарь путей.
  except:
      pass
-
+def get_active_window_exe(user,id_active):
+ try:
+  result = subprocess.run(['ps', 'aux'], stdout=subprocess.PIPE, text=True).stdout
+  lines = result.split('\n')
+  # Фильтруем строки по пользователю и PID
+  for line in lines:
+   if user in line:  # Проверяем наличие PID и имени пользователя
+    # Разделяем строку, предполагая стандартный формат ps aux
+    parts = line.split(maxsplit=10)
+    exe_path = parts[10]
+    pid= int(parts[1])
+    if id_active==pid:#"PortProton" in cmdline:# and id_active==pid:
+     return exe_path
+  return None
+ except:
+   return None
 def check_current_active_window(dict_save, games_checkmark_paths):# Получаем путь  активного ок
  
  data_dict = get_pid_and_path_window()  # в котором есть директория игр
@@ -510,15 +525,22 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
    file_path=data_dict[id_active]#  print(data_dict)  # print(games_checkmark_paths) #
    if data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  #  print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
     return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
-   else:
-    # print(dict_save.get_prev_game())
+   else:    # print(dict_save.get_prev_game())
     return dict_save.get_prev_game()# если мы ничего не нашли, вернуть предыдущую конфигурацию.
  except:
    if isinstance(data_dict, dict) and data_dict:
-    key_paths = list(data_dict.values())
-    file_path = next((p for p in games_checkmark_paths if p in key_paths), None)
-    if file_path:
-     return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
+    key_paths =get_active_window_exe(user, id_active)
+    if key_paths != None:
+     key_paths = key_paths[:-4]
+     file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)
+     if file_path:
+      return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
+    # else:
+    #  key_paths = list(data_dict.values())
+    #  file_path = next((p for p in games_checkmark_paths if p in key_paths), None)
+    #  if file_path:
+    #   return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
+    #key_paths = list(data_dict.values())
    return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
 def show_list_id_callback():
   show_list_id = f'''#!/bin/bash
