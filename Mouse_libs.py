@@ -465,16 +465,6 @@ def get_visible_active_pid():
     print(f"Ошибка: {e}")
     return 0
 
-get_main_id = '''#!/bin/bash # Получаем идентификатор активного окна
-active_window_id=$(xdotool getactivewindow 2>/dev/null)
-if [ -n "$active_window_id" ]; then
-    process_id_active=$(xdotool getwindowpid "$active_window_id" 2>/dev/null)
-    echo "$process_id_active"
-else
-    echo "0"  # Или любое значение по умолчанию, если нет активного окна
-fi
-exit '''
-
 def is_window_minimized(window_id):
  try:
   xprop_output = subprocess.run( ['xprop', '-id', window_id, '_NET_WM_STATE'],
@@ -505,21 +495,42 @@ def get_active_window_exe(user,id_active):
   # Фильтруем строки по пользователю и PID
   for line in lines:
    if user in line:  # Проверяем наличие PID и имени пользователя
-    # Разделяем строку, предполагая стандартный формат ps aux
-    parts = line.split(maxsplit=10)
+    parts = line.split(maxsplit=10)  # Разделяем строку, предполагая стандартный формат ps aux
     exe_path = parts[10]
-    pid= int(parts[1])
-    if id_active==pid:#"PortProton" in cmdline:# and id_active==pid:
+    pid = int(parts[1])
+    if id_active == pid:  # "PortProton" in cmdline:# and id_active==pid:
      return exe_path
+  output = subprocess.check_output(['ps', '-eo', 'pid,user,args'], text=True)
+  for line in output.strip().split('\n')[1:]:
+   parts = line.split(None, 2)
+   if len(parts) == 3:
+    pid, user, exe_path = parts
+    if ".exe" in exe_path and id_active == pid:
+       print(exe_path)
+       return exe_path
+     
   return None
  except:
    return None
+get_main_id = '''#!/bin/bash # Получаем идентификатор активного окна
+active_window_id=$(xdotool getactivewindow 2>/dev/null)
+if [ -n "$active_window_id" ]; then
+    process_id_active=$(xdotool getwindowpid "$active_window_id" 2>/dev/null)
+    if [ -n "$process_id_active" ]; then
+        echo "$process_id_active"
+    else
+        echo "0"
+    fi
+else
+    echo "0"
+fi
+exit'''
+
 def check_current_active_window(dict_save, games_checkmark_paths):# Получаем путь  активного ок
- 
  data_dict = get_pid_and_path_window()  # в котором есть директория игр
  try:
   id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
-  if not is_window_minimized(id_active):
+  if pid and pid != "0" and  not is_window_minimized(id_active):
    return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
   else:
    file_path=data_dict[id_active]#  print(data_dict)  # print(games_checkmark_paths) #
@@ -528,20 +539,37 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
    else:    # print(dict_save.get_prev_game())
     return dict_save.get_prev_game()# если мы ничего не нашли, вернуть предыдущую конфигурацию.
  except:
-   if isinstance(data_dict, dict) and data_dict:
+   id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
+   if isinstance(data_dict, dict) and data_dict and id_active !=0:
     key_paths =get_active_window_exe(user, id_active)
     if key_paths != None:
-     key_paths = key_paths[:-4]
-     file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)
-     if file_path:
-      return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
+     if ".exe" not in key_paths.lower():
+      return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+     if ".exe" in key_paths.lower():
+      file_name = key_paths.rsplit('\\', 1)[-1]  # Делим 1 раз с концаos.path.basename(key_paths))
+      key_paths = str(file_name[:-4])#     print(key_paths)
+      file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)#  print(file_path)
+      # print(key_paths)
+      if file_path:#     print(file_name)
+       window_class = os.path.basename(key_paths)  # например "game.exe"
+       search_cmd = ["xdotool", "search", "--class", window_class]
+       window_ids = subprocess.check_output(search_cmd).decode().split()
+       for win_id in window_ids:
+        xprop_cmd = ["xprop", "-id", win_id, "_NET_WM_STATE"]
+        state = subprocess.check_output(xprop_cmd).decode()
+        if "_NET_WM_STATE_FOCUSED" in state:
+         return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна      #  elif "_NET_WM_STATE_VISIBLE" in state:
+      return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
+     else:
+      return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
     # else:
-    #  key_paths = list(data_dict.values())
-    #  file_path = next((p for p in games_checkmark_paths if p in key_paths), None)
-    #  if file_path:
-    #   return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
+     # key_paths = list(data_dict.values())
+     # file_path = next((p for p in games_checkmark_paths if p in key_paths), None)
+     # if file_path:
+     #  return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
     #key_paths = list(data_dict.values())
-   return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
+     # return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
+
 def show_list_id_callback():
   show_list_id = f'''#!/bin/bash
    gnome-terminal -- bash -c 'xinput list;
