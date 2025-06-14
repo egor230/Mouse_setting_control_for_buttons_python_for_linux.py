@@ -559,9 +559,13 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
         state = subprocess.check_output(xprop_cmd).decode()
         if "_NET_WM_STATE_FOCUSED" in state:
          return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна      #  elif "_NET_WM_STATE_VISIBLE" in state:
-      return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
-     else:
-      return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+       return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
+      else:
+       return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+    else:
+     return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+   else:
+    return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
     # else:
      # key_paths = list(data_dict.values())
      # file_path = next((p for p in games_checkmark_paths if p in key_paths), None)
