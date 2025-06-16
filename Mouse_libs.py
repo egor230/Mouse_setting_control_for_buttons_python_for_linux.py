@@ -549,15 +549,14 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
       file_name = key_paths.rsplit('\\', 1)[-1]  # Делим 1 раз с концаos.path.basename(key_paths))
       key_paths = str(file_name[:-4])#     print(key_paths)
       file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)#  print(file_path)
-      # print(key_paths)
       if file_path:#     print(file_name)
        window_class = os.path.basename(key_paths)  # например "game.exe"
        search_cmd = ["xdotool", "search", "--class", window_class]
        window_ids = subprocess.check_output(search_cmd).decode().split()
        for win_id in window_ids:
         xprop_cmd = ["xprop", "-id", win_id, "_NET_WM_STATE"]
-        state = subprocess.check_output(xprop_cmd).decode()
-        if "_NET_WM_STATE_FOCUSED" in state:
+        state = str(subprocess.check_output(xprop_cmd).decode())
+        if "FOCUSED" in state:#         print(state)
          return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна      #  elif "_NET_WM_STATE_VISIBLE" in state:
        return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
       else:
