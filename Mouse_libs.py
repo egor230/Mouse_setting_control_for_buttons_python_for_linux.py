@@ -530,7 +530,7 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
  data_dict = get_pid_and_path_window()  # в котором есть директория игр
  try:
   id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
-  if pid and pid != "0" and  not is_window_minimized(id_active):
+  if id_active and id_active != "0" and  not is_window_minimized(id_active):
    return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
   else:
    file_path=data_dict[id_active]#  print(data_dict)  # print(games_checkmark_paths) #
@@ -546,11 +546,15 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
      if ".exe" not in key_paths.lower():
       return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
      if ".exe" in key_paths.lower():
-      file_name = key_paths.rsplit('\\', 1)[-1]  # Делим 1 раз с концаos.path.basename(key_paths))
+      last_slash_index = key_paths.rfind('/')
+      file_name = key_paths[last_slash_index + 1:]  # Берём всё после последнего '/'
       key_paths = str(file_name[:-4])#     print(key_paths)
       file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)#  print(file_path)
-      if file_path:#     print(file_name)
-       window_class = os.path.basename(key_paths)  # например "game.exe"
+      if file_path:#
+       print(file_name)
+       print(file_path)
+       window_class = os.path.basename(file_name)  # например "game.exe"
+       print(window_class)
        search_cmd = ["xdotool", "search", "--class", window_class]
        window_ids = subprocess.check_output(search_cmd).decode().split()
        for win_id in window_ids:
