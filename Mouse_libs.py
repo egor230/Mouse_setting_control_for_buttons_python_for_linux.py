@@ -551,10 +551,7 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
       key_paths = str(file_name[:-4])#     print(key_paths)
       file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)#  print(file_path)
       if file_path:#
-       print(file_name)
-       print(file_path)
        window_class = os.path.basename(file_name)  # например "game.exe"
-       print(window_class)
        search_cmd = ["xdotool", "search", "--class", window_class]
        window_ids = subprocess.check_output(search_cmd).decode().split()
        for win_id in window_ids:
@@ -787,15 +784,25 @@ class work_key:
   def key_press(self, key, number_key):# Нажать.
     press = '''#!/bin/bash
     xte 'keydown {0}'  '''
+
+    release = '''#!/bin/bash
+    xte 'keyup {0}'    '''
     if key in self.keys_list1:
      thread1 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))    #thread1.daemon = True  # Установка атрибута daemon в значение True
      thread1.start()
+     thread1.join()
      return 0
     key1= key.lower()    # print(key1)
-    if key1 in self.keys_list:
-      thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))      #thread.daemon = True  # Установка атрибута daemon в значение True
-      thread.start()     # print(key1)     # subprocess.call(['bash', '-c', press.format(key1)])
+    if key1 in self.keys_list or key in self.keys_list:
+     thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))      #thread.daemon = True  # Установка атрибута daemon в значение True
+     thread.start()     # print(key1)     # subprocess.call(['bash', '-c', press.format(key1)])
+     thread.join()
+     if number_key ==3 or 4:
+      thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', release.format(key)]))
+      thread.start()  # print(key1)     # subprocess.call(['bash', '-c', press.format(key1)])
+      thread.join()
     else:
+ 
       keybord_from.press(KEYS[key[number_key]])
 
   def key_release(self, key, number_key):# Опустить.
@@ -855,7 +862,7 @@ def mouse_key(key, number_key,press_button,list_mouse_button_names, pres, a):
  try:# list_buttons = {"Button.button10": a6}  # , "Button.button11"]
   # нет залипание кнопок мыши. Оно press_button[number_key] == False отвечает за это
   if press_button[number_key] == False and key[number_key] == "SCROLL_DOWN" or key[number_key] =="SCROLL_UP" : # print(key[number_key])
-    if  pres == True:# колёсика мышки.
+    if pres == True:# колёсика мышки.
        a.resume()
     if pres == False:
         a.pause()
@@ -964,7 +971,7 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
        if key[number_key] in list(list_mouse_button_names.keys()): # если нужно эмулировать кнопку мыши
         mouse_key(key, number_key, press_button, list_mouse_button_names, pres, a)    #        print("mnouse")
       # иначе клавиши клавиатуры.
-       else:# print("Кейтборд")
+       else:#
         keyboard_press_button(key, pres, number_key, a, press_button)# Работа с клавой.
  except Exception as e:
    save_dict.write_in_log(e)
