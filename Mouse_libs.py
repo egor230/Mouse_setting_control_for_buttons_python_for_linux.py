@@ -783,44 +783,52 @@ class work_key:
       # subprocess.call(['bash', '-c', mouse_wheel])
   def key_press(self, key, number_key):# Нажать.
     press = '''#!/bin/bash
-    xte 'keydown {0}'  '''
+    xte 'keydown {0}'
+    exit 0 '''
 
     release = '''#!/bin/bash
-    xte 'keyup {0}'    '''
-    if key in self.keys_list1:
-     thread1 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))    #thread1.daemon = True  # Установка атрибута daemon в значение True
-     thread1.start()
-     thread1.join()
-     return 0
-    key1= key.lower()    # print(key1)
-    if key1 in self.keys_list or key in self.keys_list:
-     thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))      #thread.daemon = True  # Установка атрибута daemon в значение True
-     thread.start()     # print(key1)     # subprocess.call(['bash', '-c', press.format(key1)])
-     thread.join()
+    xte 'keyup {0}'
+    sleep 0.1    # Небольшая пауза для надёжности
+    xte 'keyup {0}'
+    exit 0 '''
+    key1= key.lower()
+    if key1 in self.keys_list or key in self.keys_list1:
+     if number_key != 3 or number_key != 4:
+      thread0 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))      #thread.daemon = True  # Установка атрибута daemon в значение True
+      thread0.daemon
+      thread0.start()
+      return 0
      if number_key ==3 or 4:
-      thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', release.format(key)]))
-      thread.start()  # print(key1)     # subprocess.call(['bash', '-c', press.format(key1)])
+      thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))      #thread.daemon = True  # Установка атрибута daemon в значение True
+      thread.start()
       thread.join()
+      thread1 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', release.format(key)]))
+      #thread1.daemon
+      thread1.start()  # print(key1)     # subprocess.call(['bash', '-c', press.format(key1)])
+      thread1.join()
+      return 0
     else:
- 
       keybord_from.press(KEYS[key[number_key]])
 
   def key_release(self, key, number_key):# Опустить.
     # print("key_release")
     release = '''#!/bin/bash
-    xte 'keyup {0}'    '''
+    # Небольшая пауза для надёжности
+    sleep 0.1
+    xte 'keyup {0}'
+    exit 0 '''
     if key in self.keys_list1:
      thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', release.format(key)]))
      if number_key != 3 or number_key != 4:# избежать зависание колесика мыши.
-      thread.daemon = True  # Установка атрибута daemon в значение True
+       thread.daemon = True  # Установка атрибута daemon в значение True
      thread.start()   # print(key)     # subprocess.call(['bash', '-c', release.format(key)])
      return 0
     key1= key.lower()
     if key1 in self.keys_list:      # subprocess.call(['bash', '-c', release.format(key1)])
-     thread1 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', release.format(key)]))
+     thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', release.format(key)]))
      if number_key != 3 or number_key != 4:# избежать зависание колесика мыши.
-      thread1.daemon = True  # Установка атрибута daemon в значение True
-      thread1.start()
+      thread.daemon = True  # Установка атрибута daemon в значение True
+     thread.start()
     else:
       keybord_from.release(KEYS[key[number_key]])
 
@@ -891,12 +899,10 @@ key_work =work_key()
 def keyboard_press_button(key, pres, number_key, a, press_button):
  try:
   wk = str(KEYS[key[number_key]])  #  print(wk)
-
   if press_button[number_key] == False:  # Не поставлен флажок.
-    if pres == True:# нажата.
-
+   if pres == True:# нажата.
       key_work.key_press(wk, number_key)	# print(str(KEYS[key[number_key]]))         # print("press off")
-    if pres == False:
+   if pres == False:
       key_work.key_release(wk, number_key)		# keybord_from.release(KEYS[key[number_key]])  # print("reasle off")
 
   # поставлен флажок.
