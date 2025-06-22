@@ -978,12 +978,7 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
    pass
 
 def start_startup_now(dict_save, root):# запустить после переключения окна
- res =dict_save.return_jnson()
  dict_save.reset_id_value()  # Сброс настроек текущего id устройства.   # time.sleep(0.3)
- if dict_save.get_id() == 0:  # # получить id устройства.Если id устройство не выбрали.
-  messagebox.showinfo("Ошибка", "Вы не выбрали устройство")
-  ok_button = Button(root, text="Ок", command=show_list_id_callback)
-  return
  dictio = dict_save.return_jnson()  # Какие игры имеют галочку, получаем их список.
  games_checkmark_paths = [key for key, value in dictio['games_checkmark'].items() if value]  # Получить список путей к играм
  gp = str(dict_save.get_cur_app())  # текущая игра
@@ -1054,8 +1049,10 @@ def prepare(root, dict_save, dictio, games_checkmark_paths):  # функция �
   t1= dict_save.get_thread() # мы получаем поток от предыдущей функции ждем когда он закончится  # print(t1)
   if t1 != 0:
     t1.join()
-  # print(path)
-  # print("threading")
+  if dict_save.get_id() == 0:  # # получить id устройства.Если id устройство не выбрали.
+   messagebox.showinfo("Ошибка", "Вы не выбрали устройство")
+   ok_button = Button(root, text="Ок", command=show_list_id_callback)
+   return
   t1 = threading.Thread(target=a, args =(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths))  #t1.daemon = True
   t1.start()
   dict_save.set_thread(t1)# сохранить id посёлка потока
