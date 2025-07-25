@@ -212,16 +212,26 @@ class save_dict:
 
   def reset_id_value(self):  # Сброс настроек текущего id устройства.       #  print(self.id)
     d = '1 2 3 4 5 6 7 8 9'  #      print("reset_id_value")
-    set_button_map = '''#!/bin/bash
+    devices_mouse=list(self.dict_id_values.keys())
+    for i in devices_mouse:
+     set_button_map = '''#!/bin/bash
         sudo xinput set-button-map {0} {1}
         '''.format(self.id, d)
-    subprocess.call(['bash', '-c', set_button_map])
+     process = subprocess.Popen(['bash', '-c', set_button_map], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+     stdout, stderr = process.communicate()
+     if process.returncode != 0:
+      self.id=i
+     else:
+      break
 
   def get_default_id_value(self):#
+   try:
     d = self.dict_id_values[self.get_id()]
     d_copy = copy.deepcopy(d)
     d='1 2 3 4 5 6 7 8 9'
     return d
+   except Exception as ex1:
+     print(ex1)
   def write_in_log(self, text=" error"):# Запись ошибок.
      with open("log.txt", "a") as f:
        f.write(str(text)+"\n")
@@ -557,7 +567,8 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
        for win_id in window_ids:
         xprop_cmd = ["xprop", "-id", win_id, "_NET_WM_STATE"]
         state = str(subprocess.check_output(xprop_cmd).decode())
-        if "FOCUSED" in state:#         print(state)
+        if "FOCUSED" in state:#
+         print(state)
          return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна      #  elif "_NET_WM_STATE_VISIBLE" in state:
        return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
       else:
