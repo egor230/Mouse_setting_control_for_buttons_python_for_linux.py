@@ -523,22 +523,30 @@ def get_active_window_exe(user,id_active):
  except:
    return None
 get_main_id = '''#!/bin/bash # Получаем идентификатор активного окна
+# Получаем идентификатор активного окна
 active_window_id=$(xdotool getactivewindow 2>/dev/null)
-if [ -n "$active_window_id" ]; then
+if [[ -n "$active_window_id" && "$active_window_id" != "0" && "$active_window_id" =~ ^[0-9]+$ ]]; then
+    # Получаем PID процесса, связанного с окном
     process_id_active=$(xdotool getwindowpid "$active_window_id" 2>/dev/null)
-    if [ -n "$process_id_active" ]; then
-        echo "$process_id_active"
-    else
-        echo "0"
+    if [[ -n "$process_id_active" && "$process_id_active" != "0" ]]; then
+        # Проверяем родительский PID
+        parent_pid=$(ps -p "$process_id_active" -o ppid= | tr -d '[:space:]')
+        if [[ -n "$parent_pid" && "$parent_pid" != "0" && "$parent_pid" != "1" ]] && ps -p "$parent_pid" >/dev/null 2>&1; then
+            echo "$parent_pid"
+            exit 0
+        else
+            echo "$process_id_active"
+            exit 0
+        fi
+         echo "0"
     fi
-else
-    echo "0"
+     echo "0"
 fi
 exit'''
 
 def check_current_active_window(dict_save, games_checkmark_paths):# Получаем путь  активного ок
- data_dict = get_pid_and_path_window()  # в котором есть директория игр
  try:
+  data_dict = get_pid_and_path_window()  # в котором есть директория игр
   id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
   if id_active and id_active != "0" and  not is_window_minimized(id_active):
    return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
@@ -548,30 +556,36 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
     return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
    else:    # print(dict_save.get_prev_game())
     return dict_save.get_prev_game()# если мы ничего не нашли, вернуть предыдущую конфигурацию.
- except:
+ except Exception as e:
    id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
    if isinstance(data_dict, dict) and data_dict and id_active !=0:
     key_paths =get_active_window_exe(user, id_active)
     if key_paths != None:
-     if ".exe" not in key_paths.lower():
+     if ".exe" and ".sh" not in key_paths.lower():
       return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
      if ".exe" in key_paths.lower():
       last_slash_index = key_paths.rfind('/')
       file_name = key_paths[last_slash_index + 1:]  # Берём всё после последнего '/'
       key_paths = str(file_name[:-4])#     print(key_paths)
-      file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)#  print(file_path)
-      if file_path:#
+      file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)#
+     if ".sh" in key_paths.lower():
+      key_paths1 =  os.path.basename(key_paths.split()[-1])[:-3]# Берём всё после последнего '/'
+      file_path2 = next((p for p in games_checkmark_paths if key_paths1.lower() in p.lower()), None)#
+      if file_path2 and ".exe" in file_path2.lower():#        print(file_path2)
+        return games_checkmark_paths[get_index_of_path(file_path2, games_checkmark_paths)]
+      else:
+       return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+     if file_path:#
        window_class = os.path.basename(file_name)  # например "game.exe"
        search_cmd = ["xdotool", "search", "--class", window_class]
        window_ids = subprocess.check_output(search_cmd).decode().split()
        for win_id in window_ids:
         xprop_cmd = ["xprop", "-id", win_id, "_NET_WM_STATE"]
         state = str(subprocess.check_output(xprop_cmd).decode())
-        if "FOCUSED" in state:#
-         print(state)
+        if "FOCUSED" in state:#         print(state)
          return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна      #  elif "_NET_WM_STATE_VISIBLE" in state:
        return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
-      else:
+     else:
        return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
     else:
      return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
