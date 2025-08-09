@@ -539,8 +539,10 @@ if [[ -n "$active_window_id" && "$active_window_id" != "0" && "$active_window_id
             exit 0
         fi
          echo "0"
+         exit 0
     fi
      echo "0"
+     exit 0
 fi
 exit'''
 
@@ -563,11 +565,6 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
     if key_paths != None:
      if ".exe" and ".sh" not in key_paths.lower():
       return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
-     if ".exe" in key_paths.lower():
-      last_slash_index = key_paths.rfind('/')
-      file_name = key_paths[last_slash_index + 1:]  # Берём всё после последнего '/'
-      key_paths = str(file_name[:-4])#     print(key_paths)
-      file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)#
      if ".sh" in key_paths.lower():
       key_paths1 =  os.path.basename(key_paths.split()[-1])[:-3]# Берём всё после последнего '/'
       file_path2 = next((p for p in games_checkmark_paths if key_paths1.lower() in p.lower()), None)#
@@ -575,7 +572,12 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
         return games_checkmark_paths[get_index_of_path(file_path2, games_checkmark_paths)]
       else:
        return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
-     if file_path:#
+     if ".exe" in key_paths.lower():
+      last_slash_index = key_paths.rfind('/')
+      file_name = key_paths[last_slash_index + 1:]  # Берём всё после последнего '/'
+      key_paths = str(file_name[:-4])#     print(key_paths)
+      file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)#
+      if file_path:#
        window_class = os.path.basename(file_name)  # например "game.exe"
        search_cmd = ["xdotool", "search", "--class", window_class]
        window_ids = subprocess.check_output(search_cmd).decode().split()
@@ -619,7 +621,7 @@ KEYS = {" ": 0x0,"LBUTTON": 'mouse left', "RBUTTON": 'mouse right', "WHEEL_MOUSE
         "WHEEL_MOUSE_UP" : "WHEEL_MOUSE_UP", "MBUTTON": 0x04, "SCROLL_UP": "scroll_up",
         "SCROLL_DOWN" : "scroll_down", "XBUTTON1": 0x05, "XBUTTON2": 0x06, "BACKSPACE": "BackSpace",
         "TAB": "Tab", "CLEAR": 0x0C, "RETURN": "Return", "KP_Enter" : "KP_Enter",
-         "Shift_L":"Shift_L", "CONTROL": "CONTROL", "MENU": 0x12, "PAUSE": 0x13, "CAPITAL": 0x14,
+        "LSHIFT": "Shift_L", "CONTROL": "CONTROL", "MENU": 0x12, "PAUSE": 0x13, "CAPITAL": 0x14,
         "KANA": 0x15, "JUNJA": 0x17, "FINAL": 0x18, "KANJI": 0x19, "ESCAPE": 0x1B,
         "CONVERT": 0x1C, "NONCONVERT": 0x1D, "ACCEPT": 0x1E, "MODECHANGE": 0x1F, "SPACE": "space",
         "PRIOR": 0x21, "NEXT": 0x22, "END": "0x23", "HOME": "Home", "LEFT": 0x25, "UP": 0x26,
@@ -639,17 +641,17 @@ KEYS = {" ": 0x0,"LBUTTON": 'mouse left', "RBUTTON": 'mouse right', "WHEEL_MOUSE
         "F6": "F6", "F7": "F7", "F8": "F8", "F9": "F9", "F10": "F10", "F11": "F11", "F12": "F12",
 
         "F13": 0x7C, "F14": 0x7D, "F15": 0x7E, "F16": 0x7F, "F17": 0x80, "F18": 0x81, "F19": 0x82, "F20": 0x83, "F21": 0x84,
-        "F22": 0x85, "F23": 0x86, "F24": 0x87,"NUMLOCK": "Num_Lock", "SCROLL": "Scroll_Lock",
-         "OEM_FJ_JISHO": 0x92, "OEM_FJ_MASSHOU": 0x93,
-        "OEM_FJ_TOUROKU": 0x94, "OEM_FJ_LOYA": 0x95, "OEM_FJ_ROYA": 0x96, "LSHIFT": "Shift_L", "RSHIFT": "Shift_R", "LCONTROL": "ISO_Next_Group",
-        "RCONTROL": "Control_R",  "LMENU": 0xA4, "RMENU": 0xA5, "BROWSER_BACK": 0xA6,
-        "BROWSER_FORWARD": 0xA7, "BROWSER_REFRESH": 0xA8, "BROWSER_STOP": 0xA9, "BROWSER_SEARCH": 0xAA, "BROWSER_FAVORITES": 0xAB,
-        "BROWSER_HOME": 0xAC, "VOLUME_MUTE": 0xAD, "VOLUME_DOWN": 0xAE,
-        "VOLUME_UP": 0xAF, "MEDIA_NEXT_TRACK": 0xB0, "MEDIA_PREV_TRACK": 0xB1, "MEDIA_STOP": 0xB2, "MEDIA_PLAY_PAUSE": 0xB3, "LAUNCH_MAIL": 0xB4, "LAUNCH_MEDIA_SELECT": 0xB5, "LAUNCH_APP1": 0xB6,
-        "LAUNCH_APP2": 0xB7, "OEM_1": 0xBA, "OEM_PLUS": 0xBB, "OEM_COMMA": 0xBC, "OEM_MINUS": 0xBD, "OEM_PERIOD": 0xBE, " OEM_2": 0xBF, "OEM_3": 0xC0, "ABNT_C1": 0xC1, "ABNT_C2": 0xC2, "OEM_4": 0xDB,
+        "F22": 0x85, "F23": 0x86, "F24": 0x87,"NUMLOCK": "Num_Lock", "SCROLL": "Scroll_Lock", "OEM_FJ_JISHO": 0x92, "OEM_FJ_MASSHOU": 0x93,
+        "OEM_FJ_TOUROKU": 0x94, "OEM_FJ_LOYA": 0x95, "OEM_FJ_ROYA": 0x96, "RSHIFT": "Shift_R", "LCONTROL": "ISO_Next_Group",
+        "RCONTROL": "Control_R",  "LMENU": 0xA4, "RMENU": 0xA5, "BROWSER_BACK": 0xA6, "BROWSER_FORWARD": 0xA7, "BROWSER_REFRESH": 0xA8,
+        "BROWSER_STOP": 0xA9, "BROWSER_SEARCH": 0xAA, "BROWSER_FAVORITES": 0xAB, "BROWSER_HOME": 0xAC, "VOLUME_MUTE": 0xAD, "VOLUME_DOWN": 0xAE,
+        "VOLUME_UP": 0xAF, "MEDIA_NEXT_TRACK": 0xB0, "MEDIA_PREV_TRACK": 0xB1, "MEDIA_STOP": 0xB2, "MEDIA_PLAY_PAUSE": 0xB3, "LAUNCH_MAIL": 0xB4,
+        "LAUNCH_MEDIA_SELECT": 0xB5, "LAUNCH_APP1": 0xB6, "LAUNCH_APP2": 0xB7, "OEM_1": 0xBA, "OEM_PLUS": 0xBB, "OEM_COMMA": 0xBC, "OEM_MINUS": 0xBD, "OEM_PERIOD": 0xBE, "OEM_2": 0xBF, "OEM_3": 0xC0, "ABNT_C1": 0xC1, "ABNT_C2": 0xC2, "OEM_4": 0xDB,
         "OEM_5": 0xDC, "OEM_6": 0xDD, "OEM_7": 0xDE, "OEM_8": 0xDF, "OEM_AX": 0xE1,
-        "OEM_102": 0xE2, "ICO_HELP": 0xE3, "PROCESSKEY": 0xE5, "ICO_CLEAR": 0xE6, "PACKET": 0xE7, "OEM_RESET": 0xE9, "OEM_JUMP": 0xEA, "OEM_PA1": 0xEB, "OEM_PA2": 0xEC, "OEM_PA3": 0xED,
-        "OEM_WSCTRL": 0xEE, "OEM_CUSEL": 0xEF, "OEM_ATTN": 0xF0, "OEM_FINISH": 0xF1, "OEM_COPY": 0xF2, "OEM_AUTO": 0xF3, "OEM_ENLW": 0xF4, "OEM_BACKTAB": 0xF5, "ATTN": 0xF6, "CRSEL": 0xF7, "EXSEL": 0xF8, " EREOF": 0xF9, "PLAY": 0xFA, "ZOOM": 0xFB, "PA1": 0xFD, " OEM_CLEAR": 0xFE
+        "OEM_102": 0xE2, "ICO_HELP": 0xE3, "PROCESSKEY": 0xE5, "ICO_CLEAR": 0xE6, "PACKET": 0xE7, "OEM_RESET": 0xE9, "OEM_JUMP": 0xEA,
+        "OEM_PA1": 0xEB, "OEM_PA2": 0xEC, "OEM_PA3": 0xED,
+        "OEM_WSCTRL": 0xEE, "OEM_CUSEL": 0xEF, "OEM_ATTN": 0xF0, "OEM_FINISH": 0xF1, "OEM_COPY": 0xF2, "OEM_AUTO": 0xF3, "OEM_ENLW": 0xF4,
+        "OEM_BACKTAB": 0xF5, "ATTN": 0xF6, "CRSEL": 0xF7, "EXSEL": 0xF8, " EREOF": 0xF9, "PLAY": 0xFA, "ZOOM": 0xFB, "PA1": 0xFD, " OEM_CLEAR": 0xFE
         }
 
 LIST_MOUSE_BUTTONS=["Левая кнопка","Правая кнопка","Средняя","Колесико вверх","Колесико вниз","1 боковая","2 боковая"]
