@@ -391,6 +391,7 @@ def is_path_in_list(path, path_list):#проверяет, содержится �
 def get_index_of_path(path, path_list):
   index = next(index for index, item in enumerate(path_list) if path in item)
   return index #находит индекс пути в списке путей и возвращает соответствующий элемент списка.
+
 def get_process_info():
   process_info = {}
   pattern = re.compile(r'(/mnt/.*?\.exe)|([A-Z]:/.*?\.exe)', re.IGNORECASE)
@@ -484,7 +485,7 @@ def is_window_minimized(window_id):
   return True  # Если ошибка, считаем окно свернутым
 def get_pid_and_path_window():# Получаем идентификатор активного окна
  try:   # Регулярное выражение для поиска путей к .exe файлам
-   pattern = re.compile(r'(/mnt/.*?\.exe)|([A-Z]:/.*?\.exe)', re.IGNORECASE)
+   pattern = re.compile(r'(\/mnt\/.*?\.exe)|([A-Z]:\\.*?\.exe)|(.*?\.sh)', re.IGNORECASE)
    data_dict = {}   # Один проход по всем процессам пользователя
    for proc in psutil.process_iter(['pid', 'username', 'cmdline']):
     if proc.info['username'] == user and proc.info['cmdline']:
@@ -494,8 +495,13 @@ def get_pid_and_path_window():# Получаем идентификатор ак
       if match:
        file_path = match.group(0)
        data_dict[proc.info['pid']] = file_path
-   update_dict= replace_path_in_dict(data_dict) # Обновляем словарь с помощью внешних функций (если они есть)
-   return update_dict# Обновленный словарь путей.
+       threads = proc.threads()
+       for thread in threads:
+        data_dict[thread.id] = file_path
+   if not data_dict:# Не найдено процессов с .exe для пользователя.
+    return {}
+   # update_dict= replace_path_in_dict(data_dict) # Обновляем словарь с помощью внешних функций (если они есть)
+   return data_dict# Обновленный словарь путей.
  except:
      pass
 def get_active_window_exe(user,id_active):
@@ -509,6 +515,8 @@ def get_active_window_exe(user,id_active):
     exe_path = parts[10]
     pid = int(parts[1])
     if id_active == pid:  # "PortProton" in cmdline:# and id_active==pid:
+     # print(exe_path)
+     # print(line)
      return exe_path
   output = subprocess.check_output(['ps', '-eo', 'pid,user,args'], text=True)
   for line in output.strip().split('\n')[1:]:
@@ -516,7 +524,7 @@ def get_active_window_exe(user,id_active):
    if len(parts) == 3:
     pid, user, exe_path = parts
     if ".exe" in exe_path and id_active == pid:
-       print(exe_path)
+       # print(exe_path)
        return exe_path
      
   return None
@@ -550,18 +558,20 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
  try:
   data_dict = get_pid_and_path_window()  # в котором есть директория игр
   id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
-  if id_active and id_active != "0" and  not is_window_minimized(id_active):
+
+  file_path = data_dict[id_active]  # получаем путь
+  if  id_active and '/PortProton/data/scripts/start.sh' in data_dict[id_active]:#  если он запущен через pp
+   for p in data_dict.values():# пути извлекаем все пути к играм, которые запущены
+    if is_path_in_list(p, games_checkmark_paths):
+     return games_checkmark_paths[get_index_of_path(p, games_checkmark_paths)]  # активного окна
+   
+  if id_active != "0" and not is_window_minimized(id_active):
    return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
-  else:
-   file_path=data_dict[id_active]#  print(data_dict)  # print(games_checkmark_paths) #
+  else: #print(data_dict)  # print(games_checkmark_paths) #
    if data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  #  print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
     return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
-   else:    # print(dict_save.get_prev_game())
-    return dict_save.get_prev_game()# если мы ничего не нашли, вернуть предыдущую конфигурацию.
- except Exception as e:
-   id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
    if isinstance(data_dict, dict) and data_dict and id_active !=0:
-    key_paths =get_active_window_exe(user, id_active)
+    key_paths =get_active_window_exe(user, id_active)    # print(key_paths)
     if key_paths != None:
      if ".exe" and ".sh" not in key_paths.lower():
       return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
@@ -589,10 +599,10 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
        return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
      else:
        return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
-    else:
-     return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
-   else:
-    return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+   else:    # print(dict_save.get_prev_game())
+    return dict_save.get_prev_game()# если мы ничего не нашли, вернуть предыдущую конфигурацию.
+ except Exception as e:
+   pass
     # else:
      # key_paths = list(data_dict.values())
      # file_path = next((p for p in games_checkmark_paths if p in key_paths), None)
@@ -646,10 +656,10 @@ KEYS = {" ": 0x0,"LBUTTON": 'mouse left', "RBUTTON": 'mouse right', "WHEEL_MOUSE
         "RCONTROL": "Control_R",  "LMENU": 0xA4, "RMENU": 0xA5, "BROWSER_BACK": 0xA6, "BROWSER_FORWARD": 0xA7, "BROWSER_REFRESH": 0xA8,
         "BROWSER_STOP": 0xA9, "BROWSER_SEARCH": 0xAA, "BROWSER_FAVORITES": 0xAB, "BROWSER_HOME": 0xAC, "VOLUME_MUTE": 0xAD, "VOLUME_DOWN": 0xAE,
         "VOLUME_UP": 0xAF, "MEDIA_NEXT_TRACK": 0xB0, "MEDIA_PREV_TRACK": 0xB1, "MEDIA_STOP": 0xB2, "MEDIA_PLAY_PAUSE": 0xB3, "LAUNCH_MAIL": 0xB4,
-        "LAUNCH_MEDIA_SELECT": 0xB5, "LAUNCH_APP1": 0xB6, "LAUNCH_APP2": 0xB7, "OEM_1": 0xBA, "OEM_PLUS": 0xBB, "OEM_COMMA": 0xBC, "OEM_MINUS": 0xBD, "OEM_PERIOD": 0xBE, "OEM_2": 0xBF, "OEM_3": 0xC0, "ABNT_C1": 0xC1, "ABNT_C2": 0xC2, "OEM_4": 0xDB,
-        "OEM_5": 0xDC, "OEM_6": 0xDD, "OEM_7": 0xDE, "OEM_8": 0xDF, "OEM_AX": 0xE1,
-        "OEM_102": 0xE2, "ICO_HELP": 0xE3, "PROCESSKEY": 0xE5, "ICO_CLEAR": 0xE6, "PACKET": 0xE7, "OEM_RESET": 0xE9, "OEM_JUMP": 0xEA,
-        "OEM_PA1": 0xEB, "OEM_PA2": 0xEC, "OEM_PA3": 0xED,
+        "LAUNCH_MEDIA_SELECT": 0xB5, "LAUNCH_APP1": 0xB6, "LAUNCH_APP2": 0xB7, "OEM_1": 0xBA, "OEM_PLUS": 0xBB, "OEM_COMMA": 0xBC,
+        "OEM_MINUS": 0xBD, "OEM_PERIOD": 0xBE, "OEM_2": 0xBF, "OEM_3": 0xC0, "ABNT_C1": 0xC1, "ABNT_C2": 0xC2, "OEM_4": 0xDB,
+        "OEM_5": 0xDC, "OEM_6": 0xDD, "OEM_7": 0xDE, "OEM_8": 0xDF, "OEM_AX": 0xE1, "OEM_102": 0xE2, "ICO_HELP": 0xE3, "PROCESSKEY": 0xE5,
+        "ICO_CLEAR": 0xE6, "PACKET": 0xE7, "OEM_RESET": 0xE9, "OEM_JUMP": 0xEA, "OEM_PA1": 0xEB, "OEM_PA2": 0xEC, "OEM_PA3": 0xED,
         "OEM_WSCTRL": 0xEE, "OEM_CUSEL": 0xEF, "OEM_ATTN": 0xF0, "OEM_FINISH": 0xF1, "OEM_COPY": 0xF2, "OEM_AUTO": 0xF3, "OEM_ENLW": 0xF4,
         "OEM_BACKTAB": 0xF5, "ATTN": 0xF6, "CRSEL": 0xF7, "EXSEL": 0xF8, " EREOF": 0xF9, "PLAY": 0xFA, "ZOOM": 0xFB, "PA1": 0xFD, " OEM_CLEAR": 0xFE
         }
