@@ -558,58 +558,52 @@ def check_current_active_window(dict_save, games_checkmark_paths):# Получа
  try:
   data_dict = get_pid_and_path_window()  # в котором есть директория игр
   id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
-
   file_path = data_dict[id_active]  # получаем путь
-  if  id_active and '/PortProton/data/scripts/start.sh' in data_dict[id_active]:#  если он запущен через pp
+  if data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  # print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
+   return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  #
+  if id_active and '/PortProton/data/scripts/start.sh' in data_dict[id_active]:#  если он запущен через pp
+   # print(data_dict[id_active])
    for p in data_dict.values():# пути извлекаем все пути к играм, которые запущены
     if is_path_in_list(p, games_checkmark_paths):
      return games_checkmark_paths[get_index_of_path(p, games_checkmark_paths)]  # активного окна
-   
-  if id_active != "0" and not is_window_minimized(id_active):
+  if id_active and not is_window_minimized(id_active):
    return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
-  else: #print(data_dict)  # print(games_checkmark_paths) #
-   if data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  #  print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
-    return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
-   if isinstance(data_dict, dict) and data_dict and id_active !=0:
-    key_paths =get_active_window_exe(user, id_active)    # print(key_paths)
-    if key_paths != None:
-     if ".exe" and ".sh" not in key_paths.lower():
-      return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
-     if ".sh" in key_paths.lower():
-      key_paths1 =  os.path.basename(key_paths.split()[-1])[:-3]# Берём всё после последнего '/'
-      file_path2 = next((p for p in games_checkmark_paths if key_paths1.lower() in p.lower()), None)#
-      if file_path2 and ".exe" in file_path2.lower():#        print(file_path2)
-        return games_checkmark_paths[get_index_of_path(file_path2, games_checkmark_paths)]
-      else:
-       return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
-     if ".exe" in key_paths.lower():
-      last_slash_index = key_paths.rfind('/')
-      file_name = key_paths[last_slash_index + 1:]  # Берём всё после последнего '/'
-      key_paths = str(file_name[:-4])#     print(key_paths)
-      file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)#
-      if file_path:#
-       window_class = os.path.basename(file_name)  # например "game.exe"
-       search_cmd = ["xdotool", "search", "--class", window_class]
-       window_ids = subprocess.check_output(search_cmd).decode().split()
-       for win_id in window_ids:
-        xprop_cmd = ["xprop", "-id", win_id, "_NET_WM_STATE"]
-        state = str(subprocess.check_output(xprop_cmd).decode())
-        if "FOCUSED" in state:#         print(state)
-         return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна      #  elif "_NET_WM_STATE_VISIBLE" in state:
-       return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
-     else:
-       return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
-   else:    # print(dict_save.get_prev_game())
-    return dict_save.get_prev_game()# если мы ничего не нашли, вернуть предыдущую конфигурацию.
+
+  if isinstance(data_dict, dict) and data_dict and id_active !=0:
+   key_paths =get_active_window_exe(user, id_active)    # print(key_paths)
+   if key_paths == None or ".exe" and ".sh" not in key_paths.lower():
+     return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+   if ".sh" in key_paths.lower():
+     key_paths1 =  os.path.basename(key_paths.split()[-1])[:-3]# Берём всё после последнего '/'
+     file_path2 = next((p for p in games_checkmark_paths if key_paths1.lower() in p.lower()), None)#
+     if file_path2 and ".exe" in file_path2.lower():#        print(file_path2)
+      return games_checkmark_paths[get_index_of_path(file_path2, games_checkmark_paths)]
+  return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+
+  # else: #print(data_dict)  # print(games_checkmark_paths) # активного окна
+    # if ".exe" in key_paths.lower():
+    #   last_slash_index = key_paths.rfind('/')
+    #   file_name = key_paths[last_slash_index + 1:]  # Берём всё после последнего '/'
+    #   key_paths = str(file_name[:-4])#     print(key_paths)
+    #   file_path = next((p for p in games_checkmark_paths if key_paths.lower() in p.lower()), None)#
+    #   if file_path:#
+    #    window_class = os.path.basename(file_name)  # например "game.exe"
+    #    search_cmd = ["xdotool", "search", "--class", window_class]
+    #    window_ids = subprocess.check_output(search_cmd).decode().split()
+    #    for win_id in window_ids:
+    #     xprop_cmd = ["xprop", "-id", win_id, "_NET_WM_STATE"]
+    #     state = str(subprocess.check_output(xprop_cmd).decode())
+    #     if "FOCUSED" in state:#         print(state)
+    #      return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна      #  elif "_NET_WM_STATE_VISIBLE" in state:
  except Exception as e:
-   pass
     # else:
      # key_paths = list(data_dict.values())
      # file_path = next((p for p in games_checkmark_paths if p in key_paths), None)
      # if file_path:
      #  return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  # активного окна
     #key_paths = list(data_dict.values())
-     # return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
+    pass
+    return dict_save.get_prev_game()# то есть мы возвышаемся директорию из get_prev_game
 
 def show_list_id_callback():
   show_list_id = f'''#!/bin/bash
@@ -1024,7 +1018,7 @@ def start_startup_now(dict_save, root):# запустить после пере�
  dict_save.reset_id_value()  # Сброс настроек текущего id устройства.   # time.sleep(0.3)
  dictio = dict_save.return_jnson()  # Какие игры имеют галочку, получаем их список.
  games_checkmark_paths = [key for key, value in dictio['games_checkmark'].items() if value]  # Получить список путей к играм
- gp = str(dict_save.get_cur_app())  # текущая игра
+ gp = str(dict_save.get_cur_app())  # текущая игра print(gp)
  dict_save.set_current_path_game(gp)
  if gp in games_checkmark_paths:  # Если текущая игра имеет галочку.  print("Lok")
   prepare(root, dict_save, dictio, games_checkmark_paths)
@@ -1046,10 +1040,9 @@ def a(root, dict_save, key, list_buttons, press_button, string_keys, games_check
 
   while 1:   #time.sleep(3)   #print(dict_save.get_flag_thread())
    new_path_game = check_current_active_window(dict_save, games_checkmark_paths) # Текущая директория активного окна игры.
-   # Если никакой игры не запущено мы возвращаем предыдущую конфигурацию это директория. # print(new_path_game)#
+   # Если никакой игры не запущено мы возвращаем предыдущую конфигурацию это директория. #   # print(new_path_game)#
    if game != new_path_game: # игра которая сейчас на активной вкладке активного окна    #
-    dict_save.set_cur_app(new_path_game)#
-    # dict_save.set_current_path_game(new_path_game)
+    dict_save.set_cur_app(new_path_game)#    # dict_save.set_current_path_game(new_path_game)
    if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального
      # print("user")
      # print(new_path_game)
