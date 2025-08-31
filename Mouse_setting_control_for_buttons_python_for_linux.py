@@ -64,8 +64,7 @@ def create_scrypt_buttons(root):
   creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
 def update_buttons(event=0):# Изменение назначения кнопок.
   dict_save.set_default_id_value()
-  res=dict_save.return_jnson()  # print(res["current_app"])
-  # print(dict_save.get_cur_app())
+  res=dict_save.return_jnson()  # print(res["current_app"])  # print(dict_save.get_cur_app())
   box_value = dict_save.return_box_values() # Получить значения выпадающего списка
   box_values=[box_value[0].get(), box_value[1].get(), box_value[2].get(),
               box_value[3].get(),box_value[4].get(),box_value[5].get(),box_value[6].get()]
@@ -236,8 +235,7 @@ def add_file(dict_save):# Добавить новые игры
  dict_save.set_current_path_game(path_to_file)
  dict_save.save_jnson(res)
  set_colol_white_label_changed(labels)  # Установить белый цвет для всех label
- res = dict_save.return_jnson()
-# update_buttons()
+ res = dict_save.return_jnson()# update_buttons()
  filling_in_fields(res)
 
  # keys_values= dict_save.return_box_values()
@@ -323,7 +321,6 @@ def start(root, dict_save):# запуск всего.
  d = list(res["paths"].keys()) # получить словарь путей и имен файлов.
  dict_save.save_old_data(res) # сохранить значения настроек из файла.
  dict_save.set_cur_app(res["current_app"])  # установить текущую активную строку.
-
  dict_save.set_prev_game(res["current_app"])
  dict_save.set_current_app_path(res['current_app'])# установит текущий путь к игре.
  box_values = dict_save.return_box_values()  # получить список значения боксов.
@@ -348,8 +345,7 @@ def start(root, dict_save):# запуск всего.
  create_scrypt_buttons(root)# создание углубление кнопок скрипта.
  # print("fill")
 def move_last_key_to_front(d):# Рекурсивно перемещает последний ключ словаря в начало.
-   #Если значение является словарём, функция применяется и к нему.
-   # Если d не словарь – возвращаем как есть
+   #Если значение является словарём, функция применяется и к нему.   # Если d не словарь – возвращаем как есть
    if not isinstance(d, dict):
      return d
    keys = list(d.keys())
@@ -403,12 +399,10 @@ def on_close():# Функция закрытия программы.  # print("e
   dict_save.set_default_id_value()
   old_data = dict_save.return_old_data()  # старые значения настроек.
   new_data = dict_save.return_jnson()  # новые значения настроек.  # print(new_data["key_value"]["C:/Windows/explorer.exe"])  #print(new_data["games_checkmark"])
-  
-  print(old_data["games_checkmark"].keys())
-  print(new_data["games_checkmark"].keys())
-  if new_data != old_data or list(old_data["games_checkmark"].keys()) != list(new_data["games_checkmark"].keys()):# Если ли какие-то изменения
+  diff = DeepDiff(old_data, new_data)
+  if diff:
    if (messagebox.askokcancel("Quit", "Do you want to save the changes?")):
-        dict_save.write_to_file(new_data)  # записать настройки в файл.
+     dict_save.write_to_file(new_data)  # записать настройки в файл.
   dict_save.reset_id_value()
   target = "Mouse_setting_control_for_buttons_python_for_linux.py"
   for p in psutil.process_iter(['pid', 'cmdline']):
@@ -554,7 +548,6 @@ def reorder_keys_in_dict(res, index, direction='up'):
  res['games_checkmark'] = move_key(res['games_checkmark'])
  return res
 
-
 def move_element(dict_save, root, direction='up'):  # Перемещает текущий элемент (определяемый dict_save.get_cur_app())
   # вверх или вниз в списке, меняя положение виджетов и порядок ключей в JSON.
   # :param dict_save: Объект для работы с настройками (с методами get_cur_app, return_jnson, return_labels, set_cur_app, save_jnson)
@@ -695,7 +688,7 @@ add_button_create_keyboard.place(x=760, y=200)
 root.protocol("WM_DELETE_WINDOW", on_close)
 Button(root, text="Показать список устройств", command=show_list_id_callback).place(x=710, y=280)
 start(root, dict_save) # Запуск всего
-#root.withdraw()  # Сначала скрываем окно
+root.withdraw()  # Сначала скрываем окно
 
 # Переключение видимости окна
 def toggle_window(event=None):
