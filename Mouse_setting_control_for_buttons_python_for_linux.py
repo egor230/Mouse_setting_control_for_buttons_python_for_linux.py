@@ -64,23 +64,18 @@ def create_scrypt_buttons(root):
   creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
 
 def change_app(game=""):
- # old = dict_save.get_cur_app()
- # game = old
- print(game)
- if game== dict_save.get_cur_app() or game=="":
-  print("ch")
+ old =  dict_save.get_prev_game() # game = old
+ if game== dict_save.get_cur_app() or game=="":  # print("ch")
   dict_save.set_cur_app("")
   while True:
    if "" == dict_save.get_cur_app():
     break
  # else:
+ dict_save.set_prev_game(old)  # Сохранить предыдущую игру
+ dict_save.set_current_path_game(dict_save.get_cur_app())
  while game!=dict_save.get_cur_app(): # получить значение текущей активной строки.
    time.sleep(1)  # Добавьте задержку, чтобы избежать чрезмерного использования процессора
    dict_save.set_cur_app(game)
-
- dict_save.set_prev_game(dict_save.get_cur_app())  # Сохранить предыдущую игру
- # dict_save.set_current_path_game(dict_save.get_cur_app())
-
  res=dict_save.return_jnson()
  res['current_app'] = game# Выбранная игра.
 
@@ -89,21 +84,6 @@ def change_app(game=""):
  create_scrypt_buttons(root)
  dict_save.set_box_values()
  dict_save.set_values_box()  # Установить знач
-
-def update_buttons(event=0):# Изменение назначения кнопок.
-  dict_save.set_default_id_value()
-  res=dict_save.return_jnson()  # print(res["current_app"])  # print(dict_save.get_cur_app())
-  box_value = dict_save.return_box_values() # Получить значения выпадающего списка
-  box_values=[box_value[0].get(), box_value[1].get(), box_value[2].get(),
-              box_value[3].get(),box_value[4].get(),box_value[5].get(),box_value[6].get()]
-  res["key_value"][str(dict_save.get_cur_app())]=box_values
-  dict_save.set_id(id_value.get())
-
-  res["current_app"]=str(dict_save.get_cur_app())  # add_button_start["state"] = "normal"
-  res["id"]=id_value.get()
-  # change_app()
-  dict_save.save_jnson(res)  # Сохранить новые настройки.  # print("change color label")
-
 def check_label_changed(event, labels, count, var_list):# Когда мы переключаем вкладку актив текущей игры изменение цвета labcel
  res=dict_save.return_jnson()
  game=list(res['paths'].keys())[count]
@@ -130,8 +110,24 @@ def check_label_changed(event, labels, count, var_list):# Когда мы пер
   add_button_create_keyboard.config(relief=SUNKEN)  # Изменение стиля кнопки
  else:
   add_button_create_keyboard.config(relief=RAISED)
- change_app(game)
+ change_app(game)# перезапустить настройки/
 
+def update_buttons(event=0):# Изменение назначения кнопок.
+  dict_save.set_default_id_value()
+  res=dict_save.return_jnson()  # print(res["current_app"])  # print(dict_save.get_cur_app())
+  box_value = dict_save.return_box_values() # Получить значения выпадающего списка
+  box_values=[box_value[0].get(), box_value[1].get(), box_value[2].get(),
+              box_value[3].get(),box_value[4].get(),box_value[5].get(),box_value[6].get()]
+  res["key_value"][str(dict_save.get_cur_app())]=box_values
+  dict_save.set_id(id_value.get())
+  res["current_app"]=str(dict_save.get_cur_app())  # add_button_start["state"] = "normal"
+  res["id"]=id_value.get()
+  profile = dict_save.get_cur_app()  # Текущая директория активной игры.
+  count=list(res["paths"]).index(profile)
+  labels = dict_save.return_labels()
+  var_list = dict_save.return_var_list()
+  dict_save.save_jnson(res)  # Сохранить новые настройки.  # print("change color label")
+  check_label_changed(0, labels, count, var_list)  # Перезапуск активного приложения.
 def checkbutton_changed(event, var_list, count, name_games, labels, curr_app):  # галочки
   dict_save.set_cur_app(curr_app)# Установить текущий путь к игре напротив галочки
   dict_save.set_count(count)

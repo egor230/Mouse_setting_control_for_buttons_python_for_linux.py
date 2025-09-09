@@ -1079,6 +1079,10 @@ def prepare(root, dict_save, dictio, games_checkmark_paths):  # функция �
   t1= dict_save.get_thread() # мы получаем поток от предыдущей функции ждем когда он закончится  # print(t1)
   if t1 != 0:
     t1.join()
+  if dict_save.get_id() == 0:  # # получить id устройства.Если id устройство не выбрали.
+   messagebox.showinfo("Ошибка", "Вы не выбрали устройство")
+   ok_button = Button(root, text="Ок", command=show_list_id_callback)
+   return 0
   key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, path, list_buttons = dict_save.preparation(dictio, games_checkmark_paths)
   new = ' '.join(old)   #  print(new)  # print(list_buttons)  print( type(new)  ) print(id)
   string_keys = list(key for key in list_buttons.keys() if isinstance(key, str))
@@ -1087,10 +1091,6 @@ def prepare(root, dict_save, dictio, games_checkmark_paths):  # функция �
   dict_save.set_cur_app(path)# Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
   dict_save.set_current_path_game(path)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры
 
-  if dict_save.get_id() == 0:  # # получить id устройства.Если id устройство не выбрали.
-   messagebox.showinfo("Ошибка", "Вы не выбрали устройство")
-   ok_button = Button(root, text="Ок", command=show_list_id_callback)
-   return
   t1 = threading.Thread(target=a, args =(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths))  #t1.daemon = True
   t1.start()
   dict_save.set_thread(t1)# сохранить id посёлка потока
