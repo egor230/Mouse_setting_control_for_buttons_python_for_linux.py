@@ -647,7 +647,7 @@ KEYS = {" ": 0x0,"LBUTTON": 'mouse left', "RBUTTON": 'mouse right', "WHEEL_MOUSE
         "F13": 0x7C, "F14": 0x7D, "F15": 0x7E, "F16": 0x7F, "F17": 0x80, "F18": 0x81, "F19": 0x82, "F20": 0x83, "F21": 0x84,
         "F22": 0x85, "F23": 0x86, "F24": 0x87,"NUMLOCK": "Num_Lock", "SCROLL": "Scroll_Lock", "OEM_FJ_JISHO": 0x92, "OEM_FJ_MASSHOU": 0x93,
         "OEM_FJ_TOUROKU": 0x94, "OEM_FJ_LOYA": 0x95, "OEM_FJ_ROYA": 0x96, "RSHIFT": "Shift_R", "LCONTROL": "ISO_Next_Group",
-        "RCONTROL": "Control_R",  "LMENU": 0xA4, "RMENU": 0xA5, "BROWSER_BACK": 0xA6, "BROWSER_FORWARD": 0xA7, "BROWSER_REFRESH": 0xA8,
+        "RCONTROL": "Control_R", "LMENU": 0xA4, "RMENU": 0xA5, "BROWSER_BACK": 0xA6, "BROWSER_FORWARD": 0xA7, "BROWSER_REFRESH": 0xA8,
         "BROWSER_STOP": 0xA9, "BROWSER_SEARCH": 0xAA, "BROWSER_FAVORITES": 0xAB, "BROWSER_HOME": 0xAC, "VOLUME_MUTE": 0xAD, "VOLUME_DOWN": 0xAE,
         "VOLUME_UP": 0xAF, "MEDIA_NEXT_TRACK": 0xB0, "MEDIA_PREV_TRACK": 0xB1, "MEDIA_STOP": 0xB2, "MEDIA_PLAY_PAUSE": 0xB3, "LAUNCH_MAIL": 0xB4,
         "LAUNCH_MEDIA_SELECT": 0xB5, "LAUNCH_APP1": 0xB6, "LAUNCH_APP2": 0xB7, "OEM_1": 0xBA, "OEM_PLUS": 0xBB, "OEM_COMMA": 0xBC,
@@ -1020,7 +1020,7 @@ def start_startup_now(dict_save, root):# запустить после пере�
  games_checkmark_paths = [key for key, value in dictio['games_checkmark'].items() if value]  # Получить список путей к играм
  gp = str(dict_save.get_cur_app())  # текущая игра print(gp)
  dict_save.set_current_path_game(gp)
- if gp in games_checkmark_paths:  # Если текущая игра имеет галочку.  print("Lok")
+ if gp in games_checkmark_paths or gp =="":  # Если текущая игра имеет галочку.  print("Lok")
   prepare(root, dict_save, dictio, games_checkmark_paths)
  else:  # Вывод ошибки.
   messagebox.showinfo("Ошибка", "Нужно выбрать приложенние")
@@ -1044,12 +1044,12 @@ def a(root, dict_save, key, list_buttons, press_button, string_keys, games_check
    if game != new_path_game: # игра которая сейчас на активной вкладке активного окна    #
     dict_save.set_cur_app(new_path_game)#    # dict_save.set_current_path_game(new_path_game)
    if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального
-     # print("user")
      # print(new_path_game)
      for t in list_threads:
        t.join()
        list_threads.remove(t)
      break
+  print("exit")
   a=key_work.keys_list+key_work.keys_list1
   # for i in list(key):
   #   if i in defaut_list_mouse_buttons:
@@ -1074,7 +1074,11 @@ def a(root, dict_save, key, list_buttons, press_button, string_keys, games_check
   t2.start()#  print("cll")
 def prepare(root, dict_save, dictio, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
   curr_name = dict_save.get_cur_app()  # получить значение текущей активной строки.     # dict_save.set_current_path_game(curr_name)
-
+  if curr_name == "":
+   return 0
+  t1= dict_save.get_thread() # мы получаем поток от предыдущей функции ждем когда он закончится  # print(t1)
+  if t1 != 0:
+    t1.join()
   key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, path, list_buttons = dict_save.preparation(dictio, games_checkmark_paths)
   new = ' '.join(old)   #  print(new)  # print(list_buttons)  print( type(new)  ) print(id)
   string_keys = list(key for key in list_buttons.keys() if isinstance(key, str))
@@ -1082,9 +1086,7 @@ def prepare(root, dict_save, dictio, games_checkmark_paths):  # функция �
   subprocess.call(['bash', '-c', set_button_map])  # установить конфигурацию кнопок для мыши.   print(dict_save.get_state_thread())
   dict_save.set_cur_app(path)# Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
   dict_save.set_current_path_game(path)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры
-  t1= dict_save.get_thread() # мы получаем поток от предыдущей функции ждем когда он закончится  # print(t1)
-  if t1 != 0:
-    t1.join()
+
   if dict_save.get_id() == 0:  # # получить id устройства.Если id устройство не выбрали.
    messagebox.showinfo("Ошибка", "Вы не выбрали устройство")
    ok_button = Button(root, text="Ок", command=show_list_id_callback)

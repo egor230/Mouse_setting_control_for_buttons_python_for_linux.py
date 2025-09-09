@@ -62,6 +62,34 @@ def create_scrypt_buttons(root):
    y_place += 31  # Увеличение координаты по вертикали
 
   creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
+
+def change_app(game=""):
+ # old = dict_save.get_cur_app()
+ # game = old
+ print(game)
+ if game== dict_save.get_cur_app() or game=="":
+  print("ch")
+  dict_save.set_cur_app("")
+  while True:
+   if "" == dict_save.get_cur_app():
+    break
+ # else:
+ while game!=dict_save.get_cur_app(): # получить значение текущей активной строки.
+   time.sleep(1)  # Добавьте задержку, чтобы избежать чрезмерного использования процессора
+   dict_save.set_cur_app(game)
+
+ dict_save.set_prev_game(dict_save.get_cur_app())  # Сохранить предыдущую игру
+ # dict_save.set_current_path_game(dict_save.get_cur_app())
+
+ res=dict_save.return_jnson()
+ res['current_app'] = game# Выбранная игра.
+
+ # update_buttons(event)# Изменение назначения кнопок.
+ mouse_check_button(dict_save) # флаг для удержания кнопки мыши.
+ create_scrypt_buttons(root)
+ dict_save.set_box_values()
+ dict_save.set_values_box()  # Установить знач
+
 def update_buttons(event=0):# Изменение назначения кнопок.
   dict_save.set_default_id_value()
   res=dict_save.return_jnson()  # print(res["current_app"])  # print(dict_save.get_cur_app())
@@ -73,32 +101,17 @@ def update_buttons(event=0):# Изменение назначения кнопо
 
   res["current_app"]=str(dict_save.get_cur_app())  # add_button_start["state"] = "normal"
   res["id"]=id_value.get()
+  # change_app()
   dict_save.save_jnson(res)  # Сохранить новые настройки.  # print("change color label")
 
-def run_in_thread(dict_save, game, event):
- dict_save.set_prev_game(dict_save.get_cur_app())  # Сохранить предыдущую игру
- dict_save.set_current_path_game(dict_save.get_cur_app())
-
- while game != dict_save.get_cur_app():  # Получить значение текущей активной строки.
-  dict_save.set_cur_app(game)
-  time.sleep(1)  # Добавьте задержку, чтобы избежать чрезмерного использования процессора
-
- update_buttons(event)  # Изменение назначения кнопок.
-
- dict_save.set_box_values()
- dict_save.set_values_box()  # Установить знач
-def check_label_changed(event, labels, count, var_list):# Когда мы переключаем вкладку актив текущей игры изменение цвета label
+def check_label_changed(event, labels, count, var_list):# Когда мы переключаем вкладку актив текущей игры изменение цвета labcel
  res=dict_save.return_jnson()
  game=list(res['paths'].keys())[count]
- if game== dict_save.get_cur_app():# Если нажата активная вкладка
-   return 0 # Выход
- while game!=dict_save.get_cur_app(): # получить значение текущей активной строки.
-  dict_save.set_cur_app(game)
+ # if game== dict_save.get_cur_app():# Если нажата активная вкладка
+ #   return 0 # Выход
 
- dict_save.set_prev_game(game)# Сохранить предыдущую игру
- res['current_app'] = game# Выбранная игра.
  set_colol_white_label_changed(labels)  # Установить белый цвет для всех label print(count)
- if count != dict_save.get_count() :
+ if count != dict_save.get_count():
   dict_save.set_count(count)
   res = labels[count].cget("background")
   for i in range(len(labels)):
@@ -108,19 +121,16 @@ def check_label_changed(event, labels, count, var_list):# Когда мы пер
      labels[count].config(background="#06c")
      var_list[count].set(True)
  else:
-     if "white" == labels[count].cget("background"):
-      labels[count].config(background="#06c")
-     else: # в белый
-      labels[count].config(background="white")
+   if "white" == labels[count].cget("background"):
+    labels[count].config(background="#06c")
+   else: # в белый
+    labels[count].config(background="white")
  res = dict_save.return_jnson()
  if res.get("keyboard_script", {}).get(game, {}).get("keys"):
   add_button_create_keyboard.config(relief=SUNKEN)  # Изменение стиля кнопки
  else:
   add_button_create_keyboard.config(relief=RAISED)
- dict_save.set_box_values()
- update_buttons(event)# Изменение назначения кнопок.
- mouse_check_button(dict_save) # флаг для удержания кнопки мыши.
- create_scrypt_buttons(root)
+ change_app(game)
 
 def checkbutton_changed(event, var_list, count, name_games, labels, curr_app):  # галочки
   dict_save.set_cur_app(curr_app)# Установить текущий путь к игре напротив галочки
@@ -149,6 +159,9 @@ def update_mouse_check_button(count):# сохранение после уста�
     dict_save.save_jnson(res)
 def mouse_check_button(dict_save):
   curr_name=dict_save.get_cur_app()#
+
+  if curr_name == "":
+   return 0
   res=dict_save.return_jnson()  # print(res["mouse_press"][curr_name])
   list_mouse_button_press = list(res["mouse_press"][curr_name])#  print(d)
   mouse_press_button = []# список нажатых кнопок.
@@ -173,7 +186,7 @@ def change(event, window, new_name, old_name, res, count, labels):# Окно и�
     res["paths"][list(res["paths"])[count]]=new_name
     labels[count].config(text=new_name)#  res["paths"][dict_save.get_cur_app()] = new_name.get()
   window.destroy()  # Закрытие окна после сохранения изменений
-def change_name_label(event, count): #Изменить название игры
+def change_name_label(event, count): # Изменить название игры
   window = Toplevel(root)  # основа
   window.title("change_name")  # заголовок
   window.geometry("350x150+750+400")  # Первые 2 определяют ширину высоту. Пос 2 x и y координаты на экране.
