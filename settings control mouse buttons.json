@@ -4,16 +4,20 @@
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": true,
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": true,
-    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/obse_loader.exe": true,
-    "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": true
+    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": true
   },
   "paths": {
     "C:/Windows/explorer.exe": "По умолчанию",
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": "Splinter Cell - Chaos Theory",
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": "Alien Isolation",
+    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": "Oblivion",
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": "Serious Sam",
+    "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": "Cold Fear",
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": "Medal of Honor Allied Assault",
-    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/obse_loader.exe": "Oblivion",
-    "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": "Cold Fear"
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": "SeriousSam"
   },
   "key_value": {
     "C:/Windows/explorer.exe": [
@@ -28,20 +32,20 @@
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": [
       "LBUTTON",
       "W",
-      "F",
+      "RBUTTON",
       "SCROLL_UP",
       "SCROLL_DOWN",
-      "SPACE",
-      "Shift_L"
+      "KP_Enter",
+      "SCROLL_DOWN"
     ],
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": [
       "LBUTTON",
       "W",
-      " ",
-      " ",
+      "WHEEL_MOUSE_BUTTON",
       "C",
-      "E",
-      "Shift_L"
+      " ",
+      "SCROLL_UP",
+      "SCROLL_DOWN"
     ],
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": [
       "LBUTTON",
@@ -52,14 +56,14 @@
       "RBUTTON",
       "Shift_L"
     ],
-    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/obse_loader.exe": [
+    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": [
       "LBUTTON",
       "W",
       " ",
-      " ",
+      "F",
       "C",
       "RBUTTON",
-      "SPACE"
+      "SCROLL_DOWN"
     ],
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": [
       "LBUTTON",
@@ -69,6 +73,24 @@
       "SCROLL_DOWN",
       "RBUTTON",
       "Shift_L"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": [
+      "LBUTTON",
+      "W",
+      " ",
+      " ",
+      " ",
+      "RBUTTON",
+      "SPACE"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
+      "LBUTTON",
+      "W",
+      " ",
+      " ",
+      " ",
+      "RBUTTON",
+      "SPACE"
     ]
   },
   "mouse_press": {
@@ -108,7 +130,7 @@
       false,
       false
     ],
-    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/obse_loader.exe": [
+    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": [
       false,
       false,
       false,
@@ -125,26 +147,49 @@
       false,
       true,
       false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
     ]
   },
   "id": 9,
   "current_app": "C:/Windows/explorer.exe",
   "script_mouse": {
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": {
-      "XBUTTON2": "#!/bin/bash\nxte \"keydown Shift_R\"\nxte \"keyup Shift_R\"\nxte \"keydown Shift\"\nxte \"keyup Shift\"\n"
+      "XBUTTON2": "#!/bin/bash\nxte \"keydown Shift_R\"\nxte \"keyup Shift_R\"\nxte \"keydown Shift_L\"\nxte \"keyup Shift_L\"",
+      "XBUTTON1": ""
     },
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": {
       "XBUTTON2": "",
-      "XBUTTON1": "#!/bin/bash\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\n\nxte \"keydown R\"\nxte \"keyup R\"\n"
+      "XBUTTON1": "#!/bin/bash\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\n\nxte \"keydown R\"\nxte \"keyup R\"\n",
+      "SCROLL_DOWN": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\n"
     },
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown R\"\nxte \"keyup R\"\nxte \"keydown F\"\nxte \"keyup F\"\n"
     },
-    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/obse_loader.exe": {
+    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown space\"\nsleep 0.23\nxte \"keyup space\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n"
     },
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\n"
+    },
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": {
+      "XBUTTON2": "#!/bin/bash\nxte \"keydown W\"\nsleep 1.23\nxte \"keydown space\"\nsleep 0.23\nxte \"keyup space\"\nxte \"keyup W\"\n"
     }
   },
   "keyboard_script": {
@@ -166,9 +211,8 @@
     },
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": {
       "keys": {
-        "L": "#!/bin/bash\nxte \"keydown space\"",
-        "Shift_R": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n",
-        "1\nEnd": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n"
+        "L": "#!/bin/bash\nxte \"keydown space\"\nxte \"keydown E\"",
+        "Shift_R": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n"
       }
     }
   }

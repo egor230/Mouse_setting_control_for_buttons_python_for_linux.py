@@ -63,27 +63,6 @@ def create_scrypt_buttons(root):
 
   creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
 
-def change_app(game=""):
- old =  dict_save.get_prev_game() # game = old
- if game== dict_save.get_cur_app() or game=="":  # print("ch")
-  dict_save.set_cur_app("")
-  while True:
-   if "" == dict_save.get_cur_app():
-    break
- # else:
- dict_save.set_prev_game(old)  # Сохранить предыдущую игру
- dict_save.set_current_path_game(dict_save.get_cur_app())
- while game!=dict_save.get_cur_app(): # получить значение текущей активной строки.
-   time.sleep(1)  # Добавьте задержку, чтобы избежать чрезмерного использования процессора
-   dict_save.set_cur_app(game)
- res=dict_save.return_jnson()
- res['current_app'] = game# Выбранная игра.
-
- # update_buttons(event)# Изменение назначения кнопок.
- mouse_check_button(dict_save) # флаг для удержания кнопки мыши.
- create_scrypt_buttons(root)
- dict_save.set_box_values()
- dict_save.set_values_box()  # Установить знач
 def check_label_changed(event, labels, count, var_list):# Когда мы переключаем вкладку актив текущей игры изменение цвета labcel
  res=dict_save.return_jnson()
  game=list(res['paths'].keys())[count]
@@ -202,30 +181,9 @@ def change_name_label(event, count): # Изменить название игр�
 
 def add_file(dict_save):# Добавить новые игры
  res=dict_save.return_jnson() # получаем настройки
- keys_values =res["key_value"][dict_save.get_cur_app()]# конфигурация кнопок от предыдущего профиля.
- mouse_press_old =res["mouse_press"][dict_save.get_cur_app()]# какие кнопки имеют залипания.
-
- # print(dict_save.get_current_app_path())
- cmd = ['zenity', '--file-selection', '--file-filter=EXE files | *.exe | *.EXE'] # Zenity команда для выбора одного exe файла
- # Вызов zenity и получение выбранного пути
- result = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, text=True)
- path_to_file = result.stdout.strip()# новый путь к игре
- name_with_expansion = path.basename(path_to_file)# Получение базового имени файла с расширением из полного пути к файлу
- name = path.splitext(name_with_expansion)[0] # Отделение имени файла без расширения путем разбиения строки.
- li= list(res["paths"].keys())
- if path_to_file in li:
-   return 0
- res["paths"][str(path_to_file)]=str(name)
- res["games_checkmark"][str(path_to_file)]=True
- res["key_value"][str(path_to_file)]=keys_values # сохранить пред значения
- res["mouse_press"][str(path_to_file)]= list(mouse_press_old)
- res1= res["key_value"]
- if path_to_file in res1:
-     pass
- else:
-     res["key_value"][path_to_file]=["LBUTTON","RBUTTON",  "WHEEL_MOUSE_BUTTON",
-      "WHEEL_MOUSE_UP", "WHEEL_MOUSE_DOWN", 'XBUTTON1', 'XBUTTON2']
-
+ path_to_file = return_file_path(res)
+ if path_to_file ==None:
+  return 0
  labels=dict_save.return_labels()
  for i in range(len(labels)):
    labels[i].destroy()
@@ -246,7 +204,6 @@ def add_file(dict_save):# Добавить новые игры
  set_colol_white_label_changed(labels)  # Установить белый цвет для всех label
  res = dict_save.return_jnson()# update_buttons()
  filling_in_fields(res)
-
  # keys_values= dict_save.return_box_values()
  # old_keys_values=[]
  # for i in range(len(keys_values)):
@@ -254,6 +211,7 @@ def add_file(dict_save):# Добавить новые игры
  #
  labels[len(labels)-1].config(background="#06c")  # текстовое поле и кнопка для добавления в список
 checkbutton_list=[]
+
 def fill_labes(res, name_games,labels,var_list, labels_with_checkmark):# Заполнение полей надписи и галочки.
   check_mark = res["games_checkmark"]
   d=res["paths"]
@@ -288,9 +246,7 @@ def fill_labes(res, name_games,labels,var_list, labels_with_checkmark):# Зап�
 
   #активное приложение.
   labels[index].config(background="#06c") # Установить cиний цвет.  print(index)
-  dict_save.set_count(index)# Установить  индекс текущей игры.
-  dict_save.set_box_values()  # Установить значения выпадающего списка.
-  dict_save.set_values_box()
+  set_list_box(dict_save, index)# Установить значения выпадающего списка.
 def filling_in_fields(res):# заполнения всех полей.
     labels=dict_save.return_labels()
     name_games=dict_save.return_name_games()# имя игр
@@ -298,8 +254,8 @@ def filling_in_fields(res):# заполнения всех полей.
     labels_with_checkmark= dict_save.return_labels_with_checkmark()
     boxs = dict_save.return_box_values()
     fill_labes(res, name_games, labels, var_list, labels_with_checkmark)    # if dict_save.get_count()==0:    #    print("ok")    #  labels[dict_save.get_count()].config(background="#06c")
-    dict_save.set_box_values()  # Установить значения выпадающего списка.
-    dict_save.set_values_box()
+    set_list_box(dict_save) # Установить значения выпадающего списка.
+  
 def start(root, dict_save):# запуск всего.
  data = dict_save.data  # файл настроек. print(data)
  if os.path.exists(data):  # есть ли этот файл.
@@ -353,21 +309,6 @@ def start(root, dict_save):# запуск всего.
  start_startup_now(dict_save, root)
  create_scrypt_buttons(root)# создание углубление кнопок скрипта.
  # print("fill")
-def move_last_key_to_front(d):# Рекурсивно перемещает последний ключ словаря в начало.
-   #Если значение является словарём, функция применяется и к нему.   # Если d не словарь – возвращаем как есть
-   if not isinstance(d, dict):
-     return d
-   keys = list(d.keys())
-   if not keys:
-     return d
-
-   # Сначала обрабатываем последний ключ
-   new_d = {keys[-1]: move_last_key_to_front(d[keys[-1]])}
-   # Затем остальные ключи в исходном порядке
-   for key in keys[:-1]:
-     new_d[key] = move_last_key_to_front(d[key])
-   return new_d
-
 def scrolling_list(event):# прокрутка списка игр.
  a =[]
  labels=dict_save.return_labels()
@@ -418,7 +359,6 @@ def on_close():# Функция закрытия программы.  # print("e
    if p.info['cmdline'] and target in ' '.join(p.info['cmdline']):
     os.kill(p.info['pid'], signal.SIGTERM)
     break
-
   root.destroy()
   exit()
   sys.exit()
@@ -544,18 +484,6 @@ def delete(dict_save, root):# Удалить профиль.
    dict_save.save_jnson(res)  # Сохранить новые настройки.
    check_label_changed(0, labels, del_index, var_list)  # изменение цвета label
    #current_app   # print(dict_save.return_jnson())
-def reorder_keys_in_dict(res, index, direction='up'):
- def move_key(d):
-  keys = list(d)
-  i = index + (-1 if direction == 'up' else 1)
-  if 0 <= index < len(keys) and 0 <= i < len(keys):
-   keys[index], keys[i] = keys[i], keys[index]
-   return {k: d[k] for k in keys}
-  return d
-
- res['paths'] = move_key(res['paths'])
- res['games_checkmark'] = move_key(res['games_checkmark'])
- return res
 
 def move_element(dict_save, root, direction='up'):  # Перемещает текущий элемент (определяемый dict_save.get_cur_app())
   # вверх или вниз в списке, меняя положение виджетов и порядок ключей в JSON.
@@ -609,7 +537,6 @@ def move_element(dict_save, root, direction='up'):  # Перемещает те�
   checkbutton_list.insert(new_index, element)
   res1 =reorder_keys_in_dict(res, index, direction)  # Меняем порядок в списке
   # Обновляем текущий профиль в соответствии с новым порядком
-
   list_paths = list(res["paths"].keys())
   dict_save.set_cur_app(list_paths[new_index])
   # Обновляем цвета: сначала сбрасываем, затем выделяем перемещённый элемент
