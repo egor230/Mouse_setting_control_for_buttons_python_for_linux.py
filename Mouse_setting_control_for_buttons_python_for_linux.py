@@ -63,6 +63,7 @@ def create_scrypt_buttons(root):
 
   creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
 
+ 
 def check_label_changed(event, labels, count, var_list):# Когда мы переключаем вкладку актив текущей игры изменение цвета labcel
  res=dict_save.return_jnson()
  game=list(res['paths'].keys())[count]
@@ -89,7 +90,7 @@ def check_label_changed(event, labels, count, var_list):# Когда мы пер
   add_button_create_keyboard.config(relief=SUNKEN)  # Изменение стиля кнопки
  else:
   add_button_create_keyboard.config(relief=RAISED)
- change_app(game)# перезапустить настройки/
+ change_app(dict_save, game)# перезапустить настройки.
 
 def update_buttons(event=0):# Изменение назначения кнопок.
   dict_save.set_default_id_value()

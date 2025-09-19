@@ -364,7 +364,7 @@ class Job(threading.Thread):
   while self.__running.is_set():
    self.__flag.wait() # return immediately when it is True, block until the internal flag is True when it is False
    time.sleep(0.08)
-   t=0.0015# задержка в прокрутке.
+   t=0.0115# задержка в прокрутке.
    if self.key== "SCROLL_UP":
      thread = threading.Thread(target= key_work.mouse_wheel_up)
      thread.start()  # key_work.mouse_wheel_donw()   # keybord_from.press(self.key)
@@ -990,7 +990,7 @@ def start_startup_now(dict_save, root):# запустить после пере�
  dict_save.reset_id_value()  # Сброс настроек текущего id устройства.   # time.sleep(0.3)
  dictio = dict_save.return_jnson()  # Какие игры имеют галочку, получаем их список.
  games_checkmark_paths = [key for key, value in dictio['games_checkmark'].items() if value]  # Получить список путей к играм
- gp = str(dict_save.get_cur_app())  # текущая игра print(gp)
+ gp = str(dict_save.get_cur_app())  # текущая игра
  dict_save.set_current_path_game(gp)
  if gp in games_checkmark_paths or gp =="":  # Если текущая игра имеет галочку.  print("Lok")
   prepare(root, dict_save, dictio, games_checkmark_paths)
@@ -1045,7 +1045,7 @@ def a(root, dict_save, key, list_buttons, press_button, string_keys, games_check
   t2.daemon = True
   t2.start()#  print("cll")
 def prepare(root, dict_save, dictio, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
-  curr_name = dict_save.get_cur_app()  # получить значение текущей активной строки.     # dict_save.set_current_path_game(curr_name)
+  curr_name = dict_save.get_cur_app() # получить значение текущей активной строки.  # dict_save.set_current_path_game(curr_name)
   if curr_name == "":
    return 0
   t1= dict_save.get_thread() # мы получаем поток от предыдущей функции ждем когда он закончится  # print(t1)
@@ -1062,12 +1062,12 @@ def prepare(root, dict_save, dictio, games_checkmark_paths):  # функция �
   subprocess.call(['bash', '-c', set_button_map])  # установить конфигурацию кнопок для мыши.   print(dict_save.get_state_thread())
   dict_save.set_cur_app(path)# Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
   dict_save.set_current_path_game(path)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры
-
+  # print(curr_name)
   t1 = threading.Thread(target=a, args =(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths))  #t1.daemon = True
   t1.start()
   dict_save.set_thread(t1)# сохранить id посёлка потока
+  
 def get_path_current_active(games_checkmark_paths):# Получаем идентификатор активного окна
-
  try:  # Получаем идентификатор процесса, связанного с активным окном
   active_window_id = subprocess.check_output(['xdotool', 'getactivewindow']).decode().strip()
   process_id = subprocess.check_output(['xdotool', 'getwindowpid', active_window_id]).decode().strip()
@@ -1133,27 +1133,6 @@ def quit_app(icon, item):# Функция для выхода из прилож�
  icon.stop()  # Останавливаем значок
  root.destroy()  # Закрываем приложение
 
-def change_app(game=""):
- old =  dict_save.get_prev_game() # game = old
- if game== dict_save.get_cur_app() or game=="":  # print("ch")
-  dict_save.set_cur_app("")
-  while True:
-   if "" == dict_save.get_cur_app():
-    break
- # else:
- dict_save.set_prev_game(old)  # Сохранить предыдущую игру
- dict_save.set_current_path_game(dict_save.get_cur_app())
- while game!=dict_save.get_cur_app(): # получить значение текущей активной строки.
-   time.sleep(1)  # Добавьте задержку, чтобы избежать чрезмерного использования процессора
-   dict_save.set_cur_app(game)
- res=dict_save.return_jnson()
- res['current_app'] = game# Выбранная игра.
-
- # update_buttons(event)# Изменение назначения кнопок.
- mouse_check_button(dict_save) # флаг для удержания кнопки мыши.
- create_scrypt_buttons(root)
- set_list_box(dict_save) # Установить знач
- 
 def move_last_key_to_front(d):# Рекурсивно перемещает последний ключ словаря в начало.
    #Если значение является словарём, функция применяется и к нему.   # Если d не словарь – возвращаем как есть
    if not isinstance(d, dict):
@@ -1187,6 +1166,27 @@ simple_key_map = {
     'KEY_KP1': '1\nEnd', 'KEY_KP2': '2\n↓', 'KEY_KP3': '3\nPgDn'
 }
 
+def change_app(dict_save, game=""):  #
+ # print("ch")
+ # old = dict_save.get_prev_game()  # game = old
+ if game == dict_save.get_cur_app() or game == "":
+  dict_save.set_cur_app("")
+  while True:
+   if "" == dict_save.get_cur_app():
+    break
+ # else:
+ dict_save.set_prev_game(game)  # Сохранить предыдущую игру
+ dict_save.set_cur_app(game)
+ while game != dict_save.get_cur_app():  # получить значение текущей активной строки.
+  time.sleep(1)  # Добавьте задержку, чтобы избежать чрезмерного использования процессора
+ 
+ res = dict_save.return_jnson()
+ res['current_app'] = game  # Выбранная игра.
+ mouse_check_button(dict_save)  # флаг для удержания кнопки мыши.
+ create_scrypt_buttons(root)
+ keys = list(res['paths'].keys())  # Получить все пути игр.
+ index = keys.index(res['current_app'])  # Узнать индекс текущей игры.
+ set_list_box(dict_save, index)  # Установить значения выпадающего списка.
 # def run_check_current_active_window(root, t1, dict_save, game, games_checkmark_paths):  # print(game)
 #   while 1:
 #     new_path_game = check_current_active_window(dict_save, games_checkmark_paths)  # Текущая директория активного окна игры.
