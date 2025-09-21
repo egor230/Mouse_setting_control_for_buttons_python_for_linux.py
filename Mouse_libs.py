@@ -140,7 +140,11 @@ class save_dict:
 
   def return_mouse_button_press(self):
      return self.mouse_button_press
+  def save_labels(self, labels):
+     self.labels =labels
 
+  def save_var_list(self, var_list):
+     self.var_list=var_list
   def return_labels(self):
      return self.labels
 
@@ -919,23 +923,32 @@ def keyboard_press_button(key, pres, number_key, a, press_button):
       key_work.key_release(wk, number_key)
  except Exception as e:   #save_dict.write_in_log(e)
    pass
-
-def remove_profile_keys(d, profile):   # Создаем копию словаря, чтобы избежать изменения размера словаря во время итерации
-  keys_to_delete = []
-  for key, value in d.items():
-    if str(key) == str(profile):  # Сравниваем ключ с profile
+def remove_profile_keys(d, profile):
+ # Создаем глубокую копию словаря
+ d_copy = copy.deepcopy(d)
+ 
+ keys_to_delete = []
+ for key, value in d_copy.items():
+  if str(key) == str(profile):
       keys_to_delete.append(key)
-    elif isinstance(value, dict):
-      # Рекурсивно вызываем для вложенного словаря
-      remove_profile_keys(value, profile)
-    elif isinstance(value, list):
+  elif isinstance(value, dict):
+      # Рекурсивно вызываем для вложенного словаря и обновляем значение
+      d_copy[key] = remove_profile_keys(value, profile)
+  elif isinstance(value, list):
       # Если значение — список, обрабатываем каждый элемент
+      new_list = []
       for item in value:
-        if isinstance(item, dict):
-          remove_profile_keys(item, profile)
-  # Удаляем собранные ключи
-  for key in keys_to_delete:
-    del d[key]
+          if isinstance(item, dict):
+              new_list.append(remove_profile_keys(item, profile))
+          else:
+              new_list.append(item)
+      d_copy[key] = new_list
+ 
+ # Удаляем собранные ключи
+ for key in keys_to_delete:
+  del d_copy[key]
+ return d_copy
+
 def check_mouse_script(res, dict_save, defaut_list_mouse_buttons, number_key):
  try:
   key_mouse_scrypt = res["script_mouse"][dict_save.get_cur_app()][defaut_list_mouse_buttons[number_key]]
@@ -1096,7 +1109,8 @@ def check_star():
  except psutil.NoSuchProcess:
     pass
 
-def return_file_path(res):
+def return_file_path(dict_save):
+ res=dict_save.return_jnson() # получаем настройки
  keys_values =res["key_value"][dict_save.get_cur_app()]# конфигурация кнопок от предыдущего профиля.
  mouse_press_old =res["mouse_press"][dict_save.get_cur_app()]# какие кнопки имеют залипания.
  # print(dict_save.get_current_app_path())
@@ -1104,8 +1118,9 @@ def return_file_path(res):
  # Вызов zenity и получение выбранного пути
  result = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, text=True)
  path_to_file = result.stdout.strip()# новый путь к игре
- name_with_expansion = path.basename(path_to_file)# Получение базового имени файла с расширением из полного пути к файлу
- name = path.splitext(name_with_expansion)[0] # Отделение имени файла без расширения путем разбиения строки.
+ 
+ name_with_expansion = os.path.basename(path_to_file)# Получение базового имени файла с расширением из полного пути к файлу
+ name = os.path.splitext(name_with_expansion)[0] # Отделение имени файла без расширения путем разбиения строки.
  li= list(res["paths"].keys())
  if path_to_file in li:
    return None
@@ -1114,8 +1129,10 @@ def return_file_path(res):
  res["key_value"][str(path_to_file)]=keys_values # сохранить пред значения
  res["mouse_press"][str(path_to_file)]= list(mouse_press_old)
  res1= res["key_value"]
+
+ dict_save.save_jnson(res)
  if path_to_file in res1:
-   return None
+   return path_to_file
  else:
      res["key_value"][path_to_file]=["LBUTTON","RBUTTON",  "WHEEL_MOUSE_BUTTON",
       "WHEEL_MOUSE_UP", "WHEEL_MOUSE_DOWN", 'XBUTTON1', 'XBUTTON2']
@@ -1166,27 +1183,6 @@ simple_key_map = {
     'KEY_KP1': '1\nEnd', 'KEY_KP2': '2\n↓', 'KEY_KP3': '3\nPgDn'
 }
 
-def change_app(dict_save, game=""):  #
- # print("ch")
- # old = dict_save.get_prev_game()  # game = old
- if game == dict_save.get_cur_app() or game == "":
-  dict_save.set_cur_app("")
-  while True:
-   if "" == dict_save.get_cur_app():
-    break
- # else:
- dict_save.set_prev_game(game)  # Сохранить предыдущую игру
- dict_save.set_cur_app(game)
- while game != dict_save.get_cur_app():  # получить значение текущей активной строки.
-  time.sleep(1)  # Добавьте задержку, чтобы избежать чрезмерного использования процессора
- 
- res = dict_save.return_jnson()
- res['current_app'] = game  # Выбранная игра.
- mouse_check_button(dict_save)  # флаг для удержания кнопки мыши.
- create_scrypt_buttons(root)
- keys = list(res['paths'].keys())  # Получить все пути игр.
- index = keys.index(res['current_app'])  # Узнать индекс текущей игры.
- set_list_box(dict_save, index)  # Установить значения выпадающего списка.
 # def run_check_current_active_window(root, t1, dict_save, game, games_checkmark_paths):  # print(game)
 #   while 1:
 #     new_path_game = check_current_active_window(dict_save, games_checkmark_paths)  # Текущая директория активного окна игры.

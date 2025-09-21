@@ -62,7 +62,6 @@ def create_scrypt_buttons(root):
    y_place += 31  # Увеличение координаты по вертикали
 
   creat = 1  # Обновляем флаг, чтобы кнопки не создавались повторно
-
  
 def check_label_changed(event, labels, count, var_list):# Когда мы переключаем вкладку актив текущей игры изменение цвета labcel
  res=dict_save.return_jnson()
@@ -70,7 +69,9 @@ def check_label_changed(event, labels, count, var_list):# Когда мы пер
  # if game== dict_save.get_cur_app():# Если нажата активная вкладка
  #   return 0 # Выход
 
- set_colol_white_label_changed(labels)  # Установить белый цвет для всех label print(count)
+ set_colol_white_label_changed(labels)  # Установить белый цвет для всех label
+ print(count)
+ print(dict_save.get_count())
  if count != dict_save.get_count():
   dict_save.set_count(count)
   res = labels[count].cget("background")
@@ -135,7 +136,6 @@ def update_mouse_check_button(count):# сохранение после уста�
     dict_save.save_jnson(res)
 def mouse_check_button(dict_save):
   curr_name=dict_save.get_cur_app()#
-
   if curr_name == "":
    return 0
   res=dict_save.return_jnson()  # print(res["mouse_press"][curr_name])
@@ -156,6 +156,27 @@ def set_colol_white_label_changed(labels):# Установить белый цв
   for i in range(len(labels)):
     labels[i].config(background="white")  # у всех надписей снять выделения
 
+def change_app(dict_save, game=""):  #
+ # print("ch")
+ # old = dict_save.get_prev_game()  # game = old
+ if game == dict_save.get_cur_app() or game == "":
+  dict_save.set_cur_app("")
+  while True:
+   if "" == dict_save.get_cur_app():
+    break
+ # else:
+ dict_save.set_prev_game(game)  # Сохранить предыдущую игру
+ dict_save.set_cur_app(game)
+ while game != dict_save.get_cur_app():  # получить значение текущей активной строки.
+  time.sleep(1)  # Добавьте задержку, чтобы избежать чрезмерного использования процессора
+ 
+ res = dict_save.return_jnson()
+ res['current_app'] = game  # Выбранная игра.
+ mouse_check_button(dict_save)  # флаг для удержания кнопки мыши.
+ create_scrypt_buttons(root)
+ keys = list(res['paths'].keys())  # Получить все пути игр.
+ index = keys.index(res['current_app'])  # Узнать индекс текущей игры.
+ set_list_box(dict_save, index)  # Установить значения выпадающего списка.
 def change(event, window, new_name, old_name, res, count, labels):# Окно изменение названия игры
   new_name = new_name.get()  # print(new_name, old_name, end=" , ")
   if new_name != "" and new_name != old_name:
@@ -181,10 +202,11 @@ def change_name_label(event, count): # Изменить название игр�
   e.bind('<Return>', lambda event: change(event, window, new_name, old_name, res, count,labels))
 
 def add_file(dict_save):# Добавить новые игры
- res=dict_save.return_jnson() # получаем настройки
- path_to_file = return_file_path(res)
+ path_to_file = return_file_path(dict_save)
  if path_to_file ==None:
   return 0
+
+ res=dict_save.return_jnson() # получаем настройки
  labels=dict_save.return_labels()
  for i in range(len(labels)):
    labels[i].destroy()
@@ -205,11 +227,11 @@ def add_file(dict_save):# Добавить новые игры
  set_colol_white_label_changed(labels)  # Установить белый цвет для всех label
  res = dict_save.return_jnson()# update_buttons()
  filling_in_fields(res)
- # keys_values= dict_save.return_box_values()
- # old_keys_values=[]
- # for i in range(len(keys_values)):
- #     old_keys_values.append(keys_values[i].get())
- #
+ keys_values= dict_save.return_box_values()
+ old_keys_values=[]
+ for i in range(len(keys_values)):
+     old_keys_values.append(keys_values[i].get())
+
  labels[len(labels)-1].config(background="#06c")  # текстовое поле и кнопка для добавления в список
 checkbutton_list=[]
 
@@ -462,12 +484,19 @@ def delete(dict_save, root):# Удалить профиль.
    del_index=(list_paths.index(profile))
    labels = dict_save.return_labels()
    var_list = dict_save.return_var_list()
+   labels[del_index].config(background="white")
    for i in range(len(labels)):
      if i == del_index: # индекс какой нужно удалить
       info = labels[i].place_info()
       info2= checkbutton_list[i].place_info()
       old_y = int(info["y"])
       old_y2 = int(info2["y"])
+      labels[i].destroy()
+      checkbutton_list[i].destroy()
+      labels.pop(del_index)
+      checkbutton_list.pop(del_index)
+      # dict_save.save_labels(labels)
+      # dict_save.save_var_list(var_list)
      if i > del_index:# индекс больше удалённого
        info = labels[i].place_info()
        new_y = int(info["y"])
@@ -478,10 +507,9 @@ def delete(dict_save, root):# Удалить профиль.
        checkbutton_list[i].place(x=checkbutton_list[i].winfo_x(), y=old_y2)
        old_y2 = new_y2
 
-   labels.pop()
-   checkbutton_list.pop()
-   remove_profile_keys(res, profile)
    del_index= del_index-1
+
+   res=remove_profile_keys(res, profile)
    dict_save.save_jnson(res)  # Сохранить новые настройки.
    check_label_changed(0, labels, del_index, var_list)  # изменение цвета label
    #current_app   # print(dict_save.return_jnson())
