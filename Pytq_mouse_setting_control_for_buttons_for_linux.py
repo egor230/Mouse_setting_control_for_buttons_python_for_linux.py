@@ -170,8 +170,40 @@ class MouseSettingApp(QMainWindow):
         break
     if self.board is None:
       print("Клавиатура не найдена!")
-    self.setup_ui()
+    data = dict_save.data
+    if os.path.exists(data):
+      with open(data) as json_file:
+        res = json.load(json_file)
+        dict_save.save_old_data(res)
+        dict_save.save_jnson(res)
 
+    else:
+      res = {
+        'games_checkmark': {'C:/Windows/explorer.exe': True},
+        'paths': {'C:/Windows/explorer.exe': 'По умолчанию'},
+        'key_value': {'C:/Windows/explorer.exe': ['LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'SCROLL_UP',
+                                                  'SCROLL_DOWN', 'SCROLL_UP', 'SCROLL_DOWN']},
+        "mouse_press": {"C:/Windows/explorer.exe": [False, False, False, False, False, False, False]},
+        "id": 0,
+        "current_app": 'C:/Windows/explorer.exe'
+      }
+
+      try:
+       know_id = '''#!/bin/bash
+              input_list=$(xinput list)
+              mouse_line=$(echo "$input_list" | head -n 1)
+              if [ -n "$mouse_line" ]; then
+                  mouse_id=$(echo "$mouse_line" | grep -o "id=[0-9]*" | cut -d "=" -f 2)
+                  echo "$mouse_id"
+              fi
+              '''
+       result = subprocess.run(['bash', '-c', know_id], capture_output=True, text=True)
+ 
+       res["id"] = int(result.stdout.strip())
+      except:
+       res["id"] = 0
+    self.setup_ui()
+    
   def setup_ui(self):
    self.setWindowTitle("Mouse setting control for buttons python")
    self.setGeometry(440, 280, 940, 346)
@@ -224,7 +256,10 @@ class MouseSettingApp(QMainWindow):
    self.mouse_button_labels = []
    self.mouse_button_combos = []
    self.mouse_check_buttons = []
-
+   res = dict_save.return_jnson()
+   game=res['current_app']
+   box_button=list(res["key_value"][game])
+   print(box_button)
    for i in range(7):
     row_layout = QHBoxLayout()
     row_layout.setSpacing(10)
@@ -235,13 +270,22 @@ class MouseSettingApp(QMainWindow):
     label.setAlignment(Qt.AlignCenter)
  
     combo = QComboBox()
-    combo.addItems(LIST_KEYS)
-    combo.currentIndexChanged.connect(self.update_buttons)
- 
+    combo.addItems(LIST_KEYS)# Это кнопка выпадающего списка
+    # Получаем значение из box_button для текущего индекса
+    current_value = box_button[i]
+
+    # Ищем индекс этого значения в LIST_KEYS
+    if current_value in LIST_KEYS:
+     i2 = LIST_KEYS.index(current_value)
+     combo.setCurrentIndex(i2)
+    else:
+     # Если значение не найдено, можно установить дефолтное значение, например, 0
+     combo.setCurrentIndex(0)
+    combo.currentIndexChanged.connect(lambda idx=i: self.update_button(idx))
     checkbox = QCheckBox()
     checkbox.setToolTip("Держать нажатой")
-    checkbox.stateChanged.connect( lambda state, idx=i: self.update_mouse_check_button(idx))
- 
+    # checkbox.stateChanged.connect( lambda state, idx=i: self.update_mouse_check_button(idx))
+    #
     self.mouse_button_labels.append(label)
     self.mouse_button_combos.append(combo)
     self.mouse_check_buttons.append(checkbox)
@@ -256,12 +300,12 @@ class MouseSettingApp(QMainWindow):
    button_column_layout = QVBoxLayout()
    button_column_layout.setSpacing(5)
 
-   for name in LIST_MOUSE_BUTTONS:
+   for idx, name in enumerate(LIST_MOUSE_BUTTONS):# это кнопка для клавиатуры
     button = QPushButton(name)
     button.setFixedWidth(150)
     button.setStyleSheet("padding: 4px;")
     button_column_layout.addWidget(button)
-    button.clicked.connect(lambda: self.button_keyboard(dict_save))
+    button.clicked.connect(lambda _, i=idx: self.button_keyboard(dict_save, i))
    # Нижний блок управления (будет справа как отдельная колонка)
    control_widget = QWidget()
    control_layout = QVBoxLayout(control_widget)
@@ -295,7 +339,7 @@ class MouseSettingApp(QMainWindow):
     self.id_combo = QComboBox()
     id_list = dict_save.get_list_ids() if dict_save else []
     self.id_combo.addItems([str(id) for id in id_list])
-    self.id_combo.currentIndexChanged.connect(self.update_buttons)
+    # self.id_combo.currentIndexChanged.connect(self.update_button)
     self.id_combo.setToolTip('Выбор id устройства')
  
     id_layout.addWidget(id_label)
@@ -319,35 +363,7 @@ class MouseSettingApp(QMainWindow):
      QTimer.singleShot(0, self.setup_tray)
 
   def start_app(self):
-    data = dict_save.data
-    if os.path.exists(data):
-      with open(data) as json_file:
-        res = json.load(json_file)
-        dict_save.save_old_data(res)
-        dict_save.save_jnson(res)
-    else:
-      res = {
-        'games_checkmark': {'C:/Windows/explorer.exe': True},
-        'paths': {'C:/Windows/explorer.exe': 'По умолчанию'},
-        'key_value': {'C:/Windows/explorer.exe': ['LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'SCROLL_UP',
-                                                  'SCROLL_DOWN', 'SCROLL_UP', 'SCROLL_DOWN']},
-        "mouse_press": {"C:/Windows/explorer.exe": [False, False, False, False, False, False, False]},
-        "id": 0,
-        "current_app": 'C:/Windows/explorer.exe'
-      }
-      know_id = '''#!/bin/bash
-            input_list=$(xinput list)
-            mouse_line=$(echo "$input_list" | head -n 1)
-            if [ -n "$mouse_line" ]; then
-                mouse_id=$(echo "$mouse_line" | grep -o "id=[0-9]*" | cut -d "=" -f 2)
-                echo "$mouse_id"
-            fi
-            '''
-      try:
-        result = subprocess.run(['bash', '-c', know_id], capture_output=True, text=True)
-        res["id"] = int(result.stdout.strip())
-      except:
-        res["id"] = 0
+    res=dict_save.return_jnson()
     dict_save.set_cur_app(res["current_app"])
     dict_save.set_prev_game(res["current_app"])
     dict_save.set_current_app_path(res['current_app'])
@@ -437,8 +453,9 @@ class MouseSettingApp(QMainWindow):
     # else:
     #   self.add_button_create_keyboard.setStyleSheet("")
     change_app(dict_save, game)
-  def update_buttons(self):
-    print("update_buttons(self):")
+  def update_button(self, index):
+    print(index)
+
     dict_save.set_default_id_value()
     res = dict_save.return_jnson()
     box_values = []
@@ -479,7 +496,8 @@ class MouseSettingApp(QMainWindow):
       var_list = dict_save.return_var_list()
       self.check_label_changed(labels, count, var_list)
 
-  def update_mouse_check_button(self, count):
+  def update_mouse_check_button(self, count):# Изменение кнопок выпадающего списка
+    print(count)
     res = dict_save.return_jnson()
     curr_name = dict_save.get_cur_app()
     if curr_name in res["mouse_press"]:
@@ -498,9 +516,11 @@ class MouseSettingApp(QMainWindow):
     for label in labels:
       label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
 
-  def button_keyboard(self, dict_save):
+  def button_keyboard(self, dict_save, i):
+   print(i)
    print("button_keyboard")
   def change_name_label(self, count):
+    print(count)
     pass
 
   def change_name(self, window, new_name, old_name, res, count):
