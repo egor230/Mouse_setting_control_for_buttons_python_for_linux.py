@@ -316,7 +316,7 @@ class MouseSettingApp(QMainWindow):
    control_layout = QVBoxLayout(control_widget)
    control_layout.setContentsMargins(10, 10, 10, 10)
    control_layout.setSpacing(12)
-
+   
    self.add_button_add = QPushButton("Добавить")
    self.add_button_add.clicked.connect(lambda: self.add_file(dict_save))
    control_layout.addWidget(self.add_button_add)
@@ -325,6 +325,13 @@ class MouseSettingApp(QMainWindow):
    self.add_button_start.clicked.connect(lambda: self.delete(dict_save))
    control_layout.addWidget(self.add_button_start)
 
+   self.move_element_up = QPushButton("Вверх")
+   self.move_element_up.clicked.connect(lambda: self.move_element(dict_save, "up"))
+   control_layout.addWidget(self.move_element_up)
+   self.move_element_down = QPushButton("Вниз")
+   self.move_element_down.clicked.connect(lambda: self.move_element(dict_save, "down"))
+   control_layout.addWidget(self.move_element_down)
+   
    self.Keyboard_button = QPushButton("Клавитура")
    self.Keyboard_button.clicked.connect(lambda: self.add_file(dict_save))
    control_layout.addWidget(self.Keyboard_button)
@@ -424,6 +431,61 @@ class MouseSettingApp(QMainWindow):
       index = list(paths.keys()).index(res['current_app'])
       if index < len(labels):
         labels[index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
+
+  def move_element(self, dict_save, direction):  # Перемещает текущий элемент (определяемый dict_save.get_cur_app())
+
+   res = dict_save.return_jnson()  # Получаем текущий профиль и конфигурацию
+   profile = dict_save.get_cur_app()  # Текущая директория/приложение
+   list_paths = list(res["paths"].keys())
+   print(list_paths)
+   try:
+    index = list_paths.index(profile)
+    print(index)
+   except ValueError:
+    return  # Если профиль не найден, выходим
+   labels = dict_save.return_labels()
+ 
+   # Проверяем границы для перемещения
+   if direction == 'up':
+    if index == 0:
+     return  # Нельзя двигать вверх первый элемент
+    new_index = index - 1
+   elif direction == 'down':
+    if index == len(labels) - 1:
+     return  # Нельзя двигать вниз последний элемент
+    new_index = index + 1
+   else:
+    raise ValueError("direction должен быть 'up' или 'down'")
+   # Получаем текущие позиции элементов (предполагается, что используется .place())
+   info_current = labels[index].place_info()
+   info_neighbor = labels[new_index].place_info()
+   y_current = int(info_current.get("y", 0))
+   y_neighbor = int(info_neighbor.get("y", 0))
+   # Меняем местами y-координаты для labels
+   labels[index].place(x=labels[index].winfo_x(), y=y_neighbor)
+   labels[new_index].place(x=labels[new_index].winfo_x(), y=y_current)
+ 
+   # Меняем порядок элементов в списке labels
+   element = labels.pop(index)
+   labels.insert(new_index, element)
+ 
+   info_current = checkbutton_list[index].place_info()
+   info_neighbor = checkbutton_list[new_index].place_info()
+   y_current = int(info_current.get("y", 0))
+   y_neighbor = int(info_neighbor.get("y", 0))
+   # Меняем местами y-координаты для labels
+   checkbutton_list[index].place(x=checkbutton_list[index].winfo_x(), y=y_neighbor)
+   checkbutton_list[new_index].place(x=checkbutton_list[new_index].winfo_x(), y=y_current)
+ 
+   # Меняем порядок элементов в списке labels
+   element = checkbutton_list.pop(index)
+   checkbutton_list.insert(new_index, element)
+   res1 = reorder_keys_in_dict(res, index, direction)  # Меняем порядок в списке
+   # Обновляем текущий профиль в соответствии с новым порядком
+   list_paths = list(res["paths"].keys())
+   dict_save.set_cur_app(list_paths[new_index])
+
+   dict_save.save_jnson(res)
 
   def check_label_changed(self, labels, count, var_list):# Поменять цвет активной строки.
     print("ch")
