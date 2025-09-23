@@ -160,6 +160,7 @@ class MouseSettingApp(QMainWindow):
   def __init__(self):
     super().__init__()
     self.a_scrypt = []
+    self.combo_box=[]# хранить все значения выпадающего списка
     self.creat = 0
     self.devices = [InputDevice(path) for path in list_devices()]
     self.board = None
@@ -202,6 +203,10 @@ class MouseSettingApp(QMainWindow):
        res["id"] = int(result.stdout.strip())
       except:
        res["id"] = 0
+    dict_save.set_cur_app(res["current_app"])
+    dict_save.set_prev_game(res["current_app"])
+    dict_save.set_current_app_path(res['current_app'])
+    dict_save.set_id(res["id"])
     self.setup_ui()
     
   def setup_ui(self):
@@ -259,7 +264,6 @@ class MouseSettingApp(QMainWindow):
    res = dict_save.return_jnson()
    game=res['current_app']
    box_button=list(res["key_value"][game])
-   print(box_button)
    for i in range(7):
     row_layout = QHBoxLayout()
     row_layout.setSpacing(10)
@@ -273,6 +277,7 @@ class MouseSettingApp(QMainWindow):
     combo.addItems(LIST_KEYS)# Это кнопка выпадающего списка
     # Получаем значение из box_button для текущего индекса
     current_value = box_button[i]
+    self.combo_box.append(combo)
 
     # Ищем индекс этого значения в LIST_KEYS
     if current_value in LIST_KEYS:
@@ -364,10 +369,6 @@ class MouseSettingApp(QMainWindow):
 
   def start_app(self):
     res=dict_save.return_jnson()
-    dict_save.set_cur_app(res["current_app"])
-    dict_save.set_prev_game(res["current_app"])
-    dict_save.set_current_app_path(res['current_app'])
-    dict_save.set_id(res["id"])
     id_value = res["id"]
     if os.getgid() != 0 and hasattr(self, 'id_combo'):
       self.id_combo.setCurrentText(str(res["id"]))
@@ -424,54 +425,55 @@ class MouseSettingApp(QMainWindow):
       if index < len(labels):
         labels[index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
 
-  def check_label_changed(self, labels, count, var_list):
+  def check_label_changed(self, labels, count, var_list):# Поменять цвет активной строки.
     print("ch")
     res = dict_save.return_jnson()
-    game = list(res['paths'].keys())[count]
-    self.set_colol_white_label_changed(labels)
-
+    keys_list = list(res["key_value"].keys())
+    curr=res["current_app"]
+    index_curr = keys_list.index(curr)# Текущий индекс активности
+    labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
+    game = list(res["key_value"].keys())[count]# получить название новой игры по индексу
+    labels[count].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
+    res["current_app"]=game# Установить текущую игру
+    dict_save.save_jnson(res)
+    self.update_button(curr)
     # Проверяем, что count находится в допустимых пределах
     if count >= len(labels):
         # print(f"Ошибка: индекс {count} выходит за пределы списка labels длиной {len(labels)}")
         return
-    if count != dict_save.get_count():
-      dict_save.set_count(count)
-      for i in range(len(labels)):
-        if i != count:
-          labels[i].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
-      labels[count].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-      var_list[count].setChecked(True)
-    else:
-      print(count)
-      if labels[count].palette().color(QPalette.Background).name() == "#ffffff":
-        labels[count].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-      else:
-        labels[count].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
-    res = dict_save.return_jnson()
+  
     # if res.get("keyboard_script", {}).get(game, {}).get("keys"):
     #   self.add_button_create_keyboard.setStyleSheet("background-color: #c0c0c0;")
     # else:
     #   self.add_button_create_keyboard.setStyleSheet("")
-    change_app(dict_save, game)
-  def update_button(self, index):
-    print(index)
+    # change_app(dict_save, game)
+  def update_button(self, index):# Изменить каждое значение выпадающего списка.
+   res = dict_save.return_jnson()
+   game= res["current_app"]
+   box_button = list(res["key_value"][game])
 
-    dict_save.set_default_id_value()
-    res = dict_save.return_jnson()
-    box_values = []
-    for combo in self.mouse_button_combos:
-      box_values.append(combo.currentText())
-    res["key_value"][str(dict_save.get_cur_app())] = box_values
-    if os.getgid() != 0 and hasattr(self, 'id_combo'):
-      self.id_value = int(self.id_combo.currentText())
-      dict_save.set_id(self.id_value)
-      res["id"] = self.id_value
-    res["current_app"] = str(dict_save.get_cur_app())
-    profile = dict_save.get_cur_app()
-    count = list(res["paths"]).index(profile)
-    labels = dict_save.return_labels()
-    var_list = dict_save.return_var_list()
-    dict_save.save_jnson(res)
+   for i in range(7):  # Получаем значение из box_button для текущего индекса
+    current_value = box_button[i]
+    i2 = LIST_KEYS.index(current_value)
+    self.combo_box[i].setCurrentIndex(i2)
+   pass
+    #
+    # dict_save.set_default_id_value()
+    # res = dict_save.return_jnson()
+    # box_values = []
+    # for combo in self.mouse_button_combos:
+    #   box_values.append(combo.currentText())
+    # res["key_value"][str(dict_save.get_cur_app())] = box_values
+    # if os.getgid() != 0 and hasattr(self, 'id_combo'):
+    #   self.id_value = int(self.id_combo.currentText())
+    #   dict_save.set_id(self.id_value)
+    #   res["id"] = self.id_value
+    # res["current_app"] = str(dict_save.get_cur_app())
+    # profile = dict_save.get_cur_app()
+    # count = list(res["paths"]).index(profile)
+    # labels = dict_save.return_labels()
+    # var_list = dict_save.return_var_list()
+    # dict_save.save_jnson(res)
 
   def checkbutton_changed(self, count, curr_app):
     dict_save.set_cur_app(curr_app)
@@ -512,15 +514,11 @@ class MouseSettingApp(QMainWindow):
         if i < len(res["mouse_press"][curr_name]):
           checkbox.setChecked(res["mouse_press"][curr_name][i])
 
-  def set_colol_white_label_changed(self, labels):
-    for label in labels:
-      label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
-
   def button_keyboard(self, dict_save, i):
    print(i)
    print("button_keyboard")
   def change_name_label(self, count):
-    print(count)
+    # print(count)
     pass
 
   def change_name(self, window, new_name, old_name, res, count):
