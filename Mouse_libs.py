@@ -33,7 +33,7 @@ KEYS = {" ": 0x0,"LBUTTON": 'mouse left', "RBUTTON": 'mouse right', "WHEEL_MOUSE
         "WHEEL_MOUSE_UP" : "WHEEL_MOUSE_UP", "MBUTTON": 0x04, "SCROLL_UP": "scroll_up",
         "SCROLL_DOWN" : "scroll_down", "XBUTTON1": 0x05, "XBUTTON2": 0x06, "BACKSPACE": "BackSpace",
         "TAB": "Tab", "CLEAR": 0x0C, "RETURN": "Return", "KP_Enter" : "KP_Enter",
-        "LSHIFT": "Shift_L", "CONTROL": "CONTROL", "MENU": 0x12, "PAUSE": 0x13, "CAPITAL": 0x14,
+        "Shift_L": "Shift_L", "CONTROL": "CONTROL", "MENU": 0x12, "PAUSE": 0x13, "CAPITAL": 0x14,
         "KANA": 0x15, "JUNJA": 0x17, "FINAL": 0x18, "KANJI": 0x19, "ESCAPE": 0x1B,
         "CONVERT": 0x1C, "NONCONVERT": 0x1D, "ACCEPT": 0x1E, "MODECHANGE": 0x1F, "SPACE": "space",
         "PRIOR": 0x21, "NEXT": 0x22, "END": "0x23", "HOME": "Home", "LEFT": 0x25, "UP": 0x26,
@@ -143,13 +143,12 @@ class save_dict:
   def save_labels(self, labels):
      self.labels =labels
 
-  def save_var_list(self, var_list):
-     self.var_list=var_list
   def return_labels(self):
      return self.labels
-
+  def save_var_list(self, var_list):
+     self.var_list=var_list
   def return_var_list(self):
-     return self.var_list
+   return self.var_list
 
   def return_labels_with_checkmark(self):
      return self.labels_with_checkmark
@@ -1165,18 +1164,56 @@ def move_last_key_to_front(d):# Рекурсивно перемещает пос
      new_d[key] = move_last_key_to_front(d[key])
    return new_d
 
-def reorder_keys_in_dict(res, index, direction='up'):
- def move_key(d):
-  keys = list(d)
-  i = index + (-1 if direction == 'up' else 1)
-  if 0 <= index < len(keys) and 0 <= i < len(keys):
-   keys[index], keys[i] = keys[i], keys[index]
-   return {k: d[k] for k in keys}
-  return d
 
- res['paths'] = move_key(res['paths'])
- res['games_checkmark'] = move_key(res['games_checkmark'])
+def reorder_keys_in_dict(res, index, direction='up'):
+  # защищённый путь: если нет paths или это не dict — возвращаем как было
+ if 'paths' not in res or not isinstance(res['paths'], dict):
+  return res
+ 
+ orig_keys = list(res['paths'].keys())
+ n = len(orig_keys)
+ # целевой индекс
+ i = index + (-1 if direction == 'up' else 1)
+ 
+ # проверка границ
+ if not (0 <= index < n and 0 <= i < n):
+  return res
+ 
+ # новая последовательность ключей (после обмена)
+ new_order = orig_keys.copy()
+ new_order[index], new_order[i] = new_order[i], new_order[index]
+ 
+ def reorder_dict_by_order(d, keys_order, reference_keys):
+  """
+  Возвращает новый dict, в котором элементы из keys_order (если они есть в d)
+  идут в указанном порядке, а все остальные ключи из d добавляются после них
+  в исходном порядке.
+  """
+  if not isinstance(d, dict):
+   return d
+  # если в d нет ни одного ключа из reference_keys — не трогаем d
+  if not any(k in d for k in reference_keys):
+   return d
+  
+  new_d = {}
+  # сначала добавляем ключи в порядке keys_order (если присутствуют в d)
+  for k in keys_order:
+   if k in d:
+    new_d[k] = d[k]
+  # затем добавляем оставшиеся ключи в исходном порядке
+  for k in d:
+   if k not in new_d:
+    new_d[k] = d[k]
+  return new_d
+ 
+ # Перестроим все вложенные словари, которые содержат ключи из orig_keys
+ for top_k, top_v in list(res.items()):
+  if isinstance(top_v, dict):
+   res[top_k] = reorder_dict_by_order(top_v, new_order, orig_keys)
+ 
  return res
+
+
 simple_key_map = {
     'KEY_KP7': ' 7\nHome', 'KEY_KP8': '8\n↑', 'KEY_KP9': '9\nPgUp',
     'KEY_KP4': '4\n←', 'KEY_KP5': '5\n', 'KEY_KP6': '6\n→',

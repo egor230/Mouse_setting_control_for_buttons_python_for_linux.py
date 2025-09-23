@@ -264,6 +264,7 @@ class MouseSettingApp(QMainWindow):
    res = dict_save.return_jnson()
    game=res['current_app']
    box_button=list(res["key_value"][game])
+   lab=[]
    for i in range(7):
     row_layout = QHBoxLayout()
     row_layout.setSpacing(10)
@@ -272,7 +273,7 @@ class MouseSettingApp(QMainWindow):
     label.setStyleSheet("padding: 4px; font-weight: bold;")
     label.setFixedWidth(150)
     label.setAlignment(Qt.AlignCenter)
- 
+    lab.append(label)
     combo = QComboBox()
     combo.addItems(LIST_KEYS)# Это кнопка выпадающего списка
     # Получаем значение из box_button для текущего индекса
@@ -304,7 +305,7 @@ class MouseSettingApp(QMainWindow):
    # Правая колонка с кнопками
    button_column_layout = QVBoxLayout()
    button_column_layout.setSpacing(5)
-
+   dict_save.save_labels(lab)
    for idx, name in enumerate(LIST_MOUSE_BUTTONS):# это кнопка для клавиатуры
     button = QPushButton(name)
     button.setFixedWidth(150)
@@ -433,60 +434,71 @@ class MouseSettingApp(QMainWindow):
         labels[index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
 
   def move_element(self, dict_save, direction):  # Перемещает текущий элемент (определяемый dict_save.get_cur_app())
-
    res = dict_save.return_jnson()  # Получаем текущий профиль и конфигурацию
-   profile = dict_save.get_cur_app()  # Текущая директория/приложение
-   list_paths = list(res["paths"].keys())
-   print(list_paths)
-   try:
-    index = list_paths.index(profile)
-    print(index)
-   except ValueError:
-    return  # Если профиль не найден, выходим
    labels = dict_save.return_labels()
+   keys_list = list(res["key_value"].keys())
+   curr = res["current_app"]
+   index_curr = keys_list.index(curr)
+   new_index = 0  # Инициализация
  
    # Проверяем границы для перемещения
    if direction == 'up':
-    if index == 0:
+    if index_curr == 0:
      return  # Нельзя двигать вверх первый элемент
-    new_index = index - 1
+    new_index = index_curr - 1
    elif direction == 'down':
-    if index == len(labels) - 1:
+    if index_curr == len(labels) - 1:
      return  # Нельзя двигать вниз последний элемент
-    new_index = index + 1
+    new_index = index_curr + 1
    else:
     raise ValueError("direction должен быть 'up' или 'down'")
-   # Получаем текущие позиции элементов (предполагается, что используется .place())
-   info_current = labels[index].place_info()
-   info_neighbor = labels[new_index].place_info()
-   y_current = int(info_current.get("y", 0))
-   y_neighbor = int(info_neighbor.get("y", 0))
-   # Меняем местами y-координаты для labels
-   labels[index].place(x=labels[index].winfo_x(), y=y_neighbor)
-   labels[new_index].place(x=labels[new_index].winfo_x(), y=y_current)
  
-   # Меняем порядок элементов в списке labels
-   element = labels.pop(index)
-   labels.insert(new_index, element)
+   print(f"Текущий индекс: {index_curr}")
+   print(f"Новый индекс: {new_index}")
  
-   info_current = checkbutton_list[index].place_info()
-   info_neighbor = checkbutton_list[new_index].place_info()
-   y_current = int(info_current.get("y", 0))
-   y_neighbor = int(info_neighbor.get("y", 0))
-   # Меняем местами y-координаты для labels
-   checkbutton_list[index].place(x=checkbutton_list[index].winfo_x(), y=y_neighbor)
-   checkbutton_list[new_index].place(x=checkbutton_list[new_index].winfo_x(), y=y_current)
+   # Получаем layout, в котором находятся виджеты
+   container_index = labels[index_curr].parentWidget()
+   layout = container_index.parentWidget().layout()
  
-   # Меняем порядок элементов в списке labels
-   element = checkbutton_list.pop(index)
-   checkbutton_list.insert(new_index, element)
-   res1 = reorder_keys_in_dict(res, index, direction)  # Меняем порядок в списке
+   # Получаем контейнеры для перемещения
+   container_index = labels[index_curr].parentWidget()
+   container_new_index = labels[new_index].parentWidget()
+ 
+   # Удаляем виджеты из layout-а
+   layout.removeWidget(container_index)
+   layout.removeWidget(container_new_index)
+   # Меняем порядок в списке виджетов-меток
+   # ИСПРАВЛЕНО: была переменная "index", заменена на "index_curr"
+   labels.insert(new_index, labels.pop(index_curr))
+ 
+   # Вставляем виджеты обратно в layout в новом порядке
+   if direction == 'up':
+    # ИСПРАВЛЕНО: была переменная "index", заменена на "index_curr"
+    layout.insertWidget(new_index, container_index)
+    layout.insertWidget(index_curr, container_new_index)
+   else:  # direction == 'down'
+    # ИСПРАВЛЕНО: была переменная "index", заменена на "index_curr"
+    layout.insertWidget(index_curr, container_new_index)
+    layout.insertWidget(new_index, container_index)
+ 
+   # Обновляем стили, чтобы визуально выделить перемещенный элемент на новой позиции
+   # Логика здесь корректна, т.к. список labels уже был пересортирован
+   labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
+   labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
+
+   print(list(res["paths"])[new_index])
+   res = reorder_keys_in_dict(res, index_curr, direction)
+   print(list(res["paths"])[new_index])
    # Обновляем текущий профиль в соответствии с новым порядком
-   list_paths = list(res["paths"].keys())
-   dict_save.set_cur_app(list_paths[new_index])
+   # print(keys_list)
+   dict_save.set_cur_app(keys_list[new_index])
+   print(keys_list[new_index])
+   res["current_app"] = keys_list[new_index]
+   dict_save.set_current_app_path(keys_list[new_index])
 
+   # Сохраняем изменения
+   dict_save.save_labels(labels)
    dict_save.save_jnson(res)
-
   def check_label_changed(self, labels, count, var_list):# Поменять цвет активной строки.
     print("ch")
     res = dict_save.return_jnson()
@@ -497,6 +509,9 @@ class MouseSettingApp(QMainWindow):
     game = list(res["key_value"].keys())[count]# получить название новой игры по индексу
     labels[count].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
     res["current_app"]=game# Установить текущую игру
+    dict_save.set_cur_app(game)
+    dict_save.set_prev_game(curr)
+    keys_list = list(res["key_value"].keys())
     dict_save.save_jnson(res)
     self.update_button(curr)
     # Проверяем, что count находится в допустимых пределах
