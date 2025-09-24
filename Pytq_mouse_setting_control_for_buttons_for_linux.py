@@ -413,22 +413,19 @@ class MouseSettingApp(QMainWindow):
   labels = dict_save.return_labels()
   name_games = dict_save.return_name_games()
   var_list = dict_save.return_var_list()
-  labels_with_checkmark = dict_save.return_labels_with_checkmark()
   labels.clear()
   name_games.clear()
   var_list.clear()
-  labels_with_checkmark.clear()
   check_mark = res["games_checkmark"]
   paths = res["paths"]
-  checkbutton_list = []
   for count, (path, game_name) in enumerate(paths.items()):
    game_container = QWidget()
    game_layout = QHBoxLayout(game_container)
    game_layout.setContentsMargins(0, 0, 0, 0)
    var = QCheckBox()
    var.setChecked(check_mark[path])
-   var.stateChanged.connect(lambda state, c=count, p=path: self.checkbutton_changed(c, p))
-   checkbutton_list.append(var)
+   var_list.append(var)
+   var.stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c, dict_save))
    label = QLabel(game_name)
    label.setFixedWidth(200)
    label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
@@ -438,80 +435,36 @@ class MouseSettingApp(QMainWindow):
    label.customContextMenuRequested.connect(lambda pos, c=count: self.show_change_name_menu(c))
    name_games.append(game_name)
    labels.append(label)
-   labels_with_checkmark[label] = var
    game_layout.addWidget(var)
    game_layout.addWidget(label)
    self.games_layout.addWidget(game_container)
-  dict_save.save_var_list(checkbutton_list)
   if res['current_app'] in paths:
    index = list(paths.keys()).index(res['current_app'])
    if index < len(labels):
     labels[index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
 
- def filling_in_fields(self, res):
-  while self.games_layout.count():
-   child = self.games_layout.takeAt(0)
-   if child.widget():
-    child.widget().deleteLater()
-  labels = dict_save.return_labels()
-  name_games = dict_save.return_name_games()
-  var_list = dict_save.return_var_list()
-  labels_with_checkmark = dict_save.return_labels_with_checkmark()
-  labels.clear()
-  name_games.clear()
-  var_list.clear()
-  labels_with_checkmark.clear()
-  check_mark = res["games_checkmark"]
-  paths = res["paths"]
-  checkbutton_list = []
-  for count, (path, game_name) in enumerate(paths.items()):
-   game_container = QWidget()
-   game_layout = QHBoxLayout(game_container)
-   game_layout.setContentsMargins(0, 0, 0, 0)
-   var = QCheckBox()
-   var.setChecked(check_mark[path])
-   var.stateChanged.connect(lambda state, c=count, p=path: self.checkbutton_changed(c, p))
-   checkbutton_list.append(var)
-   label = QLabel(game_name)
-   label.setFixedWidth(200)
-   label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
-   label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-   label.mousePressEvent = lambda event, c=count: self.label_clicked(event, c)
-   label.setContextMenuPolicy(Qt.CustomContextMenu)
-   label.customContextMenuRequested.connect(lambda pos, c=count: self.show_change_name_menu(c))
-   name_games.append(game_name)
-   labels.append(label)
-   labels_with_checkmark[label] = var
-   game_layout.addWidget(var)
-   game_layout.addWidget(label)
-   self.games_layout.addWidget(game_container)
-  dict_save.save_var_list(checkbutton_list)
-  if res['current_app'] in paths:
-   index = list(paths.keys()).index(res['current_app'])
-   if index < len(labels):
-    labels[index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-
- def checkbutton_changed(self, count, curr_app):  # поставить и убрать галочку.
-  dict_save.set_cur_app(curr_app)
-  dict_save.set_count(count)
+ def checkbutton_changed(self, count, dict_save):  # поставить и убрать галочку.
   res = dict_save.return_jnson()
-  labels = dict_save.return_labels()
-  var_list = dict_save.return_var_list()
+  keys_list = list(res["games_checkmark"].keys())
+  curr_app = str(keys_list[count])
+  var_list = dict_save.return_var_list()  # Получаем список QCheckBox
   if not var_list[count].isChecked():
-   labels[count].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-   res["games_checkmark"][str(dict_save.get_cur_app())] = True
+   res["games_checkmark"][curr_app] = True
   else:
-   labels[count].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
-   res["games_checkmark"][str(dict_save.get_cur_app())] = False
-  for i in range(len(labels)):
-   if i != count:
-    labels[i].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
+   res["games_checkmark"][curr_app] = False
   dict_save.save_jnson(res)
 
  def update_labels_bindings(self):
   labels = dict_save.return_labels()
+  var_list = dict_save.return_var_list()  # Получаем список QCheckBox
   for count, label in enumerate(labels):
+   # Обновляем привязку для QLabel
    label.mousePressEvent = lambda event, c=count: self.label_clicked(event, c)
+  
+   # Обновляем привязку для QCheckBox
+   if count < len(var_list):
+    var_list[count].stateChanged.disconnect()  # Отключаем старый сигнал
+    var_list[count].stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c, dict_save))
  def move_element(self, dict_save, direction):  # Перемещает текущий элемент (определяемый dict_save.get_cur_app())
   res = dict_save.return_jnson()  # Получаем текущий профиль и конфигурацию
   labels = dict_save.return_labels()
