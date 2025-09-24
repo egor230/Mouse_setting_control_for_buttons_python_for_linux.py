@@ -508,67 +508,81 @@ class MouseSettingApp(QMainWindow):
     labels[i].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
   dict_save.save_jnson(res)
 
+ def update_labels_bindings(self):
+  labels = dict_save.return_labels()
+  for count, label in enumerate(labels):
+   label.mousePressEvent = lambda event, c=count: self.label_clicked(event, c)
  def move_element(self, dict_save, direction):  # Перемещает текущий элемент (определяемый dict_save.get_cur_app())
   res = dict_save.return_jnson()  # Получаем текущий профиль и конфигурацию
   labels = dict_save.return_labels()
-  keys_list = list(res["key_value"].keys())
   curr = res["current_app"]
-  index_curr = keys_list.index(curr)
-  new_index = 0  # Инициализация
- 
+  keys_list = list(res["key_value"].keys())
   # Проверяем границы для перемещения
-  if direction == 'up':
-   if index_curr == 0:
-    return  # Нельзя двигать вверх первый элемент
+  index_curr = keys_list.index(curr)
+  index_curr = keys_list.index(curr)
+  new_index = -1  # Используем -1 для индикации, что перемещение не произошло
+  move = ""
+
+  if direction == 'up' and index_curr > 0:
+   move = "up"
    new_index = index_curr - 1
-  elif direction == 'down':
-   if index_curr == len(labels) - 1:
-    return  # Нельзя двигать вниз последний элемент
+  elif direction == 'down' and index_curr < len(labels) - 1:
+   move = "down"
    new_index = index_curr + 1
   else:
-   raise ValueError("direction должен быть 'up' или 'down'")
- 
-  print(f"Текущий индекс: {index_curr}")
- 
-  # Получаем layout, в котором находятся виджеты
-  container_index = labels[index_curr].parentWidget()
-  layout = container_index.parentWidget().layout()
- 
-  # Получаем контейнеры для перемещения
-  container_index = labels[index_curr].parentWidget()
-  container_new_index = labels[new_index].parentWidget()
- 
-  # Удаляем виджеты из layout-а
-  layout.removeWidget(container_index)
-  layout.removeWidget(container_new_index)
- 
-  # Меняем порядок в списке виджетов-меток
-  labels.insert(new_index, labels.pop(index_curr))
- 
-  # Вставляем виджеты обратно в layout в новом порядке
-  if direction == 'up':
-   layout.insertWidget(new_index, container_index)
-   layout.insertWidget(index_curr, container_new_index)
-  else:  # direction == 'down'
-   layout.insertWidget(index_curr, container_new_index)
-   layout.insertWidget(new_index, container_index)
- 
-  # Обновляем стили, чтобы визуально выделить перемещенный элемент на новой позиции
-  res = reorder_keys_in_dict(res, index_curr, direction)
-  print(new_index)
-  print(list(res["paths"])[new_index])
-  labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
-  labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
- 
-  # Обновляем текущий профиль в соответствии с новым порядком
-  # Сохраняем изменения
-  dict_save.save_labels(labels)
-  dict_save.save_jnson(res)
+   # Возвращаемся, если перемещение невозможно
+   return
+  #
+  # print(move)
+  # print(f"Текущий индекс: {index_curr}")
+  # print(new_index)
+  try:
+   # Получаем layout, в котором находятся виджеты
+   container_index = labels[index_curr].parentWidget()
+   layout = container_index.parentWidget().layout()
+  
+   # Получаем контейнеры для перемещения
+   container_index = labels[index_curr].parentWidget()
+   container_new_index = labels[new_index].parentWidget()
+  
+   # Удаляем виджеты из layout-а
+   layout.removeWidget(container_index)
+   layout.removeWidget(container_new_index)
+  
+   # Меняем порядок в списке виджетов-меток
+   labels.insert(new_index, labels.pop(index_curr))
+  
+   # Вставляем виджеты обратно в layout в новом порядке
+   if direction == 'up':
+    layout.insertWidget(new_index, container_index)
+    layout.insertWidget(index_curr, container_new_index)
+   else:  # direction == 'down'
+    layout.insertWidget(index_curr, container_new_index)
+    layout.insertWidget(new_index, container_index)
+  
+   # Обновляем стили, чтобы визуально выделить перемещенный элемент на новой позиции
+   res = reorder_keys_in_dict(res, index_curr, direction)
+   # print(list(res["paths"]))
+   labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
+   labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
 
- def check_label_changed(self, labels, count, var_list):  # Поменять цвет активной строки.
+   self.update_labels_bindings()
+   # Обновляем текущий профиль в соответствии с новым порядком
+   # Сохраняем изменения
+   dict_save.save_labels(labels)
+   dict_save.save_jnson(res)
+   # self.filling_in_fields(res)
+   return 0
+  except Exception as e:
+   print(e)
+   pass
+ def check_label_changed(self, dict_save, count):  # Поменять цвет активной строки.
   print("ch")
   res = dict_save.return_jnson()
+  print(count)
+  labels = dict_save.return_labels()
   keys_list = list(res["key_value"].keys())
+  # print(list(res["paths"]))
   curr = res["current_app"]
   index_curr = keys_list.index(curr)  # Текущий индекс активности
   labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
@@ -603,9 +617,7 @@ class MouseSettingApp(QMainWindow):
 
  def label_clicked(self, event, count):
   if event.button() == Qt.LeftButton:
-   labels = dict_save.return_labels()
-   var_list = dict_save.return_var_list()
-   self.check_label_changed(labels, count, var_list)
+   self.check_label_changed(dict_save, count)
 
  def update_mouse_check_button(self, count):  # Изменение кнопок выпадающего списка
   print(count)
