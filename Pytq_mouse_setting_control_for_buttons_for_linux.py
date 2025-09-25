@@ -1,176 +1,239 @@
-import sys
-import os
-import json
-import threading
-import subprocess
-import psutil
-import signal
+import sys, os, json, threading, subprocess, psutil, signal, time
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QLabel, QComboBox, QTextEdit, QTabWidget,
                              QScrollArea, QFrame, QCheckBox, QLineEdit, QMessageBox,
-                             QStyleFactory, QToolTip, QGridLayout, QDialog)
+                             QStyleFactory, QToolTip, QGridLayout, QDialog, QPlainTextEdit,
+                             QTextEdit)
 from PyQt5.QtCore import Qt, pyqtSignal, QThread, QTimer
-from PyQt5.QtGui import QFont, QIcon, QColor, QPalette
+from PyQt5.QtGui import QFont, QIcon, QColor, QPalette, QTextCursor
 from deepdiff import DeepDiff
 from PIL import Image
 import pystray
-# Импортируем необходимые модули из Mouse_libs
 from Mouse_libs import *
-
 from evdev import InputDevice, categorize, ecodes, list_devices
 
-# ВАЖНО: Убедитесь, что этот путь правильный для вашей системы.
 os.environ[
  "QT_QPA_PLATFORM_PLUGIN_PATH"] = "/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/myenv/lib/python3.12/site-packages/PyQt5/Qt5/plugins"
-
 dict_save = save_dict()
 
 
-def add_key_text(key, text_widget):
- add_text(key, text_widget)
- current_app = dict_save.get_cur_app()
- res = dict_save.return_jnson()
- curr_key = dict_save.get_last_key_keyboard_script()
- keyboard_script = res["keyboard_script"][current_app]["keys"]
- if text_widget.get("1.0", "end-1c"):
-  keyboard_script[curr_key] = text_widget.get("1.0", "end-1c")
- dict_save.save_jnson(res)
-
-
-def kill_notebook(w, n, text_widget):
- current_app = dict_save.get_cur_app()
- res = dict_save.return_jnson()
- curr_key = dict_save.get_last_key_keyboard_script()
+def add_text_pytq5(key, text_widget):
+ if key is None:
+  return
+ k = key.replace('\r', '').strip()
  
- keyboard_script = res["keyboard_script"][current_app]["keys"]
- sc = text_widget.get("1.0", "end-1c")
- if sc == "":
-  if curr_key in keyboard_script:
-   del keyboard_script[curr_key]
+ keypad_map = {
+  "7\nHome": "KP_Home", "8\n↑": "KP_Up",
+  "9\nPgUp": "KP_Prior", "4\n←": "KP_Left", "5\n": "KP_Begin", "6\n→": "KP_Right", "1\nEnd": "KP_End",
+  "2\n↓": "KP_Down", "3\nPgDn": "KP_Next", "Ctrl": "ISO_Next_Group",
+ }
+ if k in keypad_map:
+  k = keypad_map[k]
+ 
+ mouse_map = {
+  "Левая": ("mousedown 1", "mouseup 1"),
+  "Правая": ("mousedown 3", "mouseup 3"),
+  "wheel_up": ("mousedown 4", "mouseup 4"),
+  "mouse_middie": ("mousedown 2", "mouseup 2"),
+  "wheel_down": ("mousedown 5", "mouseup 5"),
+ }
+ 
+ if k in mouse_map:
+  down, up = mouse_map[k]
+  sc = f'xte "{down}"\n' \
+       f'sleep 0.23\n' \
+       f'xte "{up}"\n'
  else:
-  res["keyboard_script"][current_app]["keys"][curr_key] = sc
- w.destroy()
- n.destroy()
- dict_save.save_jnson(res)
- create_keyboard()
-
-
-def kill_keyboard(w, n, text_widget):
- kill_notebook(w, n, text_widget)
-
-
-def record_marcross(key, w):
- w.destroy()
- dict_save.set_last_key_keyboard_script(key)
- current_app = dict_save.get_cur_app()
- res = dict_save.return_jnson()
+  key_for_xte = k.replace('"', '\\"')
+  sc = f'xte "keydown {key_for_xte}"\n' \
+       f'sleep 0.23\n' \
+       f'xte "keyup {key_for_xte}"\n'
  
- res.setdefault("keyboard_script", {}).setdefault(current_app, {}).setdefault("keys", {})
- keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
- 
- window, buttons = create_virtial_keyboard(root)
- window.title(f"Запись макроса для клавиши {key}")
- window.geometry("1610x340+140+480")
- add_buttons_keyboard(buttons, window)
- note = Toplevel(window)
- note.title("Скрипт")
- 
- notebook = ttk.Notebook(note)
- notebook.grid(row=0, column=0, sticky="nsew")
- 
- tab1 = ttk.Frame(notebook)
- notebook.add(tab1, text="Окно редактора скрипта")
- keyboard_script = dict_save.return_jnson()["keyboard_script"]
- text_widget = Text(tab1, wrap='word')
- text_widget.grid(row=0, column=0, sticky="nsew")
- 
- note.protocol("WM_DELETE_WINDOW", lambda: kill_notebook(window, note, text_widget))
- if key in keys_active:
-  text_content = keyboard_script[current_app]["keys"][key]
-  text_widget.insert('end', text_content)
- else:
-  text_widget.insert("end", "#!/bin/bash\n")
- window.protocol("WM_DELETE_WINDOW", lambda: kill_keyboard(window, note, text_widget))
- for button, key in buttons.items():
-  button.configure(command=lambda k=key, t=text_widget: add_key_text(k, t))
+ if text_widget is not None:
+  cursor = text_widget.textCursor()
+  cursor.insertText(sc)
+  text_widget.setTextCursor(cursor)
+ return sc
 
 
-def create_keyboard():
- res = dict_save.return_jnson()
- current_app = dict_save.get_cur_app()
- if res.get("keyboard_script") is None:
-  res["keyboard_script"] = {}
- if current_app not in res.get("keyboard_script", {}):
-  res["keyboard_script"][current_app] = {}
- key = dict_save.get_last_key_keyboard_script()
- window, buttons = create_virtial_keyboard(root)
- window.title("Выбор клавиш")
+class KeyboardWidget(QWidget):
+ def __init__(self, callback):
+  super().__init__()
+  self.callback = callback
+  self.create_keyboard_layout()
  
- if "keys" in res["keyboard_script"][current_app]:
-  keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
- else:
-  keys_active = []
- for button, key in buttons.items():
-  button.configure(command=lambda k=key, w=window: record_marcross(k, w))
-  if key != "" and key in keys_active and len(keys_active) > 0:
-   style = ttk.Style()
-   style.configure("Custom.TButton", background="blue", foreground="white")
-   button.configure(style="Custom.TButton")
- 
- dict_save.save_jnson(res)
+ def create_keyboard_layout(self):
+  layout = QVBoxLayout(self)
+  
+  keyboard_layout = [
+   ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+    'Insert', 'Delete', 'Home', 'End', 'PgUp', 'PgDn'],
+   ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0',
+    '_\n-', '+\n=', 'Backspace', 'Num Lock', '/', '*', '-'],
+   ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\',
+    '7\nHome', '8\n↑', '9\nPgUp', '+'],
+   ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', 'Enter',
+    '4\n←', '5\n', '6\n→'],
+   ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift_R',
+    '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter'],
+   ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . '],
+   ['Left', 'Down', 'Right']
+  ]
+  
+  for i, row in enumerate(keyboard_layout):
+   row_widget = QWidget()
+   row_layout = QHBoxLayout(row_widget)
+   for key in row:
+    btn = QPushButton(key)
+    btn.setFixedSize(60, 40)
+    btn.clicked.connect(lambda checked, k=key: self.callback(k))
+    row_layout.addWidget(btn)
+   layout.addWidget(row_widget)
 
-def mouse_check_button(dict_save):
- curr_name = dict_save.get_cur_app()  #
- if curr_name == "":
-  return 0
- res = dict_save.return_jnson()  # print(res["mouse_press"][curr_name])
- list_mouse_button_press = list(res["mouse_press"][curr_name])  # print(d)
- mouse_press_button = []  # список нажатых кнопок.
- cd1_y = 30
- for count, i in enumerate(list_mouse_button_press):
-  mouse_press_button.append(BooleanVar())
-  mouse_press_button[count].set(i)
-  # cb1 = Checkbutton(root, variable=mouse_press_button[count],  # создания галочек
-  #                   onvalue=1, offvalue=0, state=NORMAL, command=lambda c=count: update_mouse_check_button(c))  # Исправление здесь
-  # cb1.place(x=490, y=cd1_y)
-  # cd1_y = cd1_y + 30
-  # CreateToolTip(cb1, text='Держать нажатой')  # вывод надписи
- # dict_save.save_mouse_button_press(list_mouse_button_press, check_mouse_press_button)
-
-def change_app(dict_save, game=""):  #
- # print("ch")
- # old = dict_save.get_prev_game()  # game = old
- if game == dict_save.get_cur_app() or game == "":
-  dict_save.set_cur_app("")
-  while True:
-   if "" == dict_save.get_cur_app():
-    break
- # else:
- dict_save.set_prev_game(game)  # Сохранить предыдущую игру
- dict_save.set_cur_app(game)
- while game != dict_save.get_cur_app():  # получить значение текущей активной строки.
-  time.sleep(1)  # Добавьте задержку, чтобы избежать чрезмерного использования процессора
- 
- res = dict_save.return_jnson()
- res['current_app'] = game  # Выбранная игра.
- mouse_check_button(dict_save)  # флаг для удержания кнопки мыши.
- create_scrypt_buttons(root)
- keys = list(res['paths'].keys())  # Получить все пути игр.
- index = keys.index(res['current_app'])  # Узнать индекс текущей игры.
- set_list_box(dict_save, index)  # Установить значения выпадающего списка.
- 
- res = dict_save.return_jnson()
- res['current_app'] = game
- mouse_check_button(dict_save)
- create_scrypt_buttons(root)
- keys = list(res['paths'].keys())
- index = keys.index(res['current_app'])
- set_list_box(dict_save, index)
-
-
-# --- Класс приложения ---
 
 class MouseSettingApp(QMainWindow):
+ # class VirtualKeyboard(QMainWindow):
+ #   def __init__(self, callback_record_macro=None):
+ #     super().__init__()
+ #     self.callback_record_macro = callback_record_macro
+ #     self.setGeometry(240, 580, 1350, 340)
+ #     self.setWindowTitle("Виртуальная клавиатура")
+ 
+ #     self.central = QWidget(self)
+ #     self.setCentralWidget(self.central)
+ 
+ #     self.buttons = {}
+ #     self.create_layout()
+ 
+ #   def create_layout(self):
+ #     keyboard_layout = [
+ #       ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+ #        'Insert', 'Delete', 'Home', 'End', 'PgUp', 'PgDn'],
+ #       ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0',
+ #        '_\n-', '+\n=', 'Backspace', 'Num Lock', '/', '*', '-'],
+ #       ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\',
+ #        '7\nHome', '8\n↑', '9\nPgUp', '+'],
+ #       ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', 'Enter',
+ #        '4\n←', '5\n', '6\n→'],
+ #       ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift_R',
+ #        '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter'],
+ #       ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . '],
+ #       ['Left', 'Down', 'Right']
+ #     ]
+ 
+ #     for i, row in enumerate(keyboard_layout):
+ #       for j, key in enumerate(row):
+ #         btn = QPushButton(key, self.central)
+ #         btn.resize(60, 40)
+ #         btn.move(70 * j + 6, 50 * i + 6)
+ #         btn.clicked.connect(lambda _, k=key: self.record_macro(k))
+ #         self.buttons[btn] = key
+ 
+ #     def record_macro(self, key):
+ #       if self.callback_record_macro:
+ #         self.callback_record_macro(key, self)
+ # --- ЭТОТ КЛАСС БЫЛ УДАЛЕН ---
+ 
+ class MacroEditor(QDialog):
+  def __init__(self, key, parent=None):
+   super().__init__(parent)
+   self.key = key
+   self.setWindowTitle(f"Запись макроса для {key}")
+   self.setGeometry(140, 480, 800, 400)
+   
+   layout = QVBoxLayout(self)
+   
+   self.text_widget = QPlainTextEdit(self)
+   self.text_widget.insertPlainText("#!/bin/bash\n")
+   layout.addWidget(QLabel("Редактор скрипта:"))
+   layout.addWidget(self.text_widget)
+   
+   current_app = dict_save.get_cur_app()
+   res = dict_save.return_jnson()
+   if "keyboard_script" in res and current_app in res["keyboard_script"]:
+    keys = res["keyboard_script"][current_app].get("keys", {})
+    if key in keys:
+     self.text_widget.setPlainText(keys[key])
+  
+  def get_script(self):
+   return self.text_widget.toPlainText()
+ 
+ class MacroKeyboardWindow(QMainWindow):  # Бывший KeyboardWithEditor
+  def __init__(self, dict_save, parent=None):
+   super().__init__(parent)
+   self.dict_save = dict_save
+   self.current_key = None
+   self.text_widget = None
+   self.keyboard_window = None
+   self.setup_ui()
+  
+  def setup_ui(self):
+   self.setWindowTitle("Запись макроса")
+   self.setGeometry(140, 480, 1610, 600)
+   
+   central_widget = QWidget()
+   self.setCentralWidget(central_widget)
+   layout = QVBoxLayout(central_widget)
+   
+   self.text_widget = QTextEdit()
+   self.text_widget.setPlainText("#!/bin/bash\n")
+   layout.addWidget(QLabel("Редактор скрипта:"))
+   layout.addWidget(self.text_widget)
+   
+   # Используем KeyboardWidget для создания раскладки (устранение дублирования)
+   self.keyboard_widget = KeyboardWidget(self.add_key_text)
+   layout.addWidget(self.keyboard_widget)
+  
+  def create_keyboard(self):
+   # Этот метод теперь не создает клавиатуру, но его можно оставить
+   # пустым, если он вызывался извне, чтобы не ломать код.
+   # Фактически, вся логика создания теперь в KeyboardWidget
+   pass
+  
+  def add_key_text(self, key):
+   add_text_pytq5(key, self.text_widget)
+   current_app = dict_save.get_cur_app()
+   res = dict_save.return_jnson()
+   curr_key = dict_save.get_last_key_keyboard_script()
+   
+   if "keyboard_script" not in res:
+    res["keyboard_script"] = {}
+   if current_app not in res["keyboard_script"]:
+    res["keyboard_script"][current_app] = {"keys": {}}
+   
+   keyboard_script = res["keyboard_script"][current_app]["keys"]
+   script_text = self.text_widget.toPlainText()
+   
+   if script_text.strip():
+    keyboard_script[curr_key] = script_text
+   dict_save.save_jnson(res)
+  
+  def closeEvent(self, event):
+   self.kill_notebook()
+   event.accept()
+  
+  def kill_notebook(self):
+   current_app = dict_save.get_cur_app()
+   res = dict_save.return_jnson()
+   curr_key = dict_save.get_last_key_keyboard_script()
+   
+   if "keyboard_script" not in res:
+    res["keyboard_script"] = {}
+   if current_app not in res["keyboard_script"]:
+    res["keyboard_script"][current_app] = {"keys": {}}
+   
+   keyboard_script = res["keyboard_script"][current_app]["keys"]
+   sc = self.text_widget.toPlainText()
+   
+   if sc.strip() == "":
+    if curr_key in keyboard_script:
+     del keyboard_script[curr_key]
+   else:
+    keyboard_script[curr_key] = sc
+   
+   dict_save.save_jnson(res)
+   self.close()
+ 
  def __init__(self):
   super().__init__()
   self.a_scrypt = []
@@ -178,11 +241,10 @@ class MouseSettingApp(QMainWindow):
   self.creat = 0
   self.devices = [InputDevice(path) for path in list_devices()]
   self.board = None
-
   self.mouse_button_labels = []
   self.mouse_button_combos = []
   self.mouse_check_buttons = []
-  self.buttons_script = []  # список кнопок для скриптов
+  self.buttons_script = []
   for dev in self.devices:
    dev_str = str(dev)
    if '"Keyboard"' in dev_str and ' phys ' in dev_str:
@@ -196,32 +258,28 @@ class MouseSettingApp(QMainWindow):
     res = json.load(json_file)
     dict_save.save_old_data(res)
     dict_save.save_jnson(res)
-
   else:
-   res = {
-    'games_checkmark': {'C:/Windows/explorer.exe': True},
-    'paths': {'C:/Windows/explorer.exe': 'По умолчанию'},
-    'key_value': {'C:/Windows/explorer.exe': ['LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'SCROLL_UP',
-                                              'SCROLL_DOWN', 'SCROLL_UP', 'SCROLL_DOWN']},
-    "mouse_press": {"C:/Windows/explorer.exe": [False, False, False, False, False, False, False]},
-    "id": 0,
-    "current_app": 'C:/Windows/explorer.exe'
-   }
- 
+   res = {'games_checkmark': {'C:/Windows/explorer.exe': True},
+          'paths': {'C:/Windows/explorer.exe': 'По умолчанию'},
+          'key_value': {'C:/Windows/explorer.exe': ['LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'SCROLL_UP',
+                                                    'SCROLL_DOWN', 'SCROLL_UP', 'SCROLL_DOWN']},
+          "mouse_press": {"C:/Windows/explorer.exe": [False, False, False, False, False, False, False]},
+          "id": 0,
+          "current_app": 'C:/Windows/explorer.exe'}
    try:
     know_id = '''#!/bin/bash
-            input_list=$(xinput list)
-            mouse_line=$(echo "$input_list" | head -n 1)
-            if [ -n "$mouse_line" ]; then
-                mouse_id=$(echo "$mouse_line" | grep -o "id=[0-9]*" | cut -d "=" -f 2)
-                echo "$mouse_id"
-            fi
-            '''
+                   input_list=$(xinput list)
+                   mouse_line=$(echo "$input_list" | head -n 1)
+                   if [ -n "$mouse_line" ]; then
+                       mouse_id=$(echo "$mouse_line" | grep -o "id=[0-9]*" | cut -d "=" -f 2)
+                       echo "$mouse_id"
+                   fi
+                   '''
     result = subprocess.run(['bash', '-c', know_id], capture_output=True, text=True)
-  
     res["id"] = int(result.stdout.strip())
    except:
     res["id"] = 0
+   dict_save.save_jnson(res)
   dict_save.set_cur_app(res["current_app"])
   dict_save.set_prev_game(res["current_app"])
   dict_save.set_current_app_path(res['current_app'])
@@ -242,7 +300,6 @@ class MouseSettingApp(QMainWindow):
   top_layout = QHBoxLayout()
   top_layout.setSpacing(10)
   
-  # Левая часть (scroll)
   left_widget = QWidget()
   left_widget.setFixedWidth(260)
   left_layout = QVBoxLayout(left_widget)
@@ -263,17 +320,14 @@ class MouseSettingApp(QMainWindow):
   left_layout.addWidget(self.scroll_area)
   top_layout.addWidget(left_widget, 1)
   
-  # Правая часть
   right_widget = QWidget()
   right_layout = QVBoxLayout(right_widget)
   right_layout.setContentsMargins(10, 10, 10, 10)
   right_layout.setSpacing(10)
   
-  # Верх: строки + кнопки + колонка управления
   rows_and_buttons_layout = QHBoxLayout()
   rows_and_buttons_layout.setSpacing(10)
   
-  # Строки
   rows_layout = QVBoxLayout()
   rows_layout.setSpacing(5)
   res = dict_save.return_jnson()
@@ -290,56 +344,50 @@ class MouseSettingApp(QMainWindow):
    label.setAlignment(Qt.AlignCenter)
    lab.append(label)
    combo = QComboBox()
-   combo.addItems(LIST_KEYS)  # Это кнопка выпадающего списка
-   # Получаем значение из box_button для текущего индекса
+   combo.addItems(LIST_KEYS)
    current_value = box_button[i]
    self.combo_box.append(combo)
-   # Ищем индекс этого значения в LIST_KEYS
    if current_value in LIST_KEYS:
     i2 = LIST_KEYS.index(current_value)
     combo.setCurrentIndex(i2)
    else:
-    # Если значение не найдено, можно установить дефолтное значение, например, 0
     combo.setCurrentIndex(0)
-   combo.currentIndexChanged.connect(lambda idx=i: self.update_button(idx))
+   combo.currentIndexChanged.connect(lambda idx, i=i: self.update_button(i))
    
    checkbox = QCheckBox()
-   checkbox.setToolTip("Держать нажатой")#  запомнить, где стоит галочка удерживать кнопку.
-   checkbox.stateChanged.connect(lambda state, idx=i: self.check_mouse_press_button(dict_save, idx, state))
-
+   checkbox.setToolTip("Держать нажатой")
+   checkbox.stateChanged.connect(lambda state, i=i: self.check_mouse_press_button(i, state))
    self.mouse_button_labels.append(label)
    self.mouse_button_combos.append(combo)
    self.mouse_check_buttons.append(checkbox)
-   
    row_layout.addWidget(label)
    row_layout.addWidget(combo, 1)
    row_layout.addWidget(checkbox)
    
    rows_layout.addLayout(row_layout)
   
-  # Правая колонка с кнопками
   button_column_layout = QVBoxLayout()
   button_column_layout.setSpacing(5)
   dict_save.save_labels(lab)
-  for idx, name in enumerate(LIST_MOUSE_BUTTONS):  # это кнопка для клавиатуры
+  for idx, name in enumerate(LIST_MOUSE_BUTTONS):
    button = QPushButton(name)
    button.setFixedWidth(150)
    button.setStyleSheet("padding: 4px;")
    button_column_layout.addWidget(button)
-   button.clicked.connect(lambda _, i=idx: self.button_keyboard(dict_save, i))
+   button.clicked.connect(lambda _, i=idx: self.button_keyboard(i))
    self.buttons_script.append(button)
-  # Нижний блок управления (будет справа как отдельная колонка)
+  
   control_widget = QWidget()
   control_layout = QVBoxLayout(control_widget)
   control_layout.setContentsMargins(10, 10, 10, 10)
   control_layout.setSpacing(12)
   
   self.add_button_add = QPushButton("Добавить")
-  self.add_button_add.clicked.connect(lambda: self.add_file(dict_save))
+  self.add_button_add.clicked.connect(self.add_file)
   control_layout.addWidget(self.add_button_add)
   
   self.add_button_start = QPushButton("Удалить")
-  self.add_button_start.clicked.connect(lambda: self.delete(dict_save))
+  self.add_button_start.clicked.connect(self.delete)
   control_layout.addWidget(self.add_button_start)
   
   self.move_element_up = QPushButton("Вверх")
@@ -349,13 +397,11 @@ class MouseSettingApp(QMainWindow):
   self.move_element_down.clicked.connect(lambda: self.move_element(dict_save, "down"))
   control_layout.addWidget(self.move_element_down)
   
-  self.Keyboard_button = QPushButton("Клавитура")
-  self.Keyboard_button.clicked.connect(lambda: self.add_file(dict_save))
+  self.Keyboard_button = QPushButton("Клавиатура")
+  self.Keyboard_button.clicked.connect(self.create_keyboard_with_editor)
   control_layout.addWidget(self.Keyboard_button)
   
   self.show_devices_button = QPushButton("Показать список устройств")
-  # if show_list_id_callback:
-  #   self.show_devices_button.clicked.connect(show_list_id_callback)
   control_layout.addWidget(self.show_devices_button)
   
   if os.getgid() != 0:
@@ -368,75 +414,53 @@ class MouseSettingApp(QMainWindow):
    self.id_combo = QComboBox()
    id_list = dict_save.get_list_ids() if dict_save else []
    self.id_combo.addItems([str(id) for id in id_list])
-   # self.id_combo.currentIndexChanged.connect(self.update_button)
    self.id_combo.setToolTip('Выбор id устройства')
    
    id_layout.addWidget(id_label)
    id_layout.addWidget(self.id_combo)
    control_layout.addLayout(id_layout)
   
-  # Добавляем все три колонки в один ряд
   rows_and_buttons_layout.addLayout(rows_layout, 3)
   rows_and_buttons_layout.addLayout(button_column_layout, 1)
   rows_and_buttons_layout.addWidget(control_widget, 1)
   
-  # Добавляем общий блок
   right_layout.addLayout(rows_and_buttons_layout)
   top_layout.addWidget(right_widget, 2)
   
-  # Весь top_layout → в main_layout
   main_layout.addLayout(top_layout)
   
   QTimer.singleShot(0, self.start_app)
-  if os.getgid() != 0:
-   pass  # QTimer.singleShot(0, self.setup_tray)
-
- def closeEvent(self, event): # Функция закрытия программы.  # print("exit")
-   # 1. Проверка изменений и запрос на сохранение
-   dict_save.set_default_id_value()
-   old_data = dict_save.return_old_data()
-   new_data = dict_save.return_jnson()
-   diff = DeepDiff(old_data, new_data)
-   if diff:  # Используем QMessageBox для запроса сохранения
-    reply = QMessageBox.question(self, "Выход",
-    "Вы хотите сохранить изменения перед выходом?",
-    QMessageBox.Save |  QMessageBox.Save | QMessageBox.Cancel)
-   
-    if reply == QMessageBox.Save:
-     dict_save.write_to_file(new_data)  # записать настройки в файл.
-    elif reply == QMessageBox.Cancel:
-     event.ignore()  # Отменяем закрытие окна
-     return
-   dict_save.reset_id_value()
-   # 2. Поиск и завершение других экземпляров скрипта
-   target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"  # Имя твоего файла
-   current_pid = os.getpid()
-   for p in psutil.process_iter(['pid', 'cmdline']):
-    try:  # Проверяем, что процесс запущен через Python и имеет наш скрипт в командной строке
-     cmdline_str = ' '.join(p.info['cmdline'])
-     if target in cmdline_str and p.info['pid'] != current_pid:
-      os.kill(p.info['pid'], signal.SIGTERM)
-    except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
-     continue  # Игнорируем ошибки доступа или несуществующие процессы
-   # 3. Завершение приложения PyQt
-   event.accept()  # Разрешаем закрытие окна
-   sys.exit(0)
- def start_app(self):
-  res = dict_save.return_jnson()
-  id_value = res["id"]
-  if os.getgid() != 0 and hasattr(self, 'id_combo'):
-   self.id_combo.setCurrentText(str(res["id"]))
-  box_values = []
-  curr_name = dict_save.get_cur_app()
-  res = dict_save.return_jnson()
-  key_values = res["key_value"]
-  for i in range(len(LIST_MOUSE_BUTTONS)):
-   if hasattr(self, 'mouse_button_combos') and i < len(self.mouse_button_combos):
-    if curr_name in key_values and i < len(key_values[curr_name]):
-     self.mouse_button_combos[i].setCurrentText(key_values[curr_name][i])
-  self.filling_in_fields(res)
  
- def filling_in_fields(self, res):# заполнить поля.
+ def create_keyboard_with_editor(self):
+  self.keyboard_editor = self.MacroKeyboardWindow(dict_save)
+  self.keyboard_editor.show()
+ 
+ def record_marcross(self, key):
+  dict_save.set_last_key_keyboard_script(key)
+  self.keyboard_editor = self.MacroKeyboardWindow(dict_save)
+  self.keyboard_editor.setWindowTitle(f"Запись макроса для клавиши {key}")
+  
+  res = dict_save.return_jnson()
+  current_app = dict_save.get_cur_app()
+  res.setdefault("keyboard_script", {}).setdefault(current_app, {"keys": {}})
+  keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
+  
+  if key in keys_active:
+   text_content = res["keyboard_script"][current_app]["keys"][key]
+   self.keyboard_editor.text_widget.setPlainText(text_content)
+  else:
+   self.keyboard_editor.text_widget.setPlainText("#!/bin/bash\n")
+  
+  self.keyboard_editor.show()
+ 
+ def create_keyboard(self):
+  vk = self.VirtualKeyboard(dict_save, self.record_macro_callback)
+  vk.show()
+ 
+ def record_macro_callback(self, key, window):
+  self.record_marcross(key)
+ 
+ def filling_in_fields(self, res):
   while self.games_layout.count():
    child = self.games_layout.takeAt(0)
    if child.widget():
@@ -456,12 +480,12 @@ class MouseSettingApp(QMainWindow):
    var = QCheckBox()
    var.setChecked(check_mark[path])
    var_list.append(var)
-   var.stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c, dict_save))
+   var.stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c))
    label = QLabel(game_name)
    label.setFixedWidth(200)
    label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
    label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-   label.mousePressEvent = lambda event, c=count: self.label_clicked(event, c)
+   label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
    label.setContextMenuPolicy(Qt.CustomContextMenu)
    label.customContextMenuRequested.connect(lambda pos, c=count: self.show_change_name_menu(c))
    name_games.append(game_name)
@@ -473,150 +497,217 @@ class MouseSettingApp(QMainWindow):
    index = list(paths.keys()).index(res['current_app'])
    if index < len(labels):
     labels[index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-
- def checkbutton_changed(self, count, dict_save):  # поставить и убрать галочку.
+ 
+ def change_app(self, game=""):
+  if game == dict_save.get_cur_app() or game == "":
+   dict_save.set_cur_app("")
+   while True:
+    if "" == dict_save.get_cur_app():
+     break
+   dict_save.set_prev_game(game)
+   dict_save.set_cur_app(game)
+   while game != dict_save.get_cur_app():
+    time.sleep(1)
+  
+  res = dict_save.return_jnson()
+  res['current_app'] = game
+  mouse_check_button(dict_save)
+  self.create_scrypt_buttons()
+  keys = list(res['paths'].keys())
+  index = keys.index(res['current_app'])
+  set_list_box(dict_save, index)
+ 
+ def closeEvent(self, event):
+  old_data = dict_save.return_old_data()
+  new_data = dict_save.return_jnson()
+  diff = DeepDiff(old_data, new_data)
+  if diff:
+   reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?",
+                                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
+   if reply == QMessageBox.Save:
+    dict_save.write_to_file(new_data)
+   elif reply == QMessageBox.Cancel:
+    return
+  target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"
+  current_pid = os.getpid()
+  for p in psutil.process_iter(['pid', 'cmdline']):
+   try:
+    cmdline_str = ' '.join(p.info['cmdline'])
+    if target in cmdline_str and p.info['pid'] != current_pid:
+     os.kill(p.info['pid'], signal.SIGTERM)
+   except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
+    continue
+  event.accept()
+  sys.exit(0)
+ 
+ def start_app(self):
+  res = dict_save.return_jnson()
+  id_value = res["id"]
+  if os.getgid() != 0 and hasattr(self, 'id_combo'):
+   self.id_combo.setCurrentText(str(res["id"]))
+  box_values = []
+  curr_name = dict_save.get_cur_app()
+  res = dict_save.return_jnson()
+  key_values = res["key_value"]
+  for i in range(len(LIST_MOUSE_BUTTONS)):
+   if hasattr(self, 'mouse_button_combos') and i < len(self.mouse_button_combos):
+    if curr_name in key_values and i < len(key_values[curr_name]):
+     self.mouse_button_combos[i].setCurrentText(key_values[curr_name][i])
+  self.filling_in_fields(res)
+ 
+ def checkbutton_changed(self, count):
   res = dict_save.return_jnson()
   keys_list = list(res["games_checkmark"].keys())
   curr_app = str(keys_list[count])
-  var_list = dict_save.return_var_list()  # Получаем список QCheckBox
-  if not var_list[count].isChecked():
-   res["games_checkmark"][curr_app] = True
-  else:
-   res["games_checkmark"][curr_app] = False
+  var_list = dict_save.return_var_list()
+  res["games_checkmark"][curr_app] = var_list[count].isChecked()
   dict_save.save_jnson(res)
-
- def update_labels_bindings(self):# обновить все надписи
+ 
+ def update_labels_bindings(self):
   labels = dict_save.return_labels()
-  var_list = dict_save.return_var_list()  # Получаем список QCheckBox
+  var_list = dict_save.return_var_list()
   for count, label in enumerate(labels):
-   # Обновляем привязку для QLabel
-   label.mousePressEvent = lambda event, c=count: self.label_clicked(event, c)
-  
-   # Обновляем привязку для QCheckBox
+   label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
    if count < len(var_list):
-    var_list[count].stateChanged.disconnect()  # Отключаем старый сигнал
-    var_list[count].stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c, dict_save))
- def move_element(self, dict_save, direction):  # Перемещает текущий элемент (определяемый dict_save.get_cur_app())
-  res = dict_save.return_jnson()  # Получаем текущий профиль и конфигурацию
-  labels = dict_save.return_labels()
-  curr = res["current_app"]
-  keys_list = list(res["key_value"].keys())
-  # Проверяем границы для перемещения
-  index_curr = keys_list.index(curr)
-  index_curr = keys_list.index(curr)
-  new_index = -1  # Используем -1 для индикации, что перемещение не произошло
-  if direction == 'up' and index_curr > 0:
-   new_index = index_curr - 1
-  elif direction == 'down' and index_curr < len(labels) - 1:
-   new_index = index_curr + 1
-  else:
-   # Возвращаемся, если перемещение невозможно
-   return
-  try:
-   # Получаем layout, в котором находятся виджеты
-   container_index = labels[index_curr].parentWidget()
-   layout = container_index.parentWidget().layout()
-  
-   # Получаем контейнеры для перемещения
-   container_index = labels[index_curr].parentWidget()
-   container_new_index = labels[new_index].parentWidget()
-  
-   # Удаляем виджеты из layout-а
-   layout.removeWidget(container_index)
-   layout.removeWidget(container_new_index)
-  
-   # Меняем порядок в списке виджетов-меток
+    var_list[count].stateChanged.disconnect()
+    var_list[count].stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c))
+ 
+ def move_element(self, dict_save, direction):  # Перемещает текущий выбранный элемент (приложение/игра) вверх или вниз
+  try:  # 1. Получение данных и текущих позиций
+   res = dict_save.return_jnson()
+   labels = dict_save.return_labels()  # Список QLabel виджетов
+   curr_app_path = res["current_app"]  # Путь к текущему приложению
+   # Получаем ключи (пути) в том порядке, в котором они хранятся в JSON
+   keys_list = list(res["key_value"].keys())
+   # Определяем текущий индекс
+   index_curr = keys_list.index(curr_app_path)
+   
+   # Вычисляем новый индекс
+   new_index = -1
+   if direction == 'up' and index_curr > 0:
+    new_index = index_curr - 1
+   elif direction == 'down' and index_curr < len(labels) - 1:
+    new_index = index_curr + 1
+   else:
+    # Если перемещение невозможно (уже крайний элемент или неверное направление)
+    return
+   # print("curr ", index_curr)
+   # print("new_index", new_index)
+   container_curr = labels[index_curr].parentWidget()
+   container_new = labels[new_index].parentWidget()
+   
+   # Получаем главный layout (QVBoxLayout) списка игр, в котором находятся все контейнеры
+   main_layout = container_curr.parentWidget().layout()
+   
+   # 2. Перестановка виджетов в Layout
+   main_layout.removeWidget(container_curr)
+   main_layout.removeWidget(container_new)
+   
+   # Обновляем порядок в локальном списке labels (содержит только QLabel)
    labels.insert(new_index, labels.pop(index_curr))
-  
-   # Вставляем виджеты обратно в layout в новом порядке
+   
+   # Вставляем виджеты обратно в layout.
+   # В Qt layout.insertWidget(индекс, виджет) вставляет виджет на указанную позицию.
    if direction == 'up':
-    layout.insertWidget(new_index, container_index)
-    layout.insertWidget(index_curr, container_new_index)
+    # На место new_index (которое меньше) вставляем старый curr,
+    # а на место index_curr (которое больше) - старый new.
+    main_layout.insertWidget(new_index, container_curr)
+    main_layout.insertWidget(index_curr, container_new)
    else:  # direction == 'down'
-    layout.insertWidget(index_curr, container_new_index)
-    layout.insertWidget(new_index, container_index)
-  
-   # Обновляем стили, чтобы визуально выделить перемещенный элемент на новой позиции
+    # На место index_curr (которое меньше) вставляем старый new,
+    # а на место new_index (которое больше) - старый curr.
+    main_layout.insertWidget(index_curr, container_new)
+    main_layout.insertWidget(new_index, container_curr)
+   
+   # 3. Обновление данных сохранения (JSON)
    res = reorder_keys_in_dict(res, index_curr, direction)
-   labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
+   
+   labels[index_curr].setStyleSheet("background-color: white; color: black; border: 1px solid gray; padding: 5px;")
+   # Сохраняем стиль выделения для элемента, который был текущим и переместился
+   # (labels[new_index]).
    labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-   self.update_labels_bindings()   # Обновляем текущий профиль в соответствии с новым порядком
-   # Сохраняем изменения
-   dict_save.save_labels(labels)
-   dict_save.save_jnson(res)   # self.filling_in_fields(res)
+   
+   # Обновляем привязки событий (connects) для новых позиций
+   self.update_labels_bindings()
+   
+   # 5. Сохранение и завершение
+   dict_save.save_labels(labels)  # Обновляем список labels в объекте сохранения
+   dict_save.save_jnson(res)
    return 0
+  
   except Exception as e:
-   print(e)
+   # Выводим ошибку для отладки
+   print(f"Ошибка при перемещении элемента: {e}")
+   # pass (сохраняем ваш стиль)
    pass
- def check_label_changed(self, dict_save, count): # Поменять цвет активной строки. print("ch")
+ 
+ def check_label_changed(self, dict_save, count):
   res = dict_save.return_jnson()
   labels = dict_save.return_labels()
   keys_list = list(res["key_value"].keys())
   curr = res["current_app"]
-  index_curr = keys_list.index(curr)  # Текущий индекс активности
+  index_curr = keys_list.index(curr)
   labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
-  game = list(res["key_value"].keys())[count]  # получить название новой игры по индексу
+  game = list(res["key_value"].keys())[count]
   labels[count].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-  res["current_app"] = game  # Установить текущую игру
+  res["current_app"] = game
   dict_save.set_cur_app(game)
   dict_save.set_prev_game(curr)
   
-  # Проверяем, существует ли нужный словарь
   list_check_buttons = res.get("mouse_press", {}).get(game, [])
-  # 2. Устанавливаем состояние чекбоксов
   for idx, check in enumerate(self.mouse_check_buttons):
    if idx < len(list_check_buttons):
-    # Устанавливаем состояние из сохраненного списка
     check.setChecked(list_check_buttons[idx])
-   else:  # Если в сохраненном списке нет данных для этого чекбокса, устанавливаем его в False (снятая галочка)
+   else:
     check.setChecked(False)
   
-  # Проверяем, существует ли нужный словарь
-  script = res.get("script_mouse", {}).get(game, {})  # Получаем словарь скриптов для игры (плоский, без "script")
-  # Сначала сбрасываем стиль у всех кнопок
+  script = res.get("script_mouse", {}).get(game, {})
   for button in self.buttons_script:
    button.setStyleSheet("")
-  if script:  # Если есть скрипты для этой игры. Затем ищем кнопки, у которых есть непустой скрипт, и меняем их стиль
+  if script:
    for key, value in script.items():
-     if value !=None and key in defaut_list_mouse_buttons:
-      i = defaut_list_mouse_buttons.index(key)
-      self.buttons_script[i].setStyleSheet("""
-      QPushButton { border: 1px solid gray; padding: 5px;
-      color: black;  background-color: gray; } """)
-      self.buttons_script[i].update()# Принудительная перерисовка, на всякий случай
-
+    if value is not None and key in defaut_list_mouse_buttons:
+     i = defaut_list_mouse_buttons.index(key)
+     self.buttons_script[i].setStyleSheet("""
+            QPushButton { border: 1px solid gray; padding: 5px;
+            color: black;  background-color: gray; } """)
+     self.buttons_script[i].update()
+  
   dict_save.save_jnson(res)
   self.update_button(curr)
  
- def update_button(self, index):  # Изменить каждое значение выпадающего списка.
+ def update_button(self, index):
   res = dict_save.return_jnson()
   game = res["current_app"]
   box_button = list(res["key_value"][game])
- 
-  for i in range(7):  # Получаем значение из box_button для текущего индекса
+  
+  for i in range(7):
    current_value = box_button[i]
    i2 = LIST_KEYS.index(current_value)
    self.combo_box[i].setCurrentIndex(i2)
-
- def label_clicked(self, event, count):
+ 
+ def label_clicked(self, event, dict_save, count):
   if event.button() == Qt.LeftButton:
    self.check_label_changed(dict_save, count)
-
- def check_mouse_press_button(self, dict_save, count, state):# Обновить галочки, которые удерживают кнопки.
-  print(count)
+ 
+ def check_mouse_press_button(self, count, state):
   res = dict_save.return_jnson()
   curr_name = dict_save.get_cur_app()
-
-  # Обновляем состояние удержания кнопки мыши
+  
   if curr_name not in res.get("mouse_press", {}):
-   res.setdefault("mouse_press", {}).setdefault(current_app, [False] * 7)
+   res["mouse_press"][curr_name] = [False] * 7
   res["mouse_press"][curr_name][count] = (state == Qt.Checked)
-  # Сохраняем изменения
   dict_save.save_jnson(res)
+ 
+ def add_file(self):
+  pass
+ 
+ def delete(self):
+  pass
+
 
 if __name__ == "__main__":
  app = QApplication(sys.argv)
- # Создание экземпляра класса должно быть здесь
  window = MouseSettingApp()
  window.show()
  sys.exit(app.exec_())
