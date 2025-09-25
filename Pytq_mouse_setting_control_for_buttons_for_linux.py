@@ -135,7 +135,7 @@ def mouse_check_button(dict_save):
   # cb1.place(x=490, y=cd1_y)
   # cd1_y = cd1_y + 30
   # CreateToolTip(cb1, text='Держать нажатой')  # вывод надписи
- dict_save.save_mouse_button_press(list_mouse_button_press, mouse_press_button)
+ # dict_save.save_mouse_button_press(list_mouse_button_press, check_mouse_press_button)
 
 def change_app(dict_save, game=""):  #
  # print("ch")
@@ -304,9 +304,9 @@ class MouseSettingApp(QMainWindow):
    combo.currentIndexChanged.connect(lambda idx=i: self.update_button(idx))
    
    checkbox = QCheckBox()
-   checkbox.setToolTip("Держать нажатой")#  запомнить, где стоит гаечка удерживать кнопку/
-   checkbox.stateChanged.connect( lambda idx=i: self.update_mouse_check_press_button(dict_save, idx))
-   
+   checkbox.setToolTip("Держать нажатой")#  запомнить, где стоит галочка удерживать кнопку.
+   checkbox.stateChanged.connect(lambda state, idx=i: self.check_mouse_press_button(dict_save, idx, state))
+
    self.mouse_button_labels.append(label)
    self.mouse_button_combos.append(combo)
    self.mouse_check_buttons.append(checkbox)
@@ -400,8 +400,7 @@ class MouseSettingApp(QMainWindow):
    if diff:  # Используем QMessageBox для запроса сохранения
     reply = QMessageBox.question(self, "Выход",
     "Вы хотите сохранить изменения перед выходом?",
-    QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
-    QMessageBox.Save)
+    QMessageBox.Save |  QMessageBox.Save | QMessageBox.Cancel)
    
     if reply == QMessageBox.Save:
      dict_save.write_to_file(new_data)  # записать настройки в файл.
@@ -561,6 +560,17 @@ class MouseSettingApp(QMainWindow):
   res["current_app"] = game  # Установить текущую игру
   dict_save.set_cur_app(game)
   dict_save.set_prev_game(curr)
+  
+  # Проверяем, существует ли нужный словарь
+  list_check_buttons = res.get("mouse_press", {}).get(game, [])
+  # 2. Устанавливаем состояние чекбоксов
+  for idx, check in enumerate(self.mouse_check_buttons):
+   if idx < len(list_check_buttons):
+    # Устанавливаем состояние из сохраненного списка
+    check.setChecked(list_check_buttons[idx])
+   else:  # Если в сохраненном списке нет данных для этого чекбокса, устанавливаем его в False (снятая галочка)
+    check.setChecked(False)
+  
   # Проверяем, существует ли нужный словарь
   script = res.get("script_mouse", {}).get(game, {})  # Получаем словарь скриптов для игры (плоский, без "script")
   # Сначала сбрасываем стиль у всех кнопок
@@ -592,14 +602,17 @@ class MouseSettingApp(QMainWindow):
   if event.button() == Qt.LeftButton:
    self.check_label_changed(dict_save, count)
 
- def update_mouse_check_press_button(self, dict_save, count):# Обновить галочки, которые удерживают кнопки.
+ def check_mouse_press_button(self, dict_save, count, state):# Обновить галочки, которые удерживают кнопки.
   print(count)
-  res=dict_save.return_jnson()
+  res = dict_save.return_jnson()
   curr_name = dict_save.get_cur_app()
-  if curr_name in res["mouse_press"]:
-   for i, checkbox in enumerate(self.mouse_check_buttons):
-    if i < len(res["mouse_press"][curr_name]):
-     checkbox.setChecked(res["mouse_press"][curr_name][i])
+
+  # Обновляем состояние удержания кнопки мыши
+  if curr_name not in res.get("mouse_press", {}):
+   res.setdefault("mouse_press", {}).setdefault(current_app, [False] * 7)
+  res["mouse_press"][curr_name][count] = (state == Qt.Checked)
+  # Сохраняем изменения
+  dict_save.save_jnson(res)
 
 if __name__ == "__main__":
  app = QApplication(sys.argv)
