@@ -178,6 +178,11 @@ class MouseSettingApp(QMainWindow):
   self.creat = 0
   self.devices = [InputDevice(path) for path in list_devices()]
   self.board = None
+
+  self.mouse_button_labels = []
+  self.mouse_button_combos = []
+  self.mouse_check_buttons = []
+  self.buttons_script = []  # список кнопок для скриптов
   for dev in self.devices:
    dev_str = str(dev)
    if '"Keyboard"' in dev_str and ' phys ' in dev_str:
@@ -271,10 +276,6 @@ class MouseSettingApp(QMainWindow):
   # Строки
   rows_layout = QVBoxLayout()
   rows_layout.setSpacing(5)
-  
-  self.mouse_button_labels = []
-  self.mouse_button_combos = []
-  self.mouse_check_buttons = []
   res = dict_save.return_jnson()
   game = res['current_app']
   box_button = list(res["key_value"][game])
@@ -293,7 +294,6 @@ class MouseSettingApp(QMainWindow):
    # Получаем значение из box_button для текущего индекса
    current_value = box_button[i]
    self.combo_box.append(combo)
-   
    # Ищем индекс этого значения в LIST_KEYS
    if current_value in LIST_KEYS:
     i2 = LIST_KEYS.index(current_value)
@@ -302,10 +302,11 @@ class MouseSettingApp(QMainWindow):
     # Если значение не найдено, можно установить дефолтное значение, например, 0
     combo.setCurrentIndex(0)
    combo.currentIndexChanged.connect(lambda idx=i: self.update_button(idx))
+   
    checkbox = QCheckBox()
-   checkbox.setToolTip("Держать нажатой")
-   # checkbox.stateChanged.connect( lambda state, idx=i: self.update_mouse_check_button(idx))
-   #
+   checkbox.setToolTip("Держать нажатой")#  запомнить, где стоит гаечка удерживать кнопку/
+   checkbox.stateChanged.connect( lambda idx=i: self.update_mouse_check_press_button(dict_save, idx))
+   
    self.mouse_button_labels.append(label)
    self.mouse_button_combos.append(combo)
    self.mouse_check_buttons.append(checkbox)
@@ -326,6 +327,7 @@ class MouseSettingApp(QMainWindow):
    button.setStyleSheet("padding: 4px;")
    button_column_layout.addWidget(button)
    button.clicked.connect(lambda _, i=idx: self.button_keyboard(dict_save, i))
+   self.buttons_script.append(button)
   # Нижний блок управления (будет справа как отдельная колонка)
   control_widget = QWidget()
   control_layout = QVBoxLayout(control_widget)
@@ -388,7 +390,38 @@ class MouseSettingApp(QMainWindow):
   QTimer.singleShot(0, self.start_app)
   if os.getgid() != 0:
    pass  # QTimer.singleShot(0, self.setup_tray)
- 
+
+ def closeEvent(self, event): # Функция закрытия программы.  # print("exit")
+   # 1. Проверка изменений и запрос на сохранение
+   dict_save.set_default_id_value()
+   old_data = dict_save.return_old_data()
+   new_data = dict_save.return_jnson()
+   diff = DeepDiff(old_data, new_data)
+   if diff:  # Используем QMessageBox для запроса сохранения
+    reply = QMessageBox.question(self, "Выход",
+    "Вы хотите сохранить изменения перед выходом?",
+    QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+    QMessageBox.Save)
+   
+    if reply == QMessageBox.Save:
+     dict_save.write_to_file(new_data)  # записать настройки в файл.
+    elif reply == QMessageBox.Cancel:
+     event.ignore()  # Отменяем закрытие окна
+     return
+   dict_save.reset_id_value()
+   # 2. Поиск и завершение других экземпляров скрипта
+   target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"  # Имя твоего файла
+   current_pid = os.getpid()
+   for p in psutil.process_iter(['pid', 'cmdline']):
+    try:  # Проверяем, что процесс запущен через Python и имеет наш скрипт в командной строке
+     cmdline_str = ' '.join(p.info['cmdline'])
+     if target in cmdline_str and p.info['pid'] != current_pid:
+      os.kill(p.info['pid'], signal.SIGTERM)
+    except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
+     continue  # Игнорируем ошибки доступа или несуществующие процессы
+   # 3. Завершение приложения PyQt
+   event.accept()  # Разрешаем закрытие окна
+   sys.exit(0)
  def start_app(self):
   res = dict_save.return_jnson()
   id_value = res["id"]
@@ -403,9 +436,8 @@ class MouseSettingApp(QMainWindow):
     if curr_name in key_values and i < len(key_values[curr_name]):
      self.mouse_button_combos[i].setCurrentText(key_values[curr_name][i])
   self.filling_in_fields(res)
-  # self.update_mouse_check_buttons(res)
  
- def filling_in_fields(self, res):
+ def filling_in_fields(self, res):# заполнить поля.
   while self.games_layout.count():
    child = self.games_layout.takeAt(0)
    if child.widget():
@@ -454,7 +486,7 @@ class MouseSettingApp(QMainWindow):
    res["games_checkmark"][curr_app] = False
   dict_save.save_jnson(res)
 
- def update_labels_bindings(self):
+ def update_labels_bindings(self):# обновить все надписи
   labels = dict_save.return_labels()
   var_list = dict_save.return_var_list()  # Получаем список QCheckBox
   for count, label in enumerate(labels):
@@ -474,21 +506,13 @@ class MouseSettingApp(QMainWindow):
   index_curr = keys_list.index(curr)
   index_curr = keys_list.index(curr)
   new_index = -1  # Используем -1 для индикации, что перемещение не произошло
-  move = ""
-
   if direction == 'up' and index_curr > 0:
-   move = "up"
    new_index = index_curr - 1
   elif direction == 'down' and index_curr < len(labels) - 1:
-   move = "down"
    new_index = index_curr + 1
   else:
    # Возвращаемся, если перемещение невозможно
    return
-  #
-  # print(move)
-  # print(f"Текущий индекс: {index_curr}")
-  # print(new_index)
   try:
    # Получаем layout, в котором находятся виджеты
    container_index = labels[index_curr].parentWidget()
@@ -515,27 +539,20 @@ class MouseSettingApp(QMainWindow):
   
    # Обновляем стили, чтобы визуально выделить перемещенный элемент на новой позиции
    res = reorder_keys_in_dict(res, index_curr, direction)
-   # print(list(res["paths"]))
    labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
    labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-
-   self.update_labels_bindings()
-   # Обновляем текущий профиль в соответствии с новым порядком
+   self.update_labels_bindings()   # Обновляем текущий профиль в соответствии с новым порядком
    # Сохраняем изменения
    dict_save.save_labels(labels)
-   dict_save.save_jnson(res)
-   # self.filling_in_fields(res)
+   dict_save.save_jnson(res)   # self.filling_in_fields(res)
    return 0
   except Exception as e:
    print(e)
    pass
- def check_label_changed(self, dict_save, count):  # Поменять цвет активной строки.
-  print("ch")
+ def check_label_changed(self, dict_save, count): # Поменять цвет активной строки. print("ch")
   res = dict_save.return_jnson()
-  print(count)
   labels = dict_save.return_labels()
   keys_list = list(res["key_value"].keys())
-  # print(list(res["paths"]))
   curr = res["current_app"]
   index_curr = keys_list.index(curr)  # Текущий индекс активности
   labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
@@ -544,20 +561,23 @@ class MouseSettingApp(QMainWindow):
   res["current_app"] = game  # Установить текущую игру
   dict_save.set_cur_app(game)
   dict_save.set_prev_game(curr)
-  keys_list = list(res["key_value"].keys())
+  # Проверяем, существует ли нужный словарь
+  script = res.get("script_mouse", {}).get(game, {})  # Получаем словарь скриптов для игры (плоский, без "script")
+  # Сначала сбрасываем стиль у всех кнопок
+  for button in self.buttons_script:
+   button.setStyleSheet("")
+  if script:  # Если есть скрипты для этой игры. Затем ищем кнопки, у которых есть непустой скрипт, и меняем их стиль
+   for key, value in script.items():
+     if value !=None and key in defaut_list_mouse_buttons:
+      i = defaut_list_mouse_buttons.index(key)
+      self.buttons_script[i].setStyleSheet("""
+      QPushButton { border: 1px solid gray; padding: 5px;
+      color: black;  background-color: gray; } """)
+      self.buttons_script[i].update()# Принудительная перерисовка, на всякий случай
+
   dict_save.save_jnson(res)
   self.update_button(curr)
-  # Проверяем, что count находится в допустимых пределах
-  if count >= len(labels):
-   # print(f"Ошибка: индекс {count} выходит за пределы списка labels длиной {len(labels)}")
-   return
  
-  # if res.get("keyboard_script", {}).get(game, {}).get("keys"):
-  #   self.add_button_create_keyboard.setStyleSheet("background-color: #c0c0c0;")
-  # else:
-  #   self.add_button_create_keyboard.setStyleSheet("")
-  # change_app(dict_save, game)
-
  def update_button(self, index):  # Изменить каждое значение выпадающего списка.
   res = dict_save.return_jnson()
   game = res["current_app"]
@@ -572,22 +592,14 @@ class MouseSettingApp(QMainWindow):
   if event.button() == Qt.LeftButton:
    self.check_label_changed(dict_save, count)
 
- def update_mouse_check_button(self, count):  # Изменение кнопок выпадающего списка
+ def update_mouse_check_press_button(self, dict_save, count):# Обновить галочки, которые удерживают кнопки.
   print(count)
-  res = dict_save.return_jnson()
-  curr_name = dict_save.get_cur_app()
-  if curr_name in res["mouse_press"]:
-   res["mouse_press"][curr_name][count] = not res["mouse_press"][curr_name][count]
-   dict_save.set_default_id_value()
-   dict_save.save_jnson(res)
-
- def update_mouse_check_buttons(self, res):
+  res=dict_save.return_jnson()
   curr_name = dict_save.get_cur_app()
   if curr_name in res["mouse_press"]:
    for i, checkbox in enumerate(self.mouse_check_buttons):
     if i < len(res["mouse_press"][curr_name]):
      checkbox.setChecked(res["mouse_press"][curr_name][i])
-
 
 if __name__ == "__main__":
  app = QApplication(sys.argv)
