@@ -1,6 +1,7 @@
 from Pyqt_libs_mouse import *
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/myenv/lib/python3.12/site-packages/PyQt5/Qt5/plugins"
 
+dict_save = save_dict()
 class MouseSettingApp(QMainWindow):
  class VirtualKeyboard(QMainWindow):
   def __init__(self, callback_record_macro=None):
@@ -33,8 +34,8 @@ class MouseSettingApp(QMainWindow):
    layout.addWidget(QLabel("Редактор скрипта:"))
    layout.addWidget(self.text_widget)
    
-   current_app = dict_save.get_cur_app()
    res = dict_save.return_jnson()
+   current_app = res["current_app"]
    if "keyboard_script" in res and current_app in res["keyboard_script"]:
     keys = res["keyboard_script"][current_app].get("keys", {})
     if key in keys:
