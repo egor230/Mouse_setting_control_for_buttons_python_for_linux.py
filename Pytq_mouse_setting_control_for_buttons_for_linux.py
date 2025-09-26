@@ -1,8 +1,6 @@
 from Pyqt_libs_mouse import *
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/myenv/lib/python3.12/site-packages/PyQt5/Qt5/plugins"
 
-dict_save = save_dict()
-
 class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  def __init__(self):
   super().__init__()
@@ -109,19 +107,20 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   game = res['current_app']
   box_button = list(res["key_value"][game])
   lab = []
+ 
   for i in range(7):
    row_layout = QHBoxLayout()
    row_layout.setSpacing(10)
-   
    label = QLabel(LIST_MOUSE_BUTTONS[i])
    label.setStyleSheet("padding: 4px; font-weight: bold;")
    label.setFixedWidth(150)
    label.setAlignment(Qt.AlignCenter)
    lab.append(label)
-   combo = QComboBox()
+   combo = QComboBox()# Установить все значения выпадающего списка
    combo.addItems(LIST_KEYS)
    current_value = box_button[i]
    self.combo_box.append(combo)
+ 
    if current_value in LIST_KEYS:
     i2 = LIST_KEYS.index(current_value)
     combo.setCurrentIndex(i2)

@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                            QPushButton, QLabel, QComboBox, QTextEdit, QTabWidget,
                            QScrollArea, QFrame, QCheckBox, QLineEdit, QMessageBox,
                            QStyleFactory, QToolTip, QGridLayout, QDialog, QPlainTextEdit,
-                           QTextEdit)
+                           QSystemTrayIcon, QMenu)
 from PyQt5.QtCore import Qt, pyqtSignal, QThread, QTimer
 from PyQt5.QtGui import QFont, QIcon, QColor, QPalette, QTextCursor
 from deepdiff import DeepDiff
@@ -1053,8 +1053,7 @@ def reorder_keys_in_dict(res, index, direction='up'):#   Перемещает к
 
  return new_res
 
-simple_key_map = {
- 'KEY_KP7': ' 7\nHome', 'KEY_KP8': '8\n↑', 'KEY_KP9': '9\nPgUp',
+simple_key_map = { 'KEY_KP7': ' 7\nHome', 'KEY_KP8': '8\n↑', 'KEY_KP9': '9\nPgUp',
  'KEY_KP4': '4\n←', 'KEY_KP5': '5\n', 'KEY_KP6': '6\n→',
  'KEY_KP1': '1\nEnd', 'KEY_KP2': '2\n↓', 'KEY_KP3': '3\nPgDn'
 }
@@ -1073,13 +1072,9 @@ def add_text_pytq5(key, text_widget):
  if k in keypad_map:
   k = keypad_map[k]
  
- mouse_map = {
-  "Левая": ("mousedown 1", "mouseup 1"),
-  "Правая": ("mousedown 3", "mouseup 3"),
-  "wheel_up": ("mousedown 4", "mouseup 4"),
-  "mouse_middie": ("mousedown 2", "mouseup 2"),
-  "wheel_down": ("mousedown 5", "mouseup 5"),
- }
+ mouse_map = {  "Левая": ("mousedown 1", "mouseup 1"),
+  "Правая": ("mousedown 3", "mouseup 3"),  "wheel_up": ("mousedown 4", "mouseup 4"),
+  "mouse_middie": ("mousedown 2", "mouseup 2"), "wheel_down": ("mousedown 5", "mouseup 5"), }
  
  if k in mouse_map:
   down, up = mouse_map[k]
@@ -1097,7 +1092,6 @@ def add_text_pytq5(key, text_widget):
   cursor.insertText(sc)
   text_widget.setTextCursor(cursor)
  return sc
-
 
 def add_text_pytq5(key, text_widget):
  cursor = text_widget.textCursor()
@@ -1151,6 +1145,7 @@ def add_text_pytq5(key, text_widget):
         f'xte "keyup {key}"\n')
  text_widget.insertPlainText(sc)
 
+dict_save = save_dict()
 class KeyboardWidget(QWidget):
  def __init__(self, callback_func=None, row_shifts=None):
   super().__init__()
@@ -1178,23 +1173,13 @@ class KeyboardWidget(QWidget):
    , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
    , ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
    , ['Left', 'Down', 'Right']]
-  
   buttons = {}
   
-  style_sheet = """
-                QPushButton {
-                    background-color: lightgray;
-                    border: 1px solid gray;
-                    padding: 2px;
-                }
-                QPushButton:hover {
-                    background-color: #CCCCFF;
-                }
-                QPushButton:pressed {
-                    background-color: blue;
-                    color: white;
-                }
-            """
+  style_sheet = """  QPushButton {  background-color: lightgray;
+                    border: 1px solid gray; padding: 2px;    }
+                QPushButton:hover { background-color: #CCCCFF;        }
+                QPushButton:pressed {  background-color: blue;
+                    color: white;   }   """
   keyboard_widget.setStyleSheet(style_sheet)
   numpad_shifts = {'first': 69, 'second': 140, 'third': 210}
   first_column_keys = [' 7\nHome', '8\n↑', '9\nPgUp', '+']
@@ -1290,7 +1275,49 @@ class MouseSettingAppMethods:
   def __init__(self):
     self.keyboard_editor = None
     self.current_keyboard_window = None
+    self.tray_icon = None
+    self.create_tray_icon()  # Создаем трей-иконку при запуске
 
+  def create_tray_icon(self):
+   # Ваш код для создания трей-иконки (немного модифицированный)
+   icon = QIcon("X-Mouse-Button-Control-Logo.png")
+   if icon.isNull():
+    icon = self.style().standardIcon(self.style().SP_ComputerIcon)
+ 
+   self.tray_icon = QSystemTrayIcon(icon, self)
+   self.tray_icon.setToolTip("Mouse Setting Control")
+ 
+   tray_menu = QMenu()
+   restore_action = tray_menu.addAction("Развернуть")
+   restore_action.triggered.connect(self.show_normal)
+   quit_action = tray_menu.addAction("Выход")
+   quit_action.triggered.connect(self.close_app)
+ 
+   self.tray_icon.setContextMenu(tray_menu)
+   self.tray_icon.activated.connect(self.tray_icon_clicked)
+   self.tray_icon.show()
+
+  def tray_icon_clicked(self, reason):
+   if reason == QSystemTrayIcon.Trigger:
+    if self.isVisible():
+     self.hide()
+    else:
+     self.show_normal()
+
+  def show_normal(self):
+   self.showNormal()
+   self.activateWindow()
+
+  def close_app(self):
+   # Закрываем приложение полностью
+   self.tray_icon.hide()  # Скрываем иконку
+   QApplication.quit()
+
+  def closeEvent(self, event):
+   # Переопределяем закрытие окна - скрываем в трей вместо закрытия
+   event.ignore()
+   self.hide()
+   
   def create_virtual_keyboard(self, dict_save, callback_record_macro=None):
     """Создает виртуальную клавиатуру без блокнота"""
     # Закрываем предыдущее окно клавиатуры, если оно открыто
@@ -1384,7 +1411,7 @@ class MouseSettingAppMethods:
     cursor = macro_window.text_widget.textCursor()
     cursor.movePosition(QTextCursor.End)
     macro_window.text_widget.setTextCursor(cursor)
-    
+    self.dict_save = dict_save  # ← Добавьте эту строку!
     # 2. Клавиатура (KeyboardWidget) - снизу
     def add_key_command_local(key):
       """Функция для вставки команд xte при нажатии клавиш"""
@@ -1395,7 +1422,6 @@ class MouseSettingAppMethods:
     
     # Переопределяем обработчик закрытия окна для сохранения
     macro_window.closeEvent = lambda event: self.kill_notebook(macro_window, dict_save, event)
-    
     macro_window.show()
 
   
@@ -1418,7 +1444,6 @@ class MouseSettingAppMethods:
       res["keyboard_script"][current_app]["keys"][key] = script_text
     
     dict_save.save_jnson(res)
-    
     # Закрываем окно
     if event:
       event.accept()
@@ -1436,16 +1461,16 @@ class MouseSettingAppMethods:
     """Подсвечивает кнопки, для которых уже созданы макросы"""
     # Сначала сбрасываем стиль для всех кнопок
     for button in keyboard_widget.findChildren(QPushButton):
-        button.setStyleSheet("") # Сброс на стиль по умолчанию
+     button.setStyleSheet("") # Сброс на стиль по умолчанию
 
     # Теперь подсвечиваем нужные
     for key in keys_with_macros:
         # Ищем кнопку по тексту. Текст может содержать переносы строк, поэтому используем strip()
-        buttons = keyboard_widget.findChildren(QPushButton)
-        for button in buttons:
-            if button.text().replace('\n', ' ').strip() == key.replace('\n', ' ').strip():
-                button.setStyleSheet("background-color: #0078d7; color: white;")
-                break
+     buttons = keyboard_widget.findChildren(QPushButton)
+     for button in buttons:
+      if button.text().replace('\n', ' ').strip() == key.replace('\n', ' ').strip():
+         button.setStyleSheet("background-color: #0078d7; color: white;")
+         break
   
   def update_keyboard_display(self, dict_save):
     """Обновляет отображение основной клавиатуры после сохранения изменений"""
@@ -1522,10 +1547,10 @@ class MouseSettingAppMethods:
   
     res = dict_save.return_jnson()
     res['current_app'] = game
- 
-  def closeEvent(self, event, dict_save):
-    old_data = dict_save.return_old_data()
-    new_data = dict_save.return_jnson()
+    dict_save.save_jnson(res)
+  def closeEvent(self, event):# Когда мы закрываем программу сохранить или нет
+    old_data = self.dict_save.return_old_data()
+    new_data = self.dict_save.return_jnson()
     diff = DeepDiff(old_data, new_data)
     if diff:
       reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?",
@@ -1546,7 +1571,7 @@ class MouseSettingAppMethods:
     event.accept()
     sys.exit(0)
  
-  def checkbutton_changed(self, count):
+  def checkbutton_changed(self, count):# снять и убрать галочку.
     res = dict_save.return_jnson()
     keys_list = list(res["games_checkmark"].keys())
     curr_app = str(keys_list[count])
@@ -1555,22 +1580,21 @@ class MouseSettingAppMethods:
     dict_save.save_jnson(res)
  
   def update_labels_bindings(self):
-    labels = dict_save.return_labels()
-    var_list = dict_save.return_var_list()
-    for count, label in enumerate(labels):
-      label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
-      if count < len(var_list):
-        var_list[count].stateChanged.disconnect()
-        var_list[count].stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c))
+   labels = dict_save.return_labels()
+   var_list = dict_save.return_var_list()
+   for count, label in enumerate(labels):
+    label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
+    if count < len(var_list):
+     var_list[count].stateChanged.disconnect()
+     var_list[count].stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c))
  
-  def move_element(self, dict_save, direction):
+  def move_element(self, dict_save, direction):# Двигать названия игр по списку
     try:
       res = dict_save.return_jnson()
       labels = dict_save.return_labels()
       curr_app_path = res["current_app"]
       keys_list = list(res["key_value"].keys())
       index_curr = keys_list.index(curr_app_path)
-   
       new_index = -1
       if direction == 'up' and index_curr > 0:
         new_index = index_curr - 1
@@ -1578,18 +1602,14 @@ class MouseSettingAppMethods:
         new_index = index_curr + 1
       else:
         return
-   
       container_curr = labels[index_curr].parentWidget()
       container_new = labels[new_index].parentWidget()
-   
       main_layout = container_curr.parentWidget().layout()
-   
       main_layout.removeWidget(container_curr)
       main_layout.removeWidget(container_new)
-   
       labels.insert(new_index, labels.pop(index_curr))
    
-      if direction == 'up':
+      if direction == 'up':# передвинуть вверх, если нет, то вниз.
         main_layout.insertWidget(new_index, container_curr)
         main_layout.insertWidget(index_curr, container_new)
       else:
@@ -1600,7 +1620,6 @@ class MouseSettingAppMethods:
       labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
    
       self.update_labels_bindings()
-   
       dict_save.save_labels(labels)
       dict_save.save_jnson(res)
       return 0
@@ -1609,7 +1628,7 @@ class MouseSettingAppMethods:
       print(f"Ошибка при перемещении элемента: {e}")
       pass
  
-  def check_label_changed(self, dict_save, count):
+  def check_label_changed(self, dict_save, count):# установить текущую активную игру
     res = dict_save.return_jnson()
     labels = dict_save.return_labels()
     keys_list = list(res["key_value"].keys())
@@ -1621,7 +1640,6 @@ class MouseSettingAppMethods:
     res["current_app"] = game
     dict_save.set_cur_app(game)
     dict_save.set_prev_game(curr)
-  
     list_check_buttons = res.get("mouse_press", {}).get(game, [])
     for idx, check in enumerate(self.mouse_check_buttons):
       if idx < len(list_check_buttons):
@@ -1633,27 +1651,25 @@ class MouseSettingAppMethods:
     for button in self.buttons_script:
       button.setStyleSheet("")
     if script:
-      for key, value in script.items():
-        if value is not None and key in defaut_list_mouse_buttons:
-          i = defaut_list_mouse_buttons.index(key)
-          self.buttons_script[i].setStyleSheet("""
-                        QPushButton { border: 1px solid gray; padding: 5px;
+     for key, value in script.items():
+      if value is not None and key in defaut_list_mouse_buttons:
+       i = defaut_list_mouse_buttons.index(key)
+       self.buttons_script[i].setStyleSheet(""" QPushButton { border: 1px solid gray; padding: 5px;
                         color: black;  background-color: gray; } """)
-          self.buttons_script[i].update()
-  
+       self.buttons_script[i].update()
+    values = res["key_value"][game]# Получить значение выпадающего списка для этой игры
+    for button, value in zip(self.combo_box, values):
+     # Предположим, что вы хотите установить значение value в кнопку (комбо-бокс)
+     button.setCurrentText(value)  # для PyQt/PySide
     dict_save.save_jnson(res)
-    self.update_button(curr)
- 
-  def update_button(self, index):
+   
+  def update_button(self, index):# обновить, когда выбираем другое значение для кнопки мыши
     res = dict_save.return_jnson()
     game = res["current_app"]
-    box_button = list(res["key_value"][game])
-  
-    for i in range(7):
-      current_value = box_button[i]
-      i2 = LIST_KEYS.index(current_value)
-      self.combo_box[i].setCurrentIndex(i2)
- 
+    current_value = self.combo_box[index].currentText()
+    res["key_value"][game][index]=current_value
+    dict_save.save_jnson(res)# Сохранить новое значение для выпадающего списка
+
   def label_clicked(self, event, dict_save, count):
     if event.button() == Qt.LeftButton:
       self.check_label_changed(dict_save, count)
