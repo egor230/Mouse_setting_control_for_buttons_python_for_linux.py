@@ -1244,347 +1244,401 @@ class KeyboardWidget(QWidget):
 
 
 class MouseSettingAppMethods:
- def create_virtual_keyboard(self, callback_record_macro=None):
-  """
-  Создает виртуальную клавиатуру без блокнота
-  """
-  keyboard_window = QMainWindow(self)
-  keyboard_window.callback_record_macro = callback_record_macro
-  keyboard_window.setGeometry(240, 580, 1350, 340)
-  keyboard_window.setWindowTitle("Виртуальная клавиатура")
-  
-  keyboard_window.central = QWidget(keyboard_window)
-  keyboard_window.setCentralWidget(keyboard_window.central)
-  
-  keyboard_window.buttons = {}
-  self.create_layout_for_virtual_keyboard(keyboard_window.central)
-  
-  return keyboard_window
-  
- def create_layout_for_virtual_keyboard(self, central_widget):
-  """
-  Создает layout с кнопками клавиатуры
-  """
-  layout = QVBoxLayout(central_widget)
-  
-  # Создаем клавиатуру без callback для ввода текста
-  keyboard_widget = KeyboardWidget()
-  layout.addWidget(keyboard_widget)
  
- 
- def create_keyboard(self):
-  """
-  Создает простую клавиатуру без блокнота
-  """
-  return self.create_virtual_keyboard()
- 
- 
- def create_keyboard_with_editor(self, dict_save):
-  """
-  Создает клавиатуру с блокнотом для редактирования макросов.
-  Использует create_macro_keyboard_window для создания окна.
-  """
-  # Вызываем конструктор окна, который гарантирует правильный порядок: Блокнот СВЕРХУ
-  self.keyboard_editor = self.create_macro_keyboard_window(dict_save, self)
-  self.keyboard_editor.show()
+  def __init__(self):
+    self.keyboard_editor = None
+    self.current_keyboard_window = None
+
+  def create_virtual_keyboard(self, dict_save, callback_record_macro=None):
+    """Создает виртуальную клавиатуру без блокнота"""
+    # Закрываем предыдущее окно клавиатуры, если оно открыто
+    if self.current_keyboard_window:
+      self.current_keyboard_window.close()
+    
+    keyboard_window = QMainWindow(self)
+    self.current_keyboard_window = keyboard_window
+    keyboard_window.dict_save = dict_save
+    keyboard_window.setGeometry(240, 580, 1350, 340)
+    keyboard_window.setWindowTitle("Выбор клавиш")
+    
+    keyboard_window.central = QWidget(keyboard_window)
+    keyboard_window.setCentralWidget(keyboard_window.central)
+    
+    # Создаем layout для клавиатуры
+    layout = QVBoxLayout(keyboard_window.central)
+    
+    # Получаем информацию о активных клавишах с макросами
+    res = dict_save.return_jnson()
+    current_app = dict_save.get_cur_app()
+    
+    # Инициализируем структуры если их нет
+    res.setdefault("keyboard_script", {}).setdefault(current_app, {"keys": {}})
+    
+    keys_active = []
+    if "keys" in res["keyboard_script"][current_app]:
+      keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
+    
+    # Создаем клавиатуру с callback для записи макросов
+    def record_macro_callback(key):
+      # Открываем редактор для этой клавиши
+      self.create_keyboard_with_editor(dict_save, key)
+    
+    keyboard_widget = KeyboardWidget(record_macro_callback)
+    layout.addWidget(keyboard_widget)
+    
+    # Подсвечиваем кнопки, которые уже имеют макросы
+    self.highlight_buttons_with_macros(keyboard_widget, keys_active)
+    
+    keyboard_window.show()
+    return keyboard_window
+
+  def create_keyboard_with_editor(self, dict_save, i):
+    """
+    Создает клавиатуру с блокнотом для редактирования макросов для конкретной клавиши i
+    """
+    # Скрываем основное окно клавиатуры
+    if self.current_keyboard_window:
+        self.current_keyboard_window.hide()
+
+    # Сохраняем информацию о нажатой клавише
+    dict_save.set_last_key_keyboard_script(i)
+    
+    # Закрываем предыдущее окно редактора, если оно открыто
+    if self.keyboard_editor:
+      self.keyboard_editor.close()
+    
+    # Создаем окно с блокнотом сверху и клавиатурой снизу
+    macro_window = QMainWindow(self)
+    self.keyboard_editor = macro_window
+    macro_window.dict_save = dict_save
+    macro_window.setWindowTitle(f"Запись макроса для клавиши {i}")
+    macro_window.setGeometry(140, 480, 1410, 600)
+    
+    central_widget = QWidget()
+    macro_window.setCentralWidget(central_widget)
+    layout = QVBoxLayout(central_widget)
+    
+    # 1. Блокнот (QTextEdit) - сверху
+    macro_window.text_widget = QTextEdit()
+    layout.addWidget(QLabel("Редактор скрипта:"))
+    layout.addWidget(macro_window.text_widget)
+    
+    # Загружаем существующий скрипт для этой клавиши, если он есть
+    res = dict_save.return_jnson()
+    current_app = dict_save.get_cur_app()
+    
+    # Инициализируем структуры если их нет
+    res.setdefault("keyboard_script", {}).setdefault(current_app, {"keys": {}})
+    
+    if i in res["keyboard_script"][current_app]["keys"]:
+      # Загружаем существующий скрипт
+      text_content = res["keyboard_script"][current_app]["keys"][i]
+      macro_window.text_widget.setPlainText(text_content)
+    else:
+      # Начальный скрипт
+      macro_window.text_widget.setPlainText("#!/bin/bash\n")
+    
+    # Перемещаем курсор в конец текста
+    cursor = macro_window.text_widget.textCursor()
+    cursor.movePosition(QTextCursor.End)
+    macro_window.text_widget.setTextCursor(cursor)
+    
+    # 2. Клавиатура (KeyboardWidget) - снизу
+    def add_key_command_local(key):
+      """Функция для вставки команд xte при нажатии клавиш"""
+      add_text_pytq5(key, macro_window.text_widget)
+
+    macro_window.keyboard_widget = KeyboardWidget(add_key_command_local)
+    layout.addWidget(macro_window.keyboard_widget)
+    
+    # Переопределяем обработчик закрытия окна для сохранения
+    macro_window.closeEvent = lambda event: self.kill_notebook(macro_window, dict_save, event)
+    
+    macro_window.show()
+
+  def save_script(self, text_widget, key, dict_save):
+    """Сохраняет скрипт (оставлен для возможной будущей логики, сейчас не используется)"""
+    pass
+
+  def kill_notebook(self, window, dict_save, event=None):
+    """Обработчик закрытия окна - сохраняет скрипт и закрывает окно"""
+    key = dict_save.get_last_key_keyboard_script()
+    script_text = window.text_widget.toPlainText()
+    current_app = dict_save.get_cur_app()
+    res = dict_save.return_jnson()
+    
+    res.setdefault("keyboard_script", {}).setdefault(current_app, {"keys": {}})
+    
+    # Проверяем, является ли скрипт пустым или только шаблоном
+    if not script_text.strip() or script_text.strip() == "#!/bin/bash":
+      # Удаляем ключ, если он существует
+      if key in res["keyboard_script"][current_app]["keys"]:
+        del res["keyboard_script"][current_app]["keys"][key]
+    else:
+      # Сохраняем скрипт
+      res["keyboard_script"][current_app]["keys"][key] = script_text
+    
+    dict_save.save_jnson(res)
+    
+    # Закрываем окно
+    if event:
+      event.accept()
+    else:
+      window.close()
+
+    # Показываем основную клавиатуру снова
+    if self.current_keyboard_window:
+        self.current_keyboard_window.show()
+    
+    # Обновляем отображение основной клавиатуры
+    self.update_keyboard_display(dict_save)
+
+  def highlight_buttons_with_macros(self, keyboard_widget, keys_with_macros):
+    """Подсвечивает кнопки, для которых уже созданы макросы"""
+    # Сначала сбрасываем стиль для всех кнопок
+    for button in keyboard_widget.findChildren(QPushButton):
+        button.setStyleSheet("") # Сброс на стиль по умолчанию
+
+    # Теперь подсвечиваем нужные
+    for key in keys_with_macros:
+        # Ищем кнопку по тексту. Текст может содержать переносы строк, поэтому используем strip()
+        buttons = keyboard_widget.findChildren(QPushButton)
+        for button in buttons:
+            if button.text().replace('\n', ' ').strip() == key.replace('\n', ' ').strip():
+                button.setStyleSheet("background-color: #0078d7; color: white;")
+                break
   
-  # --- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ОКОН ---
- 
- 
- def record_macro_in_virtual_keyboard(self, key, keyboard_window):
-  if keyboard_window.callback_record_macro:
-   keyboard_window.callback_record_macro(key, keyboard_window)
- 
- 
- def create_macro_editor(self, key, parent=None):
-  editor_dialog = QDialog(parent)
-  editor_dialog.key = key
-  editor_dialog.setWindowTitle(f"Запись макроса для {key}")
-  
-  layout = QVBoxLayout(editor_dialog)
-  
-  editor_dialog.text_widget = QPlainTextEdit(editor_dialog)
-  editor_dialog.text_widget.insertPlainText("#!/bin/bash\n")
-  layout.addWidget(QLabel("Редактор скрипта:"))
-  layout.addWidget(editor_dialog.text_widget)
-  
-  res = dict_save.return_jnson()
-  current_app = res["current_app"]
-  if "keyboard_script" in res and current_app in res["keyboard_script"]:
-   keys = res["keyboard_script"][current_app].get("keys", {})
-   if key in keys:
-    editor_dialog.text_widget.setPlainText(keys[key])
-  
-  editor_dialog.get_script = lambda: editor_dialog.text_widget.toPlainText()
-  
-  return editor_dialog
- 
- 
- def create_macro_keyboard_window(self, dict_save, parent=None):
-  """
-  Конструктор окна, где Блокнот находится СВЕРХУ, а Клавиатура СНИЗУ.
-  """
-  macro_window = QMainWindow(parent)
-  macro_window.dict_save = dict_save
-  macro_window.setWindowTitle("Запись макроса")
-  macro_window.setGeometry(140, 480, 1410, 600)
-  
-  central_widget = QWidget()
-  macro_window.setCentralWidget(central_widget)
-  layout = QVBoxLayout(central_widget)
-  
-  # 1. ДОБАВЛЯЕМ БЛОКНОТ (QTextEdit) - он будет СВЕРХУ
-  macro_window.text_widget = QTextEdit()
-  macro_window.text_widget.setPlainText("#!/bin/bash\n")
-  
-  cursor = macro_window.text_widget.textCursor()
-  cursor.movePosition(QTextCursor.End)
-  macro_window.text_widget.setTextCursor(cursor)
-  layout.addWidget(QLabel("Редактор скрипта:"))
-  layout.addWidget(macro_window.text_widget)
-  
-  # 2. ДОБАВЛЯЕМ КЛАВИАТУРУ (KeyboardWidget) - она будет СНИЗУ
-  def add_key_text_local(key):
-   add_text_pytq5(key, macro_window.text_widget)
-   # Используем аргумент dict_save
-   current_app = dict_save.get_cur_app()
-  
-  macro_window.keyboard_widget = KeyboardWidget(add_key_text_local)
-  layout.addWidget(macro_window.keyboard_widget)
-  
-  return macro_window
- 
- 
- def record_marcross(self, dict_save, key):
-  dict_save.set_last_key_keyboard_script(key)
-  self.keyboard_editor = self.create_macro_keyboard_window(dict_save, self)
-  self.keyboard_editor.setWindowTitle(f"Запись макроса для клавиши {key}")
-  
-  res = dict_save.return_jnson()
-  current_app = dict_save.get_cur_app()
-  res.setdefault("keyboard_script", {}).setdefault(current_app, {"keys": {}})
-  keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
-  
-  if key in keys_active:
-   text_content = res["keyboard_script"][current_app]["keys"][key]
-   self.keyboard_editor.text_widget.setPlainText(text_content)
-  else:
-   self.keyboard_editor.text_widget.setPlainText("#!/bin/bash\n")
-  
-  self.keyboard_editor.show()
- 
- 
- def record_macro_callback(self, key, window):
-  self.record_marcross(dict_save, key)
- 
- def filling_in_fields(self, dict_save):
-   while self.games_layout.count():
-    child = self.games_layout.takeAt(0)
-    if child.widget():
-     child.widget().deleteLater()
-   res = dict_save.return_jnson()
-   labels = dict_save.return_labels()
-   name_games = dict_save.return_name_games()
-   var_list = dict_save.return_var_list()
-   labels.clear()
-   name_games.clear()
-   var_list.clear()
-   check_mark = res["games_checkmark"]
-   paths = res["paths"]
-   for count, (path, game_name) in enumerate(paths.items()):
-    game_container = QWidget()
-    game_layout = QHBoxLayout(game_container)
-    game_layout.setContentsMargins(0, 0, 0, 0)
-    var = QCheckBox()
-    var.setChecked(check_mark[path])
-    var_list.append(var)
-    var.stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c))
-    label = QLabel(game_name)
-    label.setFixedWidth(200)
-    label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
-    label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-    label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
-    label.setContextMenuPolicy(Qt.CustomContextMenu)
-    label.customContextMenuRequested.connect(lambda pos, c=count: self.show_change_name_menu(c))
-    name_games.append(game_name)
-    labels.append(label)
-    game_layout.addWidget(var)
-    game_layout.addWidget(label)
-    self.games_layout.addWidget(game_container)
-   if res['current_app'] in paths:
-    index = list(paths.keys()).index(res['current_app'])
-    if index < len(labels):
-     labels[index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
- 
- def change_app(self, game=""):
-   if game == dict_save.get_cur_app() or game == "":
-    dict_save.set_cur_app("")
-    while True:
-     if "" == dict_save.get_cur_app():
-      break
-    dict_save.set_prev_game(game)
-    dict_save.set_cur_app(game)
-    while game != dict_save.get_cur_app():
-     time.sleep(1)
-  
-   res = dict_save.return_jnson()
-   res['current_app'] = game
- 
- def closeEvent(self, event, dict_save):
-   old_data = dict_save.return_old_data()
-   new_data = dict_save.return_jnson()
-   diff = DeepDiff(old_data, new_data)
-   if diff:
-    reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?",
-                                 QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
-    if reply == QMessageBox.Save:
-     dict_save.write_to_file(new_data)
-    elif reply == QMessageBox.Cancel:
-     return
-   target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"
-   current_pid = os.getpid()
-   for p in psutil.process_iter(['pid', 'cmdline']):
-    try:
-     cmdline_str = ' '.join(p.info['cmdline'])
-     if target in cmdline_str and p.info['pid'] != current_pid:
-      os.kill(p.info['pid'], signal.SIGTERM)
-    except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
-     continue
-   event.accept()
-   sys.exit(0)
- 
- def checkbutton_changed(self, count):
-   res = dict_save.return_jnson()
-   keys_list = list(res["games_checkmark"].keys())
-   curr_app = str(keys_list[count])
-   var_list = dict_save.return_var_list()
-   res["games_checkmark"][curr_app] = var_list[count].isChecked()
-   dict_save.save_jnson(res)
- 
- def update_labels_bindings(self):
-   labels = dict_save.return_labels()
-   var_list = dict_save.return_var_list()
-   for count, label in enumerate(labels):
-    label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
-    if count < len(var_list):
-     var_list[count].stateChanged.disconnect()
-     var_list[count].stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c))
- 
- def move_element(self, dict_save, direction):
-   try:
+  def update_keyboard_display(self, dict_save):
+    """Обновляет отображение основной клавиатуры после сохранения изменений"""
+    if not self.current_keyboard_window:
+        self.create_virtual_keyboard(dict_save)
+        return
+
+    # Получаем актуальный список клавиш с макросами
+    current_app = dict_save.get_cur_app()
+    res = dict_save.return_jnson()
+    keys_active = []
+    
+    if "keyboard_script" in res and current_app in res["keyboard_script"]:
+        if "keys" in res["keyboard_script"][current_app]:
+            keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
+            
+    # Находим виджет клавиатуры и обновляем подсветку
+    keyboard_widget = self.current_keyboard_window.findChild(KeyboardWidget)
+    if keyboard_widget:
+        self.highlight_buttons_with_macros(keyboard_widget, keys_active)
+    
+    # Показываем окно, если оно было скрыто
+    self.current_keyboard_window.show()
+    
+  def filling_in_fields(self, dict_save):
+    while self.games_layout.count():
+      child = self.games_layout.takeAt(0)
+      if child.widget():
+        child.widget().deleteLater()
     res = dict_save.return_jnson()
     labels = dict_save.return_labels()
-    curr_app_path = res["current_app"]
-    keys_list = list(res["key_value"].keys())
-    index_curr = keys_list.index(curr_app_path)
-   
-    new_index = -1
-    if direction == 'up' and index_curr > 0:
-     new_index = index_curr - 1
-    elif direction == 'down' and index_curr < len(labels) - 1:
-     new_index = index_curr + 1
-    else:
-     return
-   
-    container_curr = labels[index_curr].parentWidget()
-    container_new = labels[new_index].parentWidget()
-   
-    main_layout = container_curr.parentWidget().layout()
-   
-    main_layout.removeWidget(container_curr)
-    main_layout.removeWidget(container_new)
-   
-    labels.insert(new_index, labels.pop(index_curr))
-   
-    if direction == 'up':
-     main_layout.insertWidget(new_index, container_curr)
-     main_layout.insertWidget(index_curr, container_new)
-    else:
-     main_layout.insertWidget(index_curr, container_new)
-     main_layout.insertWidget(new_index, container_curr)
-   
-    labels[index_curr].setStyleSheet("background-color: white; color: black; border: 1px solid gray; padding: 5px;")
-    labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-   
-    self.update_labels_bindings()
-   
-    dict_save.save_labels(labels)
+    name_games = dict_save.return_name_games()
+    var_list = dict_save.return_var_list()
+    labels.clear()
+    name_games.clear()
+    var_list.clear()
+    check_mark = res["games_checkmark"]
+    paths = res["paths"]
+    for count, (path, game_name) in enumerate(paths.items()):
+      game_container = QWidget()
+      game_layout = QHBoxLayout(game_container)
+      game_layout.setContentsMargins(0, 0, 0, 0)
+      var = QCheckBox()
+      var.setChecked(check_mark[path])
+      var_list.append(var)
+      var.stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c))
+      label = QLabel(game_name)
+      label.setFixedWidth(200)
+      label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
+      label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+      label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
+      label.setContextMenuPolicy(Qt.CustomContextMenu)
+      label.customContextMenuRequested.connect(lambda pos, c=count: self.show_change_name_menu(c))
+      name_games.append(game_name)
+      labels.append(label)
+      game_layout.addWidget(var)
+      game_layout.addWidget(label)
+      self.games_layout.addWidget(game_container)
+    if res['current_app'] in paths:
+      index = list(paths.keys()).index(res['current_app'])
+      if index < len(labels):
+        labels[index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
+ 
+  def change_app(self, game=""):
+    if game == dict_save.get_cur_app() or game == "":
+      dict_save.set_cur_app("")
+      while True:
+        if "" == dict_save.get_cur_app():
+          break
+      dict_save.set_prev_game(game)
+      dict_save.set_cur_app(game)
+      while game != dict_save.get_cur_app():
+        time.sleep(1)
+  
+    res = dict_save.return_jnson()
+    res['current_app'] = game
+ 
+  def closeEvent(self, event, dict_save):
+    old_data = dict_save.return_old_data()
+    new_data = dict_save.return_jnson()
+    diff = DeepDiff(old_data, new_data)
+    if diff:
+      reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?",
+                                  QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
+      if reply == QMessageBox.Save:
+        dict_save.write_to_file(new_data)
+      elif reply == QMessageBox.Cancel:
+        return
+    target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"
+    current_pid = os.getpid()
+    for p in psutil.process_iter(['pid', 'cmdline']):
+      try:
+        cmdline_str = ' '.join(p.info['cmdline'])
+        if target in cmdline_str and p.info['pid'] != current_pid:
+          os.kill(p.info['pid'], signal.SIGTERM)
+      except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
+        continue
+    event.accept()
+    sys.exit(0)
+ 
+  def checkbutton_changed(self, count):
+    res = dict_save.return_jnson()
+    keys_list = list(res["games_checkmark"].keys())
+    curr_app = str(keys_list[count])
+    var_list = dict_save.return_var_list()
+    res["games_checkmark"][curr_app] = var_list[count].isChecked()
     dict_save.save_jnson(res)
-    return 0
+ 
+  def update_labels_bindings(self):
+    labels = dict_save.return_labels()
+    var_list = dict_save.return_var_list()
+    for count, label in enumerate(labels):
+      label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
+      if count < len(var_list):
+        var_list[count].stateChanged.disconnect()
+        var_list[count].stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c))
+ 
+  def move_element(self, dict_save, direction):
+    try:
+      res = dict_save.return_jnson()
+      labels = dict_save.return_labels()
+      curr_app_path = res["current_app"]
+      keys_list = list(res["key_value"].keys())
+      index_curr = keys_list.index(curr_app_path)
+   
+      new_index = -1
+      if direction == 'up' and index_curr > 0:
+        new_index = index_curr - 1
+      elif direction == 'down' and index_curr < len(labels) - 1:
+        new_index = index_curr + 1
+      else:
+        return
+   
+      container_curr = labels[index_curr].parentWidget()
+      container_new = labels[new_index].parentWidget()
+   
+      main_layout = container_curr.parentWidget().layout()
+   
+      main_layout.removeWidget(container_curr)
+      main_layout.removeWidget(container_new)
+   
+      labels.insert(new_index, labels.pop(index_curr))
+   
+      if direction == 'up':
+        main_layout.insertWidget(new_index, container_curr)
+        main_layout.insertWidget(index_curr, container_new)
+      else:
+        main_layout.insertWidget(index_curr, container_new)
+        main_layout.insertWidget(new_index, container_curr)
+   
+      labels[index_curr].setStyleSheet("background-color: white; color: black; border: 1px solid gray; padding: 5px;")
+      labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
+   
+      self.update_labels_bindings()
+   
+      dict_save.save_labels(labels)
+      dict_save.save_jnson(res)
+      return 0
   
-   except Exception as e:
-    print(f"Ошибка при перемещении элемента: {e}")
+    except Exception as e:
+      print(f"Ошибка при перемещении элемента: {e}")
+      pass
+ 
+  def check_label_changed(self, dict_save, count):
+    res = dict_save.return_jnson()
+    labels = dict_save.return_labels()
+    keys_list = list(res["key_value"].keys())
+    curr = res["current_app"]
+    index_curr = keys_list.index(curr)
+    labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
+    game = list(res["key_value"].keys())[count]
+    labels[count].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
+    res["current_app"] = game
+    dict_save.set_cur_app(game)
+    dict_save.set_prev_game(curr)
+  
+    list_check_buttons = res.get("mouse_press", {}).get(game, [])
+    for idx, check in enumerate(self.mouse_check_buttons):
+      if idx < len(list_check_buttons):
+        check.setChecked(list_check_buttons[idx])
+      else:
+        check.setChecked(False)
+  
+    script = res.get("script_mouse", {}).get(game, {})
+    for button in self.buttons_script:
+      button.setStyleSheet("")
+    if script:
+      for key, value in script.items():
+        if value is not None and key in defaut_list_mouse_buttons:
+          i = defaut_list_mouse_buttons.index(key)
+          self.buttons_script[i].setStyleSheet("""
+                        QPushButton { border: 1px solid gray; padding: 5px;
+                        color: black;  background-color: gray; } """)
+          self.buttons_script[i].update()
+  
+    dict_save.save_jnson(res)
+    self.update_button(curr)
+ 
+  def update_button(self, index):
+    res = dict_save.return_jnson()
+    game = res["current_app"]
+    box_button = list(res["key_value"][game])
+  
+    for i in range(7):
+      current_value = box_button[i]
+      i2 = LIST_KEYS.index(current_value)
+      self.combo_box[i].setCurrentIndex(i2)
+ 
+  def label_clicked(self, event, dict_save, count):
+    if event.button() == Qt.LeftButton:
+      self.check_label_changed(dict_save, count)
+ 
+  def check_mouse_press_button(self, count, state):
+    res = dict_save.return_jnson()
+    curr_name = dict_save.get_cur_app()
+  
+    if curr_name not in res.get("mouse_press", {}):
+      res["mouse_press"][curr_name] = [False] * 7
+    res["mouse_press"][curr_name][count] = (state == Qt.Checked)
+    dict_save.save_jnson(res)
+ 
+  def add_file(self):
     pass
- 
- def check_label_changed(self, dict_save, count):
-   res = dict_save.return_jnson()
-   labels = dict_save.return_labels()
-   keys_list = list(res["key_value"].keys())
-   curr = res["current_app"]
-   index_curr = keys_list.index(curr)
-   labels[index_curr].setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
-   game = list(res["key_value"].keys())[count]
-   labels[count].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-   res["current_app"] = game
-   dict_save.set_cur_app(game)
-   dict_save.set_prev_game(curr)
   
-   list_check_buttons = res.get("mouse_press", {}).get(game, [])
-   for idx, check in enumerate(self.mouse_check_buttons):
-    if idx < len(list_check_buttons):
-     check.setChecked(list_check_buttons[idx])
-    else:
-     check.setChecked(False)
+  def delete(self):
+    pass
   
-   script = res.get("script_mouse", {}).get(game, {})
-   for button in self.buttons_script:
-    button.setStyleSheet("")
-   if script:
-    for key, value in script.items():
-     if value is not None and key in defaut_list_mouse_buttons:
-      i = defaut_list_mouse_buttons.index(key)
-      self.buttons_script[i].setStyleSheet("""
-                       QPushButton { border: 1px solid gray; padding: 5px;
-                       color: black;  background-color: gray; } """)
-      self.buttons_script[i].update()
+  def button_keyboard(self, index):
+    pass
   
-   dict_save.save_jnson(res)
-   self.update_button(curr)
- 
- def update_button(self, index):
-   res = dict_save.return_jnson()
-   game = res["current_app"]
-   box_button = list(res["key_value"][game])
+  def create_scrypt_buttons(self):
+    pass
   
-   for i in range(7):
-    current_value = box_button[i]
-    i2 = LIST_KEYS.index(current_value)
-    self.combo_box[i].setCurrentIndex(i2)
- 
- def label_clicked(self, event, dict_save, count):
-   if event.button() == Qt.LeftButton:
-    self.check_label_changed(dict_save, count)
- 
- def check_mouse_press_button(self, count, state):
-   res = dict_save.return_jnson()
-   curr_name = dict_save.get_cur_app()
-  
-   if curr_name not in res.get("mouse_press", {}):
-    res["mouse_press"][curr_name] = [False] * 7
-   res["mouse_press"][curr_name][count] = (state == Qt.Checked)
-   dict_save.save_jnson(res)
- 
- def add_file(self):
-   pass
- 
- def delete(self):
-   pass
- 
- def button_keyboard(self, index):
-   pass
- 
- def create_scrypt_buttons(self):
-   pass
- 
- def show_change_name_menu(self, count):
-   pass
+  def show_change_name_menu(self, count):
+    pass
