@@ -1103,8 +1103,53 @@ def add_text_pytq5(key, text_widget):
  cursor = text_widget.textCursor()
  cursor.movePosition(QTextCursor.End)
  text_widget.setTextCursor(cursor)
- text_widget.insertPlainText(key + " ")
-
+ if key == "7\nHome":
+  key = "KP_Home"
+ 
+ elif key == "8\n↑":
+  key = "KP_Up"
+ elif key == "9\nPgUp":
+  key = "KP_Prior"
+ elif key == "4\n←":
+  key = "KP_Left"
+ elif key == "5\n":
+  key = "KP_Begin"
+ elif key == "6\n→":
+  key = "KP_Right"
+ elif key == "1\nEnd":
+  key = "KP_End"
+ elif key == "2\n↓":
+  key = "KP_Down"
+ elif key == "3\nPgDn":
+  key = "KP_Next"
+ elif key == "Ctrl":
+  key = "ISO_Next_Group"
+ 
+ if key == "Левая":
+  sc = (f'xte "mousedown 1"\n'
+        f'sleep 0.23\n'
+        f'xte "mouseup 1"\n')
+ elif key == "Правая":
+  sc = (f'xte "mousedown 3"\n'
+        f'sleep 0.23\n'
+        f'xte "mouseup 3"\n')
+ elif key == "wheel_up":
+  sc = (f'xte "mousedown 4"\n'
+        f'sleep 0.23\n'
+        f'xte "mouseup 4"\n')
+ elif key == "mouse_middie":
+  sc = (f'xte "mousedown 2"\n'
+        f'sleep 0.23\n'
+        f'xte "mouseup 2"\n')
+ elif key == "wheel_down":
+  sc = (f'xte "mousedown 5"\n'
+        f'sleep 0.23\n'
+        f'xte "mouseup 5"\n')
+ else:
+  sc = (f'xte "keydown {key}"\n'
+        f'sleep 0.23\n'
+        f'xte "keyup {key}"\n')
+ text_widget.insertPlainText(sc)
 
 class KeyboardWidget(QWidget):
  def __init__(self, callback_func=None, row_shifts=None):
@@ -1236,15 +1281,12 @@ class KeyboardWidget(QWidget):
       x_pos = x1 + 770
       y_pos = y1 - 9
       w = BUTTON_WIDTH
-    
     btn.resize(w, h)
     btn.move(x_pos, y_pos)
   
   layout.addWidget(keyboard_widget)
 
-
 class MouseSettingAppMethods:
- 
   def __init__(self):
     self.keyboard_editor = None
     self.current_keyboard_window = None
@@ -1356,10 +1398,7 @@ class MouseSettingAppMethods:
     
     macro_window.show()
 
-  def save_script(self, text_widget, key, dict_save):
-    """Сохраняет скрипт (оставлен для возможной будущей логики, сейчас не используется)"""
-    pass
-
+  
   def kill_notebook(self, window, dict_save, event=None):
     """Обработчик закрытия окна - сохраняет скрипт и закрывает окно"""
     key = dict_save.get_last_key_keyboard_script()
