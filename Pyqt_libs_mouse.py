@@ -1004,59 +1004,51 @@ def quit_app(icon, item):  # Функция для выхода из прило�
  icon.stop()  # Останавливаем значок
  root.destroy()  # Закрываем приложение
 
-def reorder_keys_in_dict(res, index, direction='up'):#   Перемещает ключ на позицию index вверх/вниз (swap с соседним)
+
+def reorder_keys_in_dict(res, idx1, idx2):  # ИЗМЕНЕНО: Новая/доработанная функция (self для метода, если нужно; или статичная)
+ # ИЗМЕНЕНО: Проверки на валидность
  if 'paths' not in res or not isinstance(res['paths'], dict):
   return res
-
  orig_keys = list(res['paths'].keys())
  n = len(orig_keys)
- target = index + (-1 if direction == 'up' else 1)
-
- # границы
- if not (0 <= index < n and 0 <= target < n):
+ if not (0 <= idx1 < n and 0 <= idx2 < n and idx1 != idx2):
   return res
-
- # новый порядок ключей (после обмена двух соседних)
+ 
+ # ИЗМЕНЕНО: Простой swap по idx1 и idx2 (без direction)
  new_order = orig_keys.copy()
- new_order[index], new_order[target] = new_order[target], new_order[index]
-
- def reorder_recursive(d):# Рекурсивно обрабатывает dict: сначала рекурсивно обрабатываем значения, перестраиваем его ключи в new_order.
+ new_order[idx1], new_order[idx2] = new_order[idx2], new_order[idx1]
+ 
+ def reorder_recursive(d):
   if not isinstance(d, dict):
    return d
-
-  # сначала рекурсивно обработаем все вложенные значения
-  processed = {}
-  for k, v in d.items():
-   processed[k] = reorder_recursive(v)
-
-  # если в этом словаре нет ни одного ключа из orig_keys — возвращаем обработанный вариант
+  # Рекурсивно обработаем значения сначала
+  processed = {k: reorder_recursive(v) for k, v in d.items()}
+  # Если нет ключей из orig_keys — возвращаем как есть
   if not any(k in processed for k in orig_keys):
    return processed
-
-  # иначе создаём новый словарь с ключами в порядке new_order (если присутствуют),
+  # Иначе: новый dict с ключами в new_order (только те, что есть)
   new_d = {}
   for k in new_order:
    if k in processed:
     new_d[k] = processed[k]
+  # Добавляем оставшиеся ключи (не из paths, если есть)
   for k in processed:
    if k not in new_d:
     new_d[k] = processed[k]
   return new_d
-
- # Собираем новый результат, не мутируя оригинал
+ 
+ # ИЗМЕНЕНО: Собираем новый res (рекурсивно по всем top-level dicts)
  new_res = {}
  for top_k, top_v in res.items():
   if isinstance(top_v, dict):
    new_res[top_k] = reorder_recursive(top_v)
   else:
    new_res[top_k] = top_v
-
  return new_res
 
 simple_key_map = { 'KEY_KP7': ' 7\nHome', 'KEY_KP8': '8\n↑', 'KEY_KP9': '9\nPgUp',
  'KEY_KP4': '4\n←', 'KEY_KP5': '5\n', 'KEY_KP6': '6\n→',
- 'KEY_KP1': '1\nEnd', 'KEY_KP2': '2\n↓', 'KEY_KP3': '3\nPgDn'
-}
+ 'KEY_KP1': '1\nEnd', 'KEY_KP2': '2\n↓', 'KEY_KP3': '3\nPgDn'}
 
 
 def add_text_pytq5(key, text_widget):
@@ -1273,48 +1265,47 @@ class KeyboardWidget(QWidget):
 
 class MouseSettingAppMethods:
   def __init__(self):
-    self.keyboard_editor = None
-    self.current_keyboard_window = None
-    self.tray_icon = None
-    self.create_tray_icon()  # Создаем трей-иконку при запуске
-
-  def create_tray_icon(self):
-   # Ваш код для создания трей-иконки (немного модифицированный)
+   self.keyboard_editor = None
+   self.current_keyboard_window = None
+   self.tray_icon = None
+   self.create_tray_icon()  # Создаем трей-иконку при запуске
+   # Запускаем self.hide() с нулевой задержкой. Это гарантирует, что
+   # команда скрытия выполнится после того, как окно полностью инициализировано.
+   QTimer.singleShot(0, self.hide)
+  
+  def create_tray_icon(self):  # создания трей-иконки (немного модифицированный)
    icon = QIcon("X-Mouse-Button-Control-Logo.png")
    if icon.isNull():
     icon = self.style().standardIcon(self.style().SP_ComputerIcon)
- 
+   
    self.tray_icon = QSystemTrayIcon(icon, self)
    self.tray_icon.setToolTip("Mouse Setting Control")
- 
+   
    tray_menu = QMenu()
-   restore_action = tray_menu.addAction("Развернуть")
-   restore_action.triggered.connect(self.show_normal)
    quit_action = tray_menu.addAction("Выход")
    quit_action.triggered.connect(self.close_app)
- 
+   
    self.tray_icon.setContextMenu(tray_menu)
    self.tray_icon.activated.connect(self.tray_icon_clicked)
-   self.tray_icon.show()
-
-  def tray_icon_clicked(self, reason):
-   if reason == QSystemTrayIcon.Trigger:
-    if self.isVisible():
-     self.hide()
+   self.tray_icon.show()  # Отображаем иконку в системном трее
+   
+  def tray_icon_clicked(self, reason):  # Метод-обработчик кликов по иконке в трее
+   if reason == QSystemTrayIcon.Trigger:  # Проверяем, является ли событие обычным кликом
+    if self.isVisible():  # Проверяем, видно ли главное окно
+     self.hide()  # Если видно, скрываем его
     else:
-     self.show_normal()
-
-  def show_normal(self):
+     self.show_normal()  # Если скрыто, восстанавливаем и показываем его
+  
+  def show_normal(self):  # Метод для восстановления и фокусировки главного окна
    self.showNormal()
    self.activateWindow()
-
+  
   def close_app(self):
    # Закрываем приложение полностью
-   self.tray_icon.hide()  # Скрываем иконку
+   self.tray_icon.hide()
    QApplication.quit()
-
-  def closeEvent(self, event):
-   # Переопределяем закрытие окна - скрываем в трей вместо закрытия
+  
+  def closeEvent(self, event):  # Переопределяем закрытие окна - скрываем в трей вместо закрытия
    event.ignore()
    self.hide()
    
@@ -1362,9 +1353,8 @@ class MouseSettingAppMethods:
     return keyboard_window
 
   def create_keyboard_with_editor(self, dict_save, i):
-    """
-    Создает клавиатуру с блокнотом для редактирования макросов для конкретной клавиши i
-    """
+   # Создает клавиатуру с блокнотом для редактирования макросов для конкретной клавиши i
+    
     # Скрываем основное окно клавиатуры
     if self.current_keyboard_window:
         self.current_keyboard_window.hide()
@@ -1423,7 +1413,6 @@ class MouseSettingAppMethods:
     # Переопределяем обработчик закрытия окна для сохранения
     macro_window.closeEvent = lambda event: self.kill_notebook(macro_window, dict_save, event)
     macro_window.show()
-
   
   def kill_notebook(self, window, dict_save, event=None):
     """Обработчик закрытия окна - сохраняет скрипт и закрывает окно"""
@@ -1549,8 +1538,8 @@ class MouseSettingAppMethods:
     res['current_app'] = game
     dict_save.save_jnson(res)
   def closeEvent(self, event):# Когда мы закрываем программу сохранить или нет
-    old_data = self.dict_save.return_old_data()
-    new_data = self.dict_save.return_jnson()
+    old_data = dict_save.return_old_data()
+    new_data = dict_save.return_jnson()
     diff = DeepDiff(old_data, new_data)
     if diff:
       reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?",
@@ -1578,55 +1567,75 @@ class MouseSettingAppMethods:
     var_list = dict_save.return_var_list()
     res["games_checkmark"][curr_app] = var_list[count].isChecked()
     dict_save.save_jnson(res)
- 
+
   def update_labels_bindings(self):
    labels = dict_save.return_labels()
    var_list = dict_save.return_var_list()
    for count, label in enumerate(labels):
+    # ИЗМЕНЕНО: Более надёжная перепривязка (lambda с default c=count захватывается правильно)
     label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
     if count < len(var_list):
-     var_list[count].stateChanged.disconnect()
+     try:
+      # ИЗМЕНЕНО: disconnect с try-except для безопасности (если уже отключено)
+      var_list[count].stateChanged.disconnect()
+     except TypeError:
+      pass  # Нет соединений — OK
      var_list[count].stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c))
- 
-  def move_element(self, dict_save, direction):# Двигать названия игр по списку
-    try:
-      res = dict_save.return_jnson()
-      labels = dict_save.return_labels()
-      curr_app_path = res["current_app"]
-      keys_list = list(res["key_value"].keys())
-      index_curr = keys_list.index(curr_app_path)
-      new_index = -1
-      if direction == 'up' and index_curr > 0:
-        new_index = index_curr - 1
-      elif direction == 'down' and index_curr < len(labels) - 1:
-        new_index = index_curr + 1
-      else:
-        return
-      container_curr = labels[index_curr].parentWidget()
-      container_new = labels[new_index].parentWidget()
-      main_layout = container_curr.parentWidget().layout()
-      main_layout.removeWidget(container_curr)
-      main_layout.removeWidget(container_new)
-      labels.insert(new_index, labels.pop(index_curr))
-   
-      if direction == 'up':# передвинуть вверх, если нет, то вниз.
-        main_layout.insertWidget(new_index, container_curr)
-        main_layout.insertWidget(index_curr, container_new)
-      else:
-        main_layout.insertWidget(index_curr, container_new)
-        main_layout.insertWidget(new_index, container_curr)
-   
-      labels[index_curr].setStyleSheet("background-color: white; color: black; border: 1px solid gray; padding: 5px;")
-      labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
-   
-      self.update_labels_bindings()
-      dict_save.save_labels(labels)
-      dict_save.save_jnson(res)
-      return 0
+
+  def move_element(self, dict_save, direction):  # Двигать названия игр по списку
+   try:
+    res = dict_save.return_jnson()
+    labels = dict_save.return_labels()
+    curr_app_path = res["current_app"]
   
-    except Exception as e:
-      print(f"Ошибка при перемещении элемента: {e}")
-      pass
+    # ИЗМЕНЕНО: Используем paths для consistency (как в filling_in_fields)
+    keys_list = list(res["paths"].keys())
+    index_curr = keys_list.index(curr_app_path)
+  
+    new_index = -1
+    if direction == 'up' and index_curr > 0:
+     new_index = index_curr - 1
+    elif direction == 'down' and index_curr < len(labels) - 1:
+     new_index = index_curr + 1
+    else:
+     return
+  
+    container_curr = labels[index_curr].parentWidget()
+    container_new = labels[new_index].parentWidget()
+    main_layout = container_curr.parentWidget().layout()
+  
+    main_layout.removeWidget(container_curr)
+    main_layout.removeWidget(container_new)
+  
+    # Перемещаем в labels (визуальный порядок)
+    labels.insert(new_index, labels.pop(index_curr))
+  
+    if direction == 'up':
+     main_layout.insertWidget(new_index, container_curr)
+     main_layout.insertWidget(index_curr, container_new)
+    else:
+     main_layout.insertWidget(index_curr, container_new)
+     main_layout.insertWidget(new_index, container_curr)
+  
+    # ИЗМЕНЕНО: Стили по временным индексам (после move: curr теперь на new_index, former new на index_curr)
+    labels[index_curr].setStyleSheet("background-color: white; color: black; border: 1px solid gray; padding: 5px;")
+    labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
+  
+    # ИЗМЕНЕНО: reorder JSON по старым индексам (swap idx1=index_curr, idx2=new_index)
+    res = reorder_keys_in_dict(res, index_curr, new_index)
+  
+    self.update_labels_bindings()
+    dict_save.save_labels(labels)
+    dict_save.save_jnson(res)
+  
+    # ИЗМЕНЕНО: Опционально — sync layout с новым JSON (перестроит, но в правильном порядке)
+    # Если не нужно (чтобы не мигать), закомментируйте
+    self.filling_in_fields(dict_save)
+  
+    return 0
+   except Exception as e:
+    print(f"Ошибка при перемещении элемента: {e}")
+    return -1
  
   def check_label_changed(self, dict_save, count):# установить текущую активную игру
     res = dict_save.return_jnson()

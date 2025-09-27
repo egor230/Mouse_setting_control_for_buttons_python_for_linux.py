@@ -7,7 +7,8 @@
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": true,
-    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": true
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": true
   },
   "paths": {
     "C:/Windows/explorer.exe": "По умолчанию",
@@ -17,7 +18,8 @@
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": "Serious Sam",
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": "Cold Fear",
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": "Medal of Honor Allied Assault",
-    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": "SeriousSam"
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": "SeriousSam",
+    "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": "Dark Messiah of Might and Magic"
   },
   "key_value": {
     "C:/Windows/explorer.exe": [
@@ -91,6 +93,15 @@
       " ",
       "RBUTTON",
       "SPACE"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": [
+      "LBUTTON",
+      "W",
+      " ",
+      "F",
+      "C",
+      "RBUTTON",
+      "SCROLL_DOWN"
     ]
   },
   "mouse_press": {
@@ -158,6 +169,15 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": [
       false,
       false,
       false,

@@ -61,7 +61,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  
  def setup_ui(self):
   self.setWindowTitle("Mouse setting control for buttons python")
-  self.setGeometry(440, 280, 940, 346)
+  self.setGeometry(400, 340, 910, 386)
   self.setFixedSize(940, 346)
   central_widget = QWidget()
   self.setCentralWidget(central_widget)
@@ -106,8 +106,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   res = dict_save.return_jnson()
   game = res['current_app']
   box_button = list(res["key_value"][game])
-  lab = []
- 
+  lab=[]
   for i in range(7):
    row_layout = QHBoxLayout()
    row_layout.setSpacing(10)
@@ -208,7 +207,6 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   id_value = res["id"]
   if os.getgid() != 0 and hasattr(self, 'id_combo'):
    self.id_combo.setCurrentText(str(res["id"]))
-  box_values = []
   curr_name = dict_save.get_cur_app()
   key_values = res["key_value"]
   for i in range(len(LIST_MOUSE_BUTTONS)):
@@ -216,7 +214,6 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     if curr_name in key_values and i < len(key_values[curr_name]):
      self.mouse_button_combos[i].setCurrentText(key_values[curr_name][i])
   self.filling_in_fields(dict_save)
-
 
 if __name__ == "__main__":
  app = QApplication(sys.argv)
