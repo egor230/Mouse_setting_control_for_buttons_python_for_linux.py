@@ -214,7 +214,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     if curr_name in key_values and i < len(key_values[curr_name]):
      self.mouse_button_combos[i].setCurrentText(key_values[curr_name][i])
   self.filling_in_fields(dict_save)
-
+  self.start_startup_now(dict_save)
 if __name__ == "__main__":
  app = QApplication(sys.argv)
  window = MouseSettingApp()

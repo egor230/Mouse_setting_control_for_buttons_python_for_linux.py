@@ -7,7 +7,6 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
 from PyQt5.QtCore import Qt, pyqtSignal, QThread, QTimer
 from PyQt5.QtGui import QFont, QIcon, QColor, QPalette, QTextCursor
 from deepdiff import DeepDiff
-from PIL import Image
 import time, json, os, copy, psutil, threading, re, glob, subprocess, psutil, pyautogui, signal, pystray
 from apport import logging
 from deepdiff import DeepDiff
@@ -848,20 +847,9 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
   save_dict.write_in_log(e)
   pass
 
-def start_startup_now(dict_save, root):  # запустить после переключения окна
- dict_save.reset_id_value()  # Сброс настроек текущего id устройства.   # time.sleep(0.3)
- dictio = dict_save.return_jnson()  # Какие игры имеют галочку, получаем их список.
- games_checkmark_paths = [key for key, value in dictio['games_checkmark'].items() if value]  # Получить список путей к играм
- gp = str(dict_save.get_cur_app())  # текущая игра
- dict_save.set_current_path_game(gp)
- if gp in games_checkmark_paths or gp == "":  # Если текущая игра имеет галочку.  print("Lok")
-  prepare(root, dict_save, dictio, games_checkmark_paths)
- else:  # Вывод ошибки.
-  messagebox.showinfo("Ошибка", "Нужно выбрать приложенние")
-
 list_threads = []
 
-def a(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):  # Основная функция эмуляциии  print(key[1])# список ключей  меняется
+def a(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):  # Основная функция эмуляциии  print(key[1])# список ключей  меняется
  # print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
  def on_click(x, y, button, pres):  # print(button) # Button.left  print(key)#['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']    print(key[1])# список ключей  меняется
   f2 = threading.Thread(target=func_mouse_press_button, args=(dict_save, key, button, pres, list_buttons, press_button, string_keys,))  # f2.daemon = True
@@ -907,30 +895,6 @@ def a(root, dict_save, key, list_buttons, press_button, string_keys, games_check
  t2 = threading.Thread(target=start_startup_now, args=(dict_save, root,))  # Запустить функцию, которая запускает эмуляцию заново.
  t2.daemon = True
  t2.start()  # print("cll")
-
-def prepare(root, dict_save, dictio, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
- curr_name = dict_save.get_cur_app()  # получить значение текущей активной строки.  # dict_save.set_current_path_game(curr_name)
- if curr_name == "":
-  return 0
- t1 = dict_save.get_thread()  # мы получаем поток от предыдущей функции ждем когда он закончится  # print(t1)
- if t1 != 0:
-  t1.join()
- if dict_save.get_id() == 0:  # # получить id устройства.Если id устройство не выбрали.
-  messagebox.showinfo("Ошибка", "Вы не выбрали устройство")
-  ok_button = Button(root, text="Ок", command=show_list_id_callback)
-  return 0
- key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, path, list_buttons = dict_save.preparation(dictio, games_checkmark_paths)
- new = ' '.join(old)  # print(new)  # print(list_buttons)  print( type(new)  ) print(id)
- string_keys = list(key for key in list_buttons.keys() if isinstance(key, str))
- set_button_map = '''#!/bin/bash\nsudo xinput set-button-map {0} {1} '''.format(id, new)
- subprocess.call(['bash', '-c', set_button_map])  # установить конфигурацию кнопок для мыши.   print(dict_save.get_state_thread())
- dict_save.set_cur_app(
-  path)  # Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
- dict_save.set_current_path_game(path)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры
- # print(curr_name)
- t1 = threading.Thread(target=a, args=(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths))  # t1.daemon = True
- t1.start()
- dict_save.set_thread(t1)  # сохранить id посёлка потока
 
 def get_path_current_active(games_checkmark_paths):  # Получаем идентификатор активного окна
  try:  # Получаем идентификатор процесса, связанного с активным окном
@@ -1308,9 +1272,50 @@ class MouseSettingAppMethods:
   def closeEvent(self, event):  # Переопределяем закрытие окна - скрываем в трей вместо закрытия
    event.ignore()
    self.hide()
+
+  def start_startup_now(self, dict_save):  # запустить после переключения окна
+   dict_save.reset_id_value()  # Сброс настроек текущего id устройства.   # time.sleep(0.3)
+   dictio = dict_save.return_jnson()  # Какие игры имеют галочку, получаем их список.
+   games_checkmark_paths = [key for key, value in dictio['games_checkmark'].items() if value]  # Получить список путей к играм
+   gp = str(dict_save.get_cur_app())  # текущая игра
+   dict_save.set_current_path_game(gp)
+   if gp in games_checkmark_paths or gp == "":  # Если текущая игра имеет галочку.  print("Lok")
+    self.prepare(dict_save, dictio, games_checkmark_paths)
+   else:  # Вывод ошибки.
+    QMessageBox.information(self, "Ошибка", "Нужно выбрать приложение")
+
+  def prepare(self, dict_save, dictio, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
+   curr_name = dict_save.get_cur_app()  # получить значение текущей активной строки.  # dict_save.set_current_path_game(curr_name)
+   if curr_name == "":
+    return 0
+   t1 = dict_save.get_thread()  # мы получаем поток от предыдущей функции ждем когда он закончится  # print(t1)
+   if t1 != 0:
+    t1.join()
+   if dict_save.get_id() == 0:  # # получить id устройства.Если id устройство не выбрали.
+    msg_box = QMessageBox(self)
+    msg_box.setWindowTitle("Ошибка")
+    msg_box.setText("Вы не выбрали устройство")    # Добавляем свою кнопку
+    ok_button = msg_box.addButton("Ок", QMessageBox.AcceptRole)
+    # Функция-обработчик
+    def on_ok_clicked():
+        show_list_id_callback()
+    # Связываем сигнал нажатия кнопки с обработчиком
+    msg_box.buttonClicked.connect(lambda btn: on_ok_clicked() if btn == ok_button else None)
+    msg_box.exec_()
+    return 0
+   key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, path, list_buttons = dict_save.preparation(dictio, games_checkmark_paths)
+   new = ' '.join(old)  # print(new)  # print(list_buttons)  print( type(new)  ) print(id)
+   string_keys = list(key for key in list_buttons.keys() if isinstance(key, str))
+   set_button_map = '''#!/bin/bash\nsudo xinput set-button-map {0} {1} '''.format(id, new)
+   subprocess.call(['bash', '-c', set_button_map])  # установить конфигурацию кнопок для мыши.   print(dict_save.get_state_thread())
+   dict_save.set_cur_app(path)  # Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
+   dict_save.set_current_path_game(path)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры
+   # print(curr_name)
+   t1 = threading.Thread(target=a, args=(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths))  # t1.daemon = True
+   t1.start()
+   dict_save.set_thread(t1)  # сохранить id посёлка потока
    
-  def create_virtual_keyboard(self, dict_save, callback_record_macro=None):
-    """Создает виртуальную клавиатуру без блокнота"""
+  def create_virtual_keyboard(self, dict_save, callback_record_macro=None):# Создает виртуальную клавиатуру без блокнота"""
     # Закрываем предыдущее окно клавиатуры, если оно открыто
     if self.current_keyboard_window:
       self.current_keyboard_window.close()
@@ -1461,8 +1466,7 @@ class MouseSettingAppMethods:
          button.setStyleSheet("background-color: #0078d7; color: white;")
          break
   
-  def update_keyboard_display(self, dict_save):
-    """Обновляет отображение основной клавиатуры после сохранения изменений"""
+  def update_keyboard_display(self, dict_save):# Обновляет отображение основной клавиатуры после сохранения изменений"""
     if not self.current_keyboard_window:
         self.create_virtual_keyboard(dict_save)
         return
