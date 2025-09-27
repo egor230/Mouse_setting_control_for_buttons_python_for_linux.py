@@ -156,12 +156,12 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   control_layout.setSpacing(12)
   
   self.add_button_add = QPushButton("Добавить")
-  self.add_button_add.clicked.connect(self.add_file)
+  self.add_button_add.clicked.connect(lambda: self.add_file())
   control_layout.addWidget(self.add_button_add)
   
-  self.add_button_start = QPushButton("Удалить")
-  self.add_button_start.clicked.connect(self.delete)
-  control_layout.addWidget(self.add_button_start)
+  self.del_button = QPushButton("Удалить")
+  self.del_button.clicked.connect(lambda: self.delete())
+  control_layout.addWidget(self.del_button)
   
   self.move_element_up = QPushButton("Вверх")
   self.move_element_up.clicked.connect(lambda: self.move_element(dict_save, "up"))
@@ -202,7 +202,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   
   QTimer.singleShot(0, self.start_app)
  
- def start_app(self):
+ def start_app(self):# Функция старта.
   res = dict_save.return_jnson()
   id_value = res["id"]
   if os.getgid() != 0 and hasattr(self, 'id_combo'):
@@ -213,8 +213,9 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
    if hasattr(self, 'mouse_button_combos') and i < len(self.mouse_button_combos):
     if curr_name in key_values and i < len(key_values[curr_name]):
      self.mouse_button_combos[i].setCurrentText(key_values[curr_name][i])
-  self.filling_in_fields(dict_save)
-  self.start_startup_now(dict_save)
+  self.filling_in_fields(dict_save) # Заполнения полей.
+  self.start_startup_now(dict_save)# Запуск эмуляции.
+  
 if __name__ == "__main__":
  app = QApplication(sys.argv)
  window = MouseSettingApp()

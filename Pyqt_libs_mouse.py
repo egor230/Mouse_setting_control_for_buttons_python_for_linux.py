@@ -1,21 +1,14 @@
-import sys, os, json, threading, subprocess, psutil, signal, time
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                           QPushButton, QLabel, QComboBox, QTextEdit, QTabWidget,
-                           QScrollArea, QFrame, QCheckBox, QLineEdit, QMessageBox,
-                           QStyleFactory, QToolTip, QGridLayout, QDialog, QPlainTextEdit,
-                           QSystemTrayIcon, QMenu)
+import sys, os, json, threading, subprocess, psutil, signal, time, copy, re, pyautogui, deepdiff
+import keyboard as keybord_from
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox,
+                             QTextEdit, QTabWidget, QScrollArea, QFrame, QCheckBox, QLineEdit, QMessageBox, QStyleFactory,
+                             QToolTip, QGridLayout, QDialog, QPlainTextEdit, QSystemTrayIcon, QMenu)
 from PyQt5.QtCore import Qt, pyqtSignal, QThread, QTimer
 from PyQt5.QtGui import QFont, QIcon, QColor, QPalette, QTextCursor
-from deepdiff import DeepDiff
-import time, json, os, copy, psutil, threading, re, glob, subprocess, psutil, pyautogui, signal, pystray
-from apport import logging
-from deepdiff import DeepDiff
-import keyboard as keybord_from # Управление мышью
 from pynput import mouse, keyboard
 from pynput.mouse import Button as Button_Controller, Controller
-from pynput.keyboard import Key, Listener # Создаем экземпляр класса Controller для управления мышью
+from pynput.keyboard import Key, Listener
 from evdev import InputDevice, categorize, ecodes, list_devices
-
 # Создаем словари
 en_to_ru = {'a': 'ф', 'A': 'Ф', 'b': 'и', 'B': 'И', 'c': 'с', 'C': 'С', 'd': 'в', 'D': 'В', 'e': 'у', 'E': 'У', 'f': 'а', 'F': 'А', 'g': 'п', 'G': 'П',
             'h': 'р', 'H': 'Р', 'i': 'ш', 'I': 'Ш', 'j': 'о', 'J': 'О', 'k': 'л', 'K': 'Л',
@@ -445,8 +438,7 @@ def get_visible_active_pid():
    return 0  # Окно свернуто
 
   # Получаем список окон с PID
-  wmctrl_output = subprocess.run(['wmctrl', '-lp'],
-                                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+  wmctrl_output = subprocess.run(['wmctrl', '-lp'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                  text=True).stdout
 
   # Ищем строку с нужным ID окна
@@ -624,8 +616,9 @@ class work_key:
   self.keys_list = ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g',
                     'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ]
   self.keys_list1 = ['BackSpace', 'Tab', 'Return', 'KP_Enter', 'Escape', 'Delete', 'Home', 'End', 'Page_Up',
-                     'Page_Down', 'F1', 'Up', 'Down', 'Left', 'Right', 'Control_L', 'ISO_Next_Group', 'Control_R', 'Shift_L', 'Shift_R', 'Alt_L', 'Alt_R', 'Super_L',
-                     'Super_R', 'Caps_Lock', 'Num_Lock', 'Scroll_Lock', 'space', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12']
+                     'Page_Down', 'F1', 'Up', 'Down', 'Left', 'Right', 'Control_L', 'ISO_Next_Group', 'Control_R',
+                     'Shift_L', 'Shift_R', 'Alt_L', 'Alt_R', 'Super_L', 'Super_R', 'Caps_Lock', 'Num_Lock', 'Scroll_Lock',
+                     'space', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12']
 
  def mouse_wheel_up(self):  #
   mouse_wheel = '''#!/bin/bash
@@ -849,6 +842,8 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
 
 list_threads = []
 
+
+# Стало: добавляем self как первый параметр
 def a(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):  # Основная функция эмуляциии  print(key[1])# список ключей  меняется
  # print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
  def on_click(x, y, button, pres):  # print(button) # Button.left  print(key)#['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']    print(key[1])# список ключей  меняется
@@ -892,7 +887,7 @@ def a(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_p
  listener.join()  # Ожидание завершения
  dict_save.set_thread(0)
 
- t2 = threading.Thread(target=start_startup_now, args=(dict_save, root,))  # Запустить функцию, которая запускает эмуляцию заново.
+ t2 = threading.Thread(target=lambda: self.start_startup_now(dict_save)) # Запустить функцию, которая запускает эмуляцию заново.
  t2.daemon = True
  t2.start()  # print("cll")
 
@@ -1020,8 +1015,7 @@ def add_text_pytq5(key, text_widget):
   return
  k = key.replace('\r', '').strip()
  
- keypad_map = {
-  "7\nHome": "KP_Home", "8\n↑": "KP_Up",
+ keypad_map = { "7\nHome": "KP_Home", "8\n↑": "KP_Up",
   "9\nPgUp": "KP_Prior", "4\n←": "KP_Left", "5\n": "KP_Begin", "6\n→": "KP_Right", "1\nEnd": "KP_End",
   "2\n↓": "KP_Down", "3\nPgDn": "KP_Next", "Ctrl": "ISO_Next_Group",
  }
@@ -1102,6 +1096,37 @@ def add_text_pytq5(key, text_widget):
  text_widget.insertPlainText(sc)
 
 dict_save = save_dict()
+
+
+def return_file_path(dict_save):
+ res = dict_save.return_jnson()  # получаем настройки
+ keys_values = res["key_value"][dict_save.get_cur_app()]  # конфигурация кнопок от предыдущего профиля.
+ mouse_press_old = res["mouse_press"][dict_save.get_cur_app()]  # какие кнопки имеют залипания.
+ # print(dict_save.get_current_app_path())
+ cmd = ['zenity', '--file-selection', '--file-filter=EXE files | *.exe | *.EXE']  # Zenity команда для выбора одного exe файла
+ # Вызов zenity и получение выбранного пути
+ result = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, text=True)
+ path_to_file = result.stdout.strip()  # новый путь к игре
+ 
+ name_with_expansion = os.path.basename(path_to_file)  # Получение базового имени файла с расширением из полного пути к файлу
+ name = os.path.splitext(name_with_expansion)[0]  # Отделение имени файла без расширения путем разбиения строки.
+ li = list(res["paths"].keys())
+ if path_to_file in li:
+  return None
+ res["paths"][str(path_to_file)] = str(name)
+ res["games_checkmark"][str(path_to_file)] = True
+ res["key_value"][str(path_to_file)] = keys_values  # сохранить пред значения
+ res["mouse_press"][str(path_to_file)] = list(mouse_press_old)
+ res1 = res["key_value"]
+ 
+ dict_save.save_jnson(res)
+ if path_to_file in res1:
+  return path_to_file
+ else:
+  res["key_value"][path_to_file] = ["LBUTTON", "RBUTTON", "WHEEL_MOUSE_BUTTON",
+                                    "WHEEL_MOUSE_UP", "WHEEL_MOUSE_DOWN", 'XBUTTON1', 'XBUTTON2']
+ return path_to_file
+
 class KeyboardWidget(QWidget):
  def __init__(self, callback_func=None, row_shifts=None):
   super().__init__()
@@ -1273,17 +1298,6 @@ class MouseSettingAppMethods:
    event.ignore()
    self.hide()
 
-  def start_startup_now(self, dict_save):  # запустить после переключения окна
-   dict_save.reset_id_value()  # Сброс настроек текущего id устройства.   # time.sleep(0.3)
-   dictio = dict_save.return_jnson()  # Какие игры имеют галочку, получаем их список.
-   games_checkmark_paths = [key for key, value in dictio['games_checkmark'].items() if value]  # Получить список путей к играм
-   gp = str(dict_save.get_cur_app())  # текущая игра
-   dict_save.set_current_path_game(gp)
-   if gp in games_checkmark_paths or gp == "":  # Если текущая игра имеет галочку.  print("Lok")
-    self.prepare(dict_save, dictio, games_checkmark_paths)
-   else:  # Вывод ошибки.
-    QMessageBox.information(self, "Ошибка", "Нужно выбрать приложение")
-
   def prepare(self, dict_save, dictio, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
    curr_name = dict_save.get_cur_app()  # получить значение текущей активной строки.  # dict_save.set_current_path_game(curr_name)
    if curr_name == "":
@@ -1309,12 +1323,22 @@ class MouseSettingAppMethods:
    set_button_map = '''#!/bin/bash\nsudo xinput set-button-map {0} {1} '''.format(id, new)
    subprocess.call(['bash', '-c', set_button_map])  # установить конфигурацию кнопок для мыши.   print(dict_save.get_state_thread())
    dict_save.set_cur_app(path)  # Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
-   dict_save.set_current_path_game(path)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры
-   # print(curr_name)
-   t1 = threading.Thread(target=a, args=(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths))  # t1.daemon = True
+   dict_save.set_current_path_game(path)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры   print(curr_name)
+   t1 = threading.Thread(target=a, args=(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths))
    t1.start()
    dict_save.set_thread(t1)  # сохранить id посёлка потока
-   
+
+  def start_startup_now(self, dict_save):  # запустить после переключения окна
+   dict_save.reset_id_value()  # Сброс настроек текущего id устройства.   # time.sleep(0.3)
+   dictio = dict_save.return_jnson()  # Какие игры имеют галочку, получаем их список.
+   games_checkmark_paths = [key for key, value in dictio['games_checkmark'].items() if value]  # Получить список путей к играм
+   gp = str(dict_save.get_cur_app())  # текущая игра
+   dict_save.set_current_path_game(gp)
+   if gp in games_checkmark_paths or gp == "":  # Если текущая игра имеет галочку.  print("Lok")
+    self.prepare(dict_save, dictio, games_checkmark_paths)
+   else:  # Вывод ошибки.
+    QMessageBox.information(self, "Ошибка", "Нужно выбрать приложение")
+
   def create_virtual_keyboard(self, dict_save, callback_record_macro=None):# Создает виртуальную клавиатуру без блокнота"""
     # Закрываем предыдущее окно клавиатуры, если оно открыто
     if self.current_keyboard_window:
@@ -1350,15 +1374,12 @@ class MouseSettingAppMethods:
     
     keyboard_widget = KeyboardWidget(record_macro_callback)
     layout.addWidget(keyboard_widget)
-    
     # Подсвечиваем кнопки, которые уже имеют макросы
     self.highlight_buttons_with_macros(keyboard_widget, keys_active)
-    
     keyboard_window.show()
     return keyboard_window
 
-  def create_keyboard_with_editor(self, dict_save, i):
-   # Создает клавиатуру с блокнотом для редактирования макросов для конкретной клавиши i
+  def create_keyboard_with_editor(self, dict_save, i): # Создает клавиатуру с блокнотом для редактирования макросов для конкретной клавиши i
     
     # Скрываем основное окно клавиатуры
     if self.current_keyboard_window:
@@ -1419,22 +1440,18 @@ class MouseSettingAppMethods:
     macro_window.closeEvent = lambda event: self.kill_notebook(macro_window, dict_save, event)
     macro_window.show()
   
-  def kill_notebook(self, window, dict_save, event=None):
-    """Обработчик закрытия окна - сохраняет скрипт и закрывает окно"""
+  def kill_notebook(self, window, dict_save, event=None):# Обработчик закрытия окна - сохраняет скрипт и закрывает окно"""
     key = dict_save.get_last_key_keyboard_script()
     script_text = window.text_widget.toPlainText()
     current_app = dict_save.get_cur_app()
     res = dict_save.return_jnson()
-    
     res.setdefault("keyboard_script", {}).setdefault(current_app, {"keys": {}})
-    
     # Проверяем, является ли скрипт пустым или только шаблоном
     if not script_text.strip() or script_text.strip() == "#!/bin/bash":
       # Удаляем ключ, если он существует
       if key in res["keyboard_script"][current_app]["keys"]:
         del res["keyboard_script"][current_app]["keys"][key]
-    else:
-      # Сохраняем скрипт
+    else:  # Сохраняем скрипт
       res["keyboard_script"][current_app]["keys"][key] = script_text
     
     dict_save.save_jnson(res)
@@ -1470,16 +1487,12 @@ class MouseSettingAppMethods:
     if not self.current_keyboard_window:
         self.create_virtual_keyboard(dict_save)
         return
-
     # Получаем актуальный список клавиш с макросами
     current_app = dict_save.get_cur_app()
     res = dict_save.return_jnson()
     keys_active = []
-    
-    if "keyboard_script" in res and current_app in res["keyboard_script"]:
-        if "keys" in res["keyboard_script"][current_app]:
-            keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
-            
+    if "keyboard_script" in res and current_app in res["keyboard_script"] and "keys" in res["keyboard_script"][current_app]:
+     keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
     # Находим виджет клавиатуры и обновляем подсветку
     keyboard_widget = self.current_keyboard_window.findChild(KeyboardWidget)
     if keyboard_widget:
@@ -1572,15 +1585,13 @@ class MouseSettingAppMethods:
     res["games_checkmark"][curr_app] = var_list[count].isChecked()
     dict_save.save_jnson(res)
 
-  def update_labels_bindings(self):
+  def update_labels_bindings(self):# Обновление списка игр
    labels = dict_save.return_labels()
    var_list = dict_save.return_var_list()
-   for count, label in enumerate(labels):
-    # ИЗМЕНЕНО: Более надёжная перепривязка (lambda с default c=count захватывается правильно)
+   for count, label in enumerate(labels):    # ИЗМЕНЕНО: Более надёжная перепривязка (lambda с default c=count захватывается правильно)
     label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
     if count < len(var_list):
-     try:
-      # ИЗМЕНЕНО: disconnect с try-except для безопасности (если уже отключено)
+     try:    # ИЗМЕНЕНО: disconnect с try-except для безопасности (если уже отключено)
       var_list[count].stateChanged.disconnect()
      except TypeError:
       pass  # Нет соединений — OK
@@ -1697,10 +1708,88 @@ class MouseSettingAppMethods:
     dict_save.save_jnson(res)
  
   def add_file(self):
-    pass
+   def add_file(self):  # Добавить новые игры
+    path_to_file = return_file_path(dict_save)
+    if path_to_file is None:
+     return 0
   
-  def delete(self):
-    pass
+    res = dict_save.return_jnson()  # получаем настройки
+  
+    # Очистка layout (аналог destroy и clear)
+    while self.games_layout.count():
+     child = self.games_layout.takeAt(0)
+     if child.widget():
+      child.widget().deleteLater()
+  
+    labels = dict_save.return_labels()
+    name_games = dict_save.return_name_games()
+    var_list = dict_save.return_var_list()
+    labels_with_checkmark = dict_save.return_labels_with_checkmark()
+  
+    # Очистка списков
+    labels.clear()
+    name_games.clear()
+    var_list.clear()
+    labels_with_checkmark.clear()
+  
+    dict_save.count += 1  # Увеличиваем счётчик (исправлена опечатка)
+  
+    res['current_app'] = path_to_file  # Выбранная игра.
+    dict_save.set_cur_app(path_to_file)
+    dict_save.set_current_path_game(path_to_file)
+    dict_save.save_jnson(res)
+  
+    # Установить белый цвет для всех label (аналог set_colol_white_label_changed)
+    for label in labels:
+     if isinstance(label, QLabel):
+      label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
+  
+    # Перезаполнение полей (аналог filling_in_fields(res))
+    self.filling_in_fields(dict_save)
+  
+    # Копирование значений из box_values (QComboBox использует currentText())
+    keys_values = dict_save.return_box_values()
+    old_keys_values = []
+    for i in range(len(keys_values)):
+     old_keys_values.append(keys_values[i].currentText())
+  
+    # Выделяем последний label синим (аналог config(background="#06c"))
+    labels = dict_save.return_labels()  # Обновляем список после filling_in_fields
+    if labels and len(labels) > 0:
+     labels[-1].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
+  
+    # Обновление привязок (аналог update_buttons и bindings)
+    self.update_labels_bindings()
+    self.set_list_box(dict_save)  # Установка значений в combo_box, если нужно
+  
+  def delete(self): # Удалить профиль.
+    if dict_save.get_cur_app() == "C:/Windows/explorer.exe":  # Получить id устройства. Если id устройство не выбрали.
+     msg_box = QMessageBox(self)
+     msg_box.setWindowTitle("Ошибка")
+     msg_box.setText("Вы выбрали профиль по умолчанию")
+     ok_button = msg_box.addButton("Ок", QMessageBox.AcceptRole)
+     msg_box.exec_()
+     return
+
+    profile = dict_save.get_cur_app()  # Текущая директория активной игры.
+    res = dict_save.return_jnson()  # print(profile)
+    list_paths = list(res["paths"].keys())
+    del_index = list_paths.index(profile)
+
+    # Удаляем из JSON
+    res = remove_profile_keys(res, profile)
+    dict_save.save_jnson(res)  # Сохранить новые настройки.
+
+    # Перестраиваем UI (удаление и сдвиг через перезаполнение)
+    self.filling_in_fields(dict_save)
+
+    # Выделяем новый активный label (первый после удаления, аналог check_label_changed(0, ...))
+    labels = dict_save.return_labels()
+    if labels and len(labels) > 0:
+        self.check_label_changed(dict_save, 0)  # Выделяем индекс 0 (первый)
+
+    # Обновляем привязки событий
+    self.update_labels_bindings()
   
   def button_keyboard(self, index):
     pass
