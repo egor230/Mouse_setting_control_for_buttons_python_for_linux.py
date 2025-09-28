@@ -15,9 +15,8 @@ en_to_ru = {'a': 'ф', 'A': 'Ф', 'b': 'и', 'B': 'И', 'c': 'с', 'C': 'С', 'd
             'l': 'д', 'L': 'Д', 'm': 'ь', 'M': 'Ь', 'n': 'т', 'N': 'Т', 'o': 'щ', 'O': 'Щ', 'p': 'з', 'P': 'З', 'q': 'й', 'Q': 'Й', 'r': 'к', 'R': 'К', 's': 'ы', 'S': 'Ы',
             't': 'е', 'T': 'Е', 'u': 'г', 'U': 'Г', 'v': 'м', 'V': 'М',
             'w': 'ц', 'W': 'Ц', 'x': 'ч', 'X': 'Ч', 'y': 'н', 'Y': 'Н', 'z': 'я', 'Z': 'Я', '.': '-', ',': '+', ' ': ' '}
-
-ru_to_en = {'ф': 'a', 'Ф': 'A', 'и': 'b', 'И': 'B', 'с': 'c', 'С': 'C', 'в': 'd', 'В': 'D', 'у': 'e', 'У': 'E', 'а': 'f', 'А': 'F', 'п': 'g', 'П': 'G', 'р': 'h', 'Р': 'H',
-            'ш': 'i', 'Ш': 'I', 'о': 'j', 'О': 'J', 'л': 'k', 'Л': 'K',
+ru_to_en = {'ф': 'a', 'Ф': 'A', 'и': 'b', 'И': 'B', 'с': 'c', 'С': 'C', 'в': 'd', 'В': 'D', 'у': 'e', 'У': 'E', 'а': 'f', 'А': 'F',
+            'п': 'g', 'П': 'G', 'р': 'h', 'Р': 'H', 'ш': 'i', 'Ш': 'I', 'о': 'j', 'О': 'J', 'л': 'k', 'Л': 'K',
             'д': 'l', 'Д': 'L', 'ь': 'm', 'Ь': 'M', 'т': 'n', 'Т': 'N', 'щ': 'o', 'Щ': 'O', 'з': 'p', 'З': 'P', 'й': 'q',
             'Й': 'Q', 'к': 'r', 'К': 'R', 'ы': 's', 'Ы': 'S', 'е': 't', 'Е': 'T', 'г': 'u', 'Г': 'U', 'м': 'v', 'М': 'V',
             'ц': 'w', 'Ц': 'W', 'ч': 'x', 'Ч': 'X', 'н': 'y', 'Н': 'Y', 'я': 'z', 'Я': 'Z', '-': '.', '+': ',', ' ': ' '}
@@ -57,10 +56,15 @@ KEYS = {" ": 0x0, "LBUTTON": 'mouse left', "RBUTTON": 'mouse right', "WHEEL_MOUS
         "OEM_WSCTRL": 0xEE, "OEM_CUSEL": 0xEF, "OEM_ATTN": 0xF0, "OEM_FINISH": 0xF1, "OEM_COPY": 0xF2, "OEM_AUTO": 0xF3, "OEM_ENLW": 0xF4,
         "OEM_BACKTAB": 0xF5, "ATTN": 0xF6, "CRSEL": 0xF7, "EXSEL": 0xF8, " EREOF": 0xF9, "PLAY": 0xFA, "ZOOM": 0xFB, "PA1": 0xFD,
         " OEM_CLEAR": 0xFE    }
-
 LIST_MOUSE_BUTTONS = ["Левая кнопка", "Правая кнопка", "Средняя", "Колесико вверх", "Колесико вниз", "1 боковая", "2 боковая"]
 LIST_KEYS = list(KEYS.keys())
 defaut_list_mouse_buttons = ['LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'SCROLL_UP', 'SCROLL_DOWN', 'XBUTTON1', 'XBUTTON2']
+get_user_name = f'''#!/bin/bash
+current_user=$(whoami);
+echo $current_user
+exit;# Завершаем выполнение скрипта
+'''
+user = subprocess.run(['bash'], input=get_user_name, stdout=subprocess.PIPE, text=True).stdout.strip()  # имя пользователя.
 
 class save_dict:
  def __init__(self):
@@ -410,13 +414,6 @@ def replace_path_in_dict(d):
    updated_value += '.exe'
   updated_dict[key] = updated_value  # Путей обновить значение путей.
  return updated_dict
-
-get_user_name = f'''#!/bin/bash
-current_user=$(whoami);
-echo $current_user
-exit;# Завершаем выполнение скрипта
-'''
-user = subprocess.run(['bash'], input=get_user_name, stdout=subprocess.PIPE, text=True).stdout.strip()  # имя пользователя.
 
 def get_visible_active_pid():
  try:  # Получаем ID активного окна в десятичном формате
@@ -830,7 +827,7 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
      thread1 = threading.Thread(target=execute_script, args=(key_mouse_script,))
      thread1.daemon = True
      thread1.start()
-    else:  # print("else")       # кнопки мыши
+    else:  # print("else") # кнопки мыши     print(key)
      if key[number_key] in list(list_mouse_button_names.keys()):  # если нужно эмулировать кнопку мыши
       mouse_key(key, number_key, press_button, list_mouse_button_names, pres, a)  # print("mnouse")
      # иначе клавиши клавиатуры.
@@ -839,14 +836,11 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
  except Exception as e:
   save_dict.write_in_log(e)
   pass
-
 list_threads = []
 
-
 # Стало: добавляем self как первый параметр
-def a(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):  # Основная функция эмуляциии  print(key[1])# список ключей  меняется
- # print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
- def on_click(x, y, button, pres):  # print(button) # Button.left  print(key)#['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']    print(key[1])# список ключей  меняется
+def a(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):  # Основная функция эмуляциии  print(key[1])# список ключей  меняется print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
+ def on_click(x, y, button, pres):#  print(button) # Button.left  print(key)#['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']    print(key[1])# список ключей  меняется
   f2 = threading.Thread(target=func_mouse_press_button, args=(dict_save, key, button, pres, list_buttons, press_button, string_keys,))  # f2.daemon = True
   list_threads.append(f2)
   f2.start()
@@ -887,7 +881,7 @@ def a(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_p
  listener.join()  # Ожидание завершения
  dict_save.set_thread(0)
 
- t2 = threading.Thread(target=lambda: self.start_startup_now(dict_save)) # Запустить функцию, которая запускает эмуляцию заново.
+ t2 = threading.Thread(target=lambda: start_startup_now(dict_save)) # Запустить функцию, которая запускает эмуляцию заново.
  t2.daemon = True
  t2.start()  # print("cll")
 
@@ -1009,23 +1003,20 @@ simple_key_map = { 'KEY_KP7': ' 7\nHome', 'KEY_KP8': '8\n↑', 'KEY_KP9': '9\nPg
  'KEY_KP4': '4\n←', 'KEY_KP5': '5\n', 'KEY_KP6': '6\n→',
  'KEY_KP1': '1\nEnd', 'KEY_KP2': '2\n↓', 'KEY_KP3': '3\nPgDn'}
 
+keypad_map = {"7\nHome": "KP_Home", "8\n↑": "KP_Up",
+              "9\nPgUp": "KP_Prior", "4\n←": "KP_Left", "5\n": "KP_Begin", "6\n→": "KP_Right", "1\nEnd": "KP_End",
+              "2\n↓": "KP_Down", "3\nPgDn": "KP_Next", "Ctrl": "ISO_Next_Group", }
+ 
+mouse_map = {  "Левая": ("mousedown 1", "mouseup 1"), "Правая": ("mousedown 3", "mouseup 3"),  "wheel_up": ("mousedown 4", "mouseup 4"),
+  "mouse_middie": ("mousedown 2", "mouseup 2"), "wheel_down": ("mousedown 5", "mouseup 5"), }
 
 def add_text_pytq5(key, text_widget):
  if key is None:
   return
  k = key.replace('\r', '').strip()
  
- keypad_map = { "7\nHome": "KP_Home", "8\n↑": "KP_Up",
-  "9\nPgUp": "KP_Prior", "4\n←": "KP_Left", "5\n": "KP_Begin", "6\n→": "KP_Right", "1\nEnd": "KP_End",
-  "2\n↓": "KP_Down", "3\nPgDn": "KP_Next", "Ctrl": "ISO_Next_Group",
- }
  if k in keypad_map:
   k = keypad_map[k]
- 
- mouse_map = {  "Левая": ("mousedown 1", "mouseup 1"),
-  "Правая": ("mousedown 3", "mouseup 3"),  "wheel_up": ("mousedown 4", "mouseup 4"),
-  "mouse_middie": ("mousedown 2", "mouseup 2"), "wheel_down": ("mousedown 5", "mouseup 5"), }
- 
  if k in mouse_map:
   down, up = mouse_map[k]
   sc = f'xte "{down}"\n' \
@@ -1707,16 +1698,13 @@ class MouseSettingAppMethods:
     res["mouse_press"][curr_name][count] = (state == Qt.Checked)
     dict_save.save_jnson(res)
  
-  def add_file(self):
-   def add_file(self):  # Добавить новые игры
+  def add_file(self): # Добавить новые игры
     path_to_file = return_file_path(dict_save)
     if path_to_file is None:
      return 0
-  
     res = dict_save.return_jnson()  # получаем настройки
   
-    # Очистка layout (аналог destroy и clear)
-    while self.games_layout.count():
+    while self.games_layout.count():    # Очистка layout (аналог destroy и clear)
      child = self.games_layout.takeAt(0)
      if child.widget():
       child.widget().deleteLater()
@@ -1744,8 +1732,7 @@ class MouseSettingAppMethods:
      if isinstance(label, QLabel):
       label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
   
-    # Перезаполнение полей (аналог filling_in_fields(res))
-    self.filling_in_fields(dict_save)
+    self.filling_in_fields(dict_save) # Перезаполнение полей (аналог filling_in_fields(res))
   
     # Копирование значений из box_values (QComboBox использует currentText())
     keys_values = dict_save.return_box_values()
@@ -1775,9 +1762,7 @@ class MouseSettingAppMethods:
     res = dict_save.return_jnson()  # print(profile)
     list_paths = list(res["paths"].keys())
     del_index = list_paths.index(profile)
-
-    # Удаляем из JSON
-    res = remove_profile_keys(res, profile)
+    res = remove_profile_keys(res, profile) # Удаляем из JSON
     dict_save.save_jnson(res)  # Сохранить новые настройки.
 
     # Перестраиваем UI (удаление и сдвиг через перезаполнение)
