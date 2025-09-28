@@ -1011,7 +1011,7 @@ def start_startup_now(dict_save, root):# запустить после пере�
 
 list_threads=[]
 
-def a(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):# Основная функция эмуляциии  print(key[1])# список ключей  меняется
+def emunator_mouse(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):# Основная функция эмуляциии  print(key[1])# список ключей  меняется
   #print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
   def on_click(x, y, button, pres):  # print(button) # Button.left  print(key)#['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']    print(key[1])# список ключей  меняется
     f2 = threading.Thread(target=func_mouse_press_button, args=(dict_save, key, button, pres, list_buttons, press_button, string_keys,))    # f2.daemon = True
@@ -1075,7 +1075,7 @@ def prepare(root, dict_save, dictio, games_checkmark_paths):  # функция �
   dict_save.set_cur_app(path)# Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
   dict_save.set_current_path_game(path)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры
   # print(curr_name)
-  t1 = threading.Thread(target=a, args =(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths))  #t1.daemon = True
+  t1 = threading.Thread(target=emunator_mouse, args =(root, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths))  #t1.daemon = True
   t1.start()
   dict_save.set_thread(t1)# сохранить id посёлка потока
   
