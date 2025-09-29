@@ -126,9 +126,6 @@ class save_dict:
  def set_process_id_active(self, process_id_active):  #
   self.process_id_active = process_id_active
 
- def get_id(self):
-  return self.id
-
  def get_current_app_path(self):  # Получить путь текущего окна.
   return self.path_current_app
 
@@ -201,9 +198,6 @@ class save_dict:
  def get_count(self):
   return self.count
 
- def set_id(self, id):
-  self.id = id
-
  def set_values_box(self):
   box_value = self.jnson["key_value"][self.cur_app]
   for i in range(len(self.box_values)):
@@ -253,7 +247,6 @@ class save_dict:
 
   self.dict_id_values = button_map  # Сохранение карты кнопок в атрибут объекта.
   id_list = list(button_map.keys())  # Сохранение списка идентификаторов в переменной id_list.
-  self.id = id_list[0]  # Установка первого устройства в списке как текущего id для использования.
   id_list = sorted(id_list)
   return id_list  # Возвращение списка id устройств для дальнейшего использования.
 
@@ -283,9 +276,9 @@ class save_dict:
    else:
     break
 
- def get_default_id_value(self):  #
+ def get_default_id_value(self, id):  #
   try:
-   d = self.dict_id_values[self.get_id()]
+   d = self.dict_id_values[id]
    d_copy = copy.deepcopy(d)
    d = '1 2 3 4 5 6 7 8 9'
    return d
@@ -991,20 +984,19 @@ def add_text_pytq5(key, text_widget):
         f'xte "keyup {key}"\n')
  text_widget.insertPlainText(sc)
 
-
 def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_button, string_keys):
  # key - список клавиш, button - какая кнопка сейчас нажата, есть нажатие, словарь с называниями кнопкам с объектами,
  # как называется кнопка мыши для эмуляции, эту надо кнопку удерживать?
  list_mouse_button_names = {"LBUTTON": Button_Controller.left, "RBUTTON": Button_Controller.right,
                             "WHEEL_MOUSE_BUTTON": Button_Controller.middle, "MBUTTON": 0x04, "SCROLL_UP": Button_Controller.scroll_up,
                             "SCROLL_DOWN": Button_Controller.scroll_down}  # print(list_mouse_button_names)
- res = dict_save.return_jnson()
+ res = dict_save.return_jnson()# print(key)
  try:
   for i in string_keys:  # print(i)
    a = list_buttons[i]  # объект  for i in string_keys:   # print(i)
-   number_key = list_buttons[a]  # получаем номер кнопки в списке.  # and len(str(key[number_key])) > 1:    # print(key)  # print(key[number_key] ) # print(button)
+   number_key = list_buttons[a]  # получаем номер кнопки в списке.  # and len(str(key[number_key])) > 1:    # print(key) # print(button)
    if str(key[number_key]) != ' ' and str(key[number_key]) != " " and \
-    str(i) == str(button) and list_buttons[i].get_hook_flag_mouse() == True:  # это кнопка нажата?
+    str(i) == str(button) and list_buttons[i].get_hook_flag_mouse() == True:  # это кнопка нажата?    print(key[number_key] )
     if check_mouse_script(res, dict_save, defaut_list_mouse_buttons, number_key):  # На эту кнопку назначен скрипт
      key_mouse_script = res["script_mouse"][dict_save.get_cur_app()][defaut_list_mouse_buttons[number_key]]  # print(key_mouse_script)
      thread1 = threading.Thread(target=execute_script, args=(key_mouse_script,))
@@ -1019,86 +1011,6 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
  except Exception as e:
   save_dict.write_in_log(e)
   pass
-
-
-def emunator_mouse(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):  # Основная функция эмуляциии  print(key[1])# список ключей  меняется
- # print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
- def on_click(x, y, button, pres):  # print(button) # Button.left  print(key)#['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']    print(key[1])# список ключей  меняется
-  f2 = threading.Thread(target=func_mouse_press_button, args=(dict_save, key, button, pres, list_buttons, press_button, string_keys,))  # f2.daemon = True
-  list_threads.append(f2)
-  f2.start()
-  return True
- 
- listener = mouse.Listener(on_click=on_click)
- listener.start()  # Запуск слушателя  # print( game)#  print( dict_save.get_cur_app
- game = dict_save.get_cur_app()  # какая игра сейчас текущая по вкладке.
- 
- while 1:  # time.sleep(3)   #print(dict_save.get_flag_thread())
-  new_path_game = check_current_active_window(dict_save, games_checkmark_paths)  # Текущая директория активного окна игры.
-  # Если никакой игры не запущено мы возвращаем предыдущую конфигурацию это директория. #   # print(new_path_game)#
-  if game != new_path_game:  # игра которая сейчас на активной вкладке активного окна    #
-   dict_save.set_cur_app(new_path_game)  # # dict_save.set_current_path_game(new_path_game)
-  if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального
-   # print(new_path_game)
-   for t in list_threads:
-    t.join()
-    list_threads.remove(t)
-   break
- print("exit")
- a = key_work.keys_list + key_work.keys_list1
- for i in list(key):
-  if i in defaut_list_mouse_buttons:
-   if i == 'RBUTTON':
-    mouse_controller.release(mouse.Button.right)
-    # pyautogui.mouseUp(button='right')
-   if i == 'LBUTTON':
-    pyautogui.mouseUp(button='left')
-   
-   if i == 'WHEEL_MOUSE_BUTTON':
-    key_work.mouse_middle_donw()
-   if i in a:  # print(i)
-    release = '''#!/bin/bash
-      xte 'keyup {0}'    '''
-    subprocess.call(['bash', '-c', release.format(key)])
- listener.stop()
- listener.join()  # Ожидание завершения
- dict_save.set_thread(0)
- 
- t2 = threading.Thread(target=self.start_startup_now, args=(dict_save,))  # Запустить функцию, которая запускает эмуляцию заново.
- t2.daemon = True
- t2.start()  # print("cll")
-
-def preparation(dict_save, res):  # games_checkmark_paths  список путей к играм
-  id = dict_save.get_id()  # Получаем id устройства
-  old = dict_save.get_default_id_value().split()  # Получить конфигурацию по умолчанию
-  game = str(dict_save.get_cur_app())
-  
-  key = res["key_value"][game]
-  a1, a2, a3, a4, a5, a6, k = get_keys_buttons(key)
-  list_mouse_check_button = dict_save.return_mouse_button_press()  # print(key)  # какие кнопки будут работать.
-  press_button = res['mouse_press'][game]
-  dict_save.reset_id_value()  # Сброс настроек текущего id устройства.
-  list_buttons = {"Button.button11": a1, a1: 1, "Button.button12": a2, a2: 2,  # Правая и средняя кнопка на мыши.
-                  "Button.button13": a3, a3: 3, "Button.button14": a4, a4: 4,  # Колёсико мыши вверх и вниз.
-                  "Button.button16": a5, a5: 5, "Button.button15": a6, a6: 6}  # , "Button.button11"]
-  if key != defaut_list_mouse_buttons:  # словарь называния кнопок мыши их значения для эмуляции
-   for i in range(len(old)):
-    if int(old[i]) in k:
-     old[i] = k[int(old[i])]  # Преобразование списка обратно в строку
-   # Обновление списка с заменой элементов из словаря
-  return key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, game, list_buttons
-
-def prepare(dict_save, res, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
- key, id, old, a1, a2, a3, a4, a5, a6, k, press_button, path, list_buttons = preparation(dict_save, res)
- new = ' '.join(old)  # print(new)  # print(list_buttons)  print( type(new)  ) print(id)
- string_keys = list(key for key in list_buttons.keys() if isinstance(key, str))
- set_button_map = '''#!/bin/bash\nsudo xinput set-button-map {0} {1} '''.format(id, new)
- subprocess.call(['bash', '-c', set_button_map])  # установить конфигурацию кнопок для мыши.   print(dict_save.get_state_thread())
- dict_save.set_cur_app( path)  # Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
- dict_save.set_current_path_game(path)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры   print(curr_name)
- t1 = threading.Thread(target=emunator_mouse, args=(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths,))
- t1.start()
- dict_save.set_thread(t1)  # сохранить id посёлка потока
 
 def return_file_path(dict_save):
  res = dict_save.return_jnson()  # получаем настройки
@@ -1291,8 +1203,7 @@ class MouseSettingAppMethods:
    self.showNormal()
    self.activateWindow()
   
-  def close_app(self):
-   # Закрываем приложение полностью
+  def close_app(self):   # Закрываем приложение полностью
    self.tray_icon.hide()
    QApplication.quit()
   
@@ -1300,8 +1211,79 @@ class MouseSettingAppMethods:
    event.ignore()
    self.hide()
 
-  def start_startup_now(self, dict_save):  # запустить после переключения окна
-   dict_save.reset_id_value()  # Сброс настроек текущего id устройства.   # time.sleep(0.3)
+  def emunator_mouse(self, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):  # Основная функция эмуляциии  print(key[1])# список ключей  меняется
+   # print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
+   def on_click(x, y, button, pres):  # print(button) # Button.left  print(key)#['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']    print(key[1])# список ключей  меняется
+    f2 = threading.Thread(target=func_mouse_press_button, args=(dict_save, key, button, pres, list_buttons, press_button, string_keys,))  # f2.daemon = True
+    list_threads.append(f2)
+    f2.start()
+    return True
+   listener = mouse.Listener(on_click=on_click)
+   listener.start()  # Запуск слушателя  # print( game)#  print( dict_save.get_cur_app
+   game = dict_save.get_cur_app()  # какая игра сейчас текущая по вкладке.
+   while 1:  # time.sleep(3)   #print(dict_save.get_flag_thread())
+    new_path_game = check_current_active_window(dict_save, games_checkmark_paths)  # Текущая директория активного окна игры.
+    # Если никакой игры не запущено мы возвращаем предыдущую конфигурацию это директория. #   # print(new_path_game)#
+    if game != new_path_game:  # игра которая сейчас на активной вкладке активного окна    #
+     dict_save.set_cur_app(new_path_game)  # # dict_save.set_current_path_game(new_path_game)
+    if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального
+     # print(new_path_game)
+     for t in list_threads:
+      t.join()
+      list_threads.remove(t)
+     break
+   print("exit")
+   a = key_work.keys_list + key_work.keys_list1
+   for i in list(key):
+    if i in defaut_list_mouse_buttons:
+     if i == 'RBUTTON':
+      mouse_controller.release(mouse.Button.right)
+      # pyautogui.mouseUp(button='right')
+     if i == 'LBUTTON':
+      pyautogui.mouseUp(button='left')
+   
+     if i == 'WHEEL_MOUSE_BUTTON':
+      key_work.mouse_middle_donw()
+     if i in a:  # print(i)
+      release = '''#!/bin/bash
+        xte 'keyup {0}'    '''
+      subprocess.call(['bash', '-c', release.format(key)])
+   listener.stop()
+   listener.join()  # Ожидание завершения
+   dict_save.set_thread(0)
+ 
+   t2 = threading.Thread(target=self.start_startup_now, args=(dict_save,))  # Запустить функцию, которая запускает эмуляцию заново.
+   t2.daemon = True
+   t2.start()  # print("cll")
+
+  def prepare(self, dict_save, res, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
+   id = res["id"]  # Получаем id устройства  print(id)
+   old = dict_save.get_default_id_value(id).split()  # Получить конфигурацию по умолчанию
+   game = str(dict_save.get_cur_app())
+   key = res["key_value"][game]
+   a1, a2, a3, a4, a5, a6, k = get_keys_buttons(key)
+   list_mouse_check_button = dict_save.return_mouse_button_press()  # print(key)  # какие кнопки будут работать.
+   press_button = res['mouse_press'][game]
+   dict_save.reset_id_value()  # Сброс настроек текущего id устройства.
+   list_buttons = {"Button.button11": a1, a1: 1, "Button.button12": a2, a2: 2,  # Правая и средняя кнопка на мыши.
+                   "Button.button13": a3, a3: 3, "Button.button14": a4, a4: 4,  # Колёсико мыши вверх и вниз.
+                   "Button.button16": a5, a5: 5, "Button.button15": a6, a6: 6}  # , "Button.button11"]
+   if key != defaut_list_mouse_buttons:  # словарь называния кнопок мыши их значения для эмуляции
+    for i in range(len(old)):
+     if int(old[i]) in k:
+      old[i] = k[int(old[i])]  # Преобразование списка обратно в строку
+    # Обновление списка с заменой элементов из словаря
+   new = ' '.join(old)  # print(new)  # print(list_buttons)  print( type(new)  ) print(id)
+   string_keys = list(key for key in list_buttons.keys() if isinstance(key, str))
+   set_button_map = '''#!/bin/bash\nsudo xinput set-button-map {0} {1} '''.format(id, new)
+   subprocess.call(['bash', '-c', set_button_map])  # установить конфигурацию кнопок для мыши.   print(dict_save.get_state_thread())
+   dict_save.set_cur_app( game)  # Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
+   dict_save.set_current_path_game(game)  # dict_save.set_prev_game(path)# мы установили путь для предыдущей игры   print(curr_name)
+   t1 = threading.Thread(target=self.emunator_mouse, args=( dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths,))
+   t1.start()
+   dict_save.set_thread(t1)  # сохранить id посёлка потока
+
+  def start_startup_now(self, dict_save):  # запустить после переключения окна   # time.sleep(0.3)
    res = dict_save.return_jnson()  # Какие игры имеют галочку, получаем их список.
    games_checkmark_paths = [key for key, value in res['games_checkmark'].items() if value]  # Получить список путей к играм
    gp = str(dict_save.get_cur_app())  # текущая игра
@@ -1312,22 +1294,22 @@ class MouseSettingAppMethods:
     return 0
    if t1 != 0:
     t1.join()
-   if dict_save.get_id() == 0:  # # получить id устройства.Если id устройство не выбрали.
+   if res["id"] == 0:  # # получить id устройства.Если id устройство не выбрали.
     msg_box = QMessageBox(self)
     msg_box.setWindowTitle("Ошибка")
     msg_box.setText("Вы не выбрали устройство")  # Добавляем свою кнопку
     ok_button = msg_box.addButton("Ок", QMessageBox.AcceptRole)
  
-    # Функция-обработчик
-    def on_ok_clicked():
+    def on_ok_clicked():  # Функция-обработчик
      show_list_id_callback()
  
     # Связываем сигнал нажатия кнопки с обработчиком
     msg_box.buttonClicked.connect(lambda btn: on_ok_clicked() if btn == ok_button else None)
     msg_box.exec_()
     return 0
+   
    if gp in games_checkmark_paths or gp == "":  # Если текущая игра имеет галочку.   print("prepare")
-    prepare(dict_save, res, games_checkmark_paths)
+    self.prepare(dict_save, res, games_checkmark_paths)
    else:  # Вывод ошибки.
     QMessageBox.information(self, "Ошибка", "Нужно выбрать приложение")
 

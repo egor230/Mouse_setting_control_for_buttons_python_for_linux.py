@@ -38,25 +38,19 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
           "mouse_press": {"C:/Windows/explorer.exe": [False, False, False, False, False, False, False]},
           "id": 0,
           "current_app": 'C:/Windows/explorer.exe'}
-   try:
-    know_id = '''#!/bin/bash
-                          input_list=$(xinput list)
-                          mouse_line=$(echo "$input_list" | head -n 1)
-                          if [ -n "$mouse_line" ]; then
-                              mouse_id=$(echo "$mouse_line" | grep -o "id=[0-9]*" | cut -d "=" -f 2)
-                              echo "$mouse_id"
-                          fi
-                          '''
-    result = subprocess.run(['bash', '-c', know_id], capture_output=True, text=True)
-    res["id"] = int(result.stdout.strip())
-   except:
-    res["id"] = 0
-   dict_save.save_jnson(res)
-  
+   know_id = '''#!/bin/bash
+               input_list=$(xinput list)
+               mouse_line=$(echo "$input_list" | head -n 1)
+               if [ -n "$mouse_line" ]; then
+                   mouse_id=$(echo "$mouse_line" | grep -o "id=[0-9]*" | cut -d "=" -f 2)
+                   echo "$mouse_id"
+               fi       '''
+          # result = subprocess.run(['bash', '-c', know_id], capture_output=True, text=True)
+          # res["id"] = int(result.stdout.strip())
+  dict_save.save_jnson(res)
   dict_save.set_cur_app(res["current_app"])
   dict_save.set_prev_game(res["current_app"])
   dict_save.set_current_app_path(res['current_app'])
-  dict_save.set_id(res["id"])
   self.setup_ui()
  
  def setup_ui(self):
@@ -204,9 +198,8 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  
  def start_app(self):# Функция старта.
   res = dict_save.return_jnson()
-  id_value = res["id"]
   if os.getgid() != 0 and hasattr(self, 'id_combo'):
-   self.id_combo.setCurrentText(str(res["id"]))
+   self.id_combo.setCurrentText(str(res["id"]))# установить ввыпадающий список ID устройства.
   curr_name = dict_save.get_cur_app()
   key_values = res["key_value"]
   for i in range(len(LIST_MOUSE_BUTTONS)):
