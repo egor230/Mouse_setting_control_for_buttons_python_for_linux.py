@@ -1172,12 +1172,10 @@ class MouseSettingAppMethods:
    self.current_keyboard_window = None
    self.tray_icon = None
    self.create_tray_icon()  # Создаем трей-иконку при запуске
-   # Запускаем self.hide() с нулевой задержкой. Это гарантирует, что
-   # команда скрытия выполнится после того, как окно полностью инициализировано.
-   QTimer.singleShot(0, self.hide)
+   QTimer.singleShot(0, self.hide) # Это гарантирует, что команда скрытия выполнится после того, как окно полностью инициализировано.
   
   def create_tray_icon(self):  # создания трей-иконки (немного модифицированный)
-   icon = QIcon("X-Mouse-Button-Control-Logo.png")
+   icon = QIcon("/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/mouse/tmpovhwj8so.png")
    if icon.isNull():
     icon = self.style().standardIcon(self.style().SP_ComputerIcon)
    
@@ -1442,8 +1440,7 @@ class MouseSettingAppMethods:
     # Обновляем отображение основной клавиатуры
     self.update_keyboard_display(dict_save)
 
-  def highlight_buttons_with_macros(self, keyboard_widget, keys_with_macros):
-    """Подсвечивает кнопки, для которых уже созданы макросы"""
+  def highlight_buttons_with_macros(self, keyboard_widget, keys_with_macros): #Подсвечивает кнопки, для которых уже созданы макросы"""
     # Сначала сбрасываем стиль для всех кнопок
     for button in keyboard_widget.findChildren(QPushButton):
      button.setStyleSheet("") # Сброс на стиль по умолчанию
@@ -1667,7 +1664,14 @@ class MouseSettingAppMethods:
     current_value = self.combo_box[index].currentText()
     res["key_value"][game][index]=current_value
     dict_save.save_jnson(res)# Сохранить новое значение для выпадающего списка
-
+  
+  def update_profile(self):# обновить профиль
+    res = dict_save.return_jnson()
+    current_value = int(self.id_combo.currentText())
+    if res["id"] != current_value:
+     res["id"]=current_value
+     dict_save.save_jnson(res)# Сохранить новое значение для выпадающего списка
+     self.change_app()
   def label_clicked(self, event, dict_save, count):
     if event.button() == Qt.LeftButton:
       self.check_label_changed(dict_save, count)

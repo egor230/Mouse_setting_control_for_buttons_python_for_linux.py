@@ -177,11 +177,11 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
    id_label = QLabel("ID устройства:")
    id_label.setStyleSheet("padding: 2px;")
    
-   self.id_combo = QComboBox()
+   self.id_combo = QComboBox()# выпадающий список профиля
    id_list = dict_save.get_list_ids() if dict_save else []
    self.id_combo.addItems([str(id) for id in id_list])
    self.id_combo.setToolTip('Выбор id устройства')
-   
+   self.id_combo.currentIndexChanged.connect(lambda: self.update_profile()) # Используем сигнал currentIndexChanged или activated
    id_layout.addWidget(id_label)
    id_layout.addWidget(self.id_combo)
    control_layout.addLayout(id_layout)
