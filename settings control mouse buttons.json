@@ -218,10 +218,10 @@
     },
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": {
       "keys": {
-        "N": "xte \"keydown E\"\nsleep 5.23\nxte \"keyup E\"\nxte \"mousedown 1\"\nxte \"mousedown 3\"\nxte \"keydown A\"\nxte \"keyup A\"\nxte \"mouseup 3\"\nxte \"mouseup 1\"\n",
-        "H": "xte \"mousedown 3\"\nsleep 9.23\nxte \"mouseup 3\"\n",
-        "L": "xte \"mousedown 3\"\n",
-        "P": "xte \"mouseup 3\"\n"
+        "N": "#!/bin/bash\nxte \"keydown E\"\nsleep 5.23\nxte \"keyup E\"\nxte \"mousedown 1\"\nxte \"mousedown 3\"\nxte \"keydown A\"\nxte \"keyup A\"\nxte \"mouseup 3\"\nxte \"mouseup 1\"\n",
+        "H": "#!/bin/bash\nxte \"mousedown 3\"\nsleep 9.23\nxte \"mouseup 3\"\n",
+        "L": "#!/bin/bash\nxte \"mousedown 3\"\n",
+        "P": "#!/bin/bash\nxte \"mouseup 3\"\n"
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": {
