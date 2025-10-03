@@ -55,7 +55,10 @@ KEYS = {" ": 0x0, "LBUTTON": 'mouse left', "RBUTTON": 'mouse right', "WHEEL_MOUS
         "ICO_CLEAR": 0xE6, "PACKET": 0xE7, "OEM_RESET": 0xE9, "OEM_JUMP": 0xEA, "OEM_PA1": 0xEB, "OEM_PA2": 0xEC, "OEM_PA3": 0xED,
         "OEM_WSCTRL": 0xEE, "OEM_CUSEL": 0xEF, "OEM_ATTN": 0xF0, "OEM_FINISH": 0xF1, "OEM_COPY": 0xF2, "OEM_AUTO": 0xF3, "OEM_ENLW": 0xF4,
         "OEM_BACKTAB": 0xF5, "ATTN": 0xF6, "CRSEL": 0xF7, "EXSEL": 0xF8, " EREOF": 0xF9, "PLAY": 0xFA, "ZOOM": 0xFB, "PA1": 0xFD,
-        " OEM_CLEAR": 0xFE    }
+        " OEM_CLEAR": 0xFE  }
+
+simple_key_map = { 'KEY_KP7': ' 7\nHome', 'KEY_KP8': '8\n↑', 'KEY_KP9': '9\nPgUp',
+    'KEY_KP4': '4\n←', 'KEY_KP5': '5\n', 'KEY_KP6': '6\n→', 'KEY_KP1': '1\nEnd', 'KEY_KP2': '2\n↓', 'KEY_KP3': '3\nPgDn'}
 LIST_MOUSE_BUTTONS = ["Левая кнопка", "Правая кнопка", "Средняя", "Колесико вверх", "Колесико вниз", "1 боковая", "2 боковая"]
 LIST_KEYS = list(KEYS.keys())
 defaut_list_mouse_buttons = ['LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'SCROLL_UP', 'SCROLL_DOWN', 'XBUTTON1', 'XBUTTON2']
@@ -908,7 +911,6 @@ def add_text_pytq5(key, text_widget):
  if key is None:
   return
  k = key.replace('\r', '').strip()
- 
  if k in keypad_map:
   k = keypad_map[k]
  if k in mouse_map:
@@ -994,7 +996,6 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
    if str(key[number_key]) != ' ' and str(key[number_key]) != " " and \
     str(i) == str(button) and list_buttons[i].get_hook_flag_mouse() == True:  # это кнопка нажата?    print(key[number_key] )
     if check_mouse_script(res, dict_save, defaut_list_mouse_buttons, number_key):  # На эту кнопку назначен скрипт
-     print("check script")
      key_mouse_script = res["script_mouse"][dict_save.get_cur_app()][defaut_list_mouse_buttons[number_key]]
      thread1 = threading.Thread(target=execute_script, args=(key_mouse_script,))
      thread1.daemon = True
@@ -1169,7 +1170,7 @@ class MouseSettingAppMethods:
    self.current_keyboard_window = None
    self.tray_icon = None
    self.create_tray_icon()  # Создаем трей-иконку при запуске
-   # QTimer.singleShot(0, self.hide) # Это гарантирует, что команда скрытия выполнится после того, как окно полностью инициализировано.
+   QTimer.singleShot(0, self.hide) # Это гарантирует, что команда скрытия выполнится после того, как окно полностью инициализировано.
   
   def create_tray_icon(self):  # создания трей-иконки (немного модифицированный)
    icon = QIcon("/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/mouse/tmpovhwj8so.png")
@@ -1201,11 +1202,27 @@ class MouseSettingAppMethods:
   # def close_app(self):   # Закрываем приложение полностью
   #  self.tray_icon.hide()
   #  QApplication.quit()
-  
+
+  def start_cleanup_thread(self):
+    self.cleanup_thread = threading.Thread(target=self._cleanup_processes)
+    self.cleanup_thread.daemon = True  # Позволяет потоку умереть, когда основная программа завершится
+    self.cleanup_thread.start()
+
+  def _cleanup_processes(self):
+    target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"
+    current_pid = os.getpid()
+    for p in psutil.process_iter(['pid', 'cmdline']):
+     try:
+      cmdline_str = ' '.join(p.info['cmdline'])
+      if target in cmdline_str and p.info['pid'] != current_pid:
+       os.kill(p.info['pid'], signal.SIGTERM)
+     except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
+      continue
   def closeEvent(self, event=0):  # Переопределяем закрытие окна - скрываем в трей вместо закрытия
+   print("ds")
    old_data = dict_save.return_old_data()
    new_data = dict_save.return_jnson()
-   diff = DeepDiff(old_data, new_data)
+   diff = deepdiff.DeepDiff(old_data, new_data)
    if diff:
     reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?",
                                  QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
@@ -1213,19 +1230,15 @@ class MouseSettingAppMethods:
      dict_save.write_to_file(new_data)
     elif reply == QMessageBox.Cancel:
      return
-   target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"
-   current_pid = os.getpid()
-   for p in psutil.process_iter(['pid', 'cmdline']):
-    try:
-     cmdline_str = ' '.join(p.info['cmdline'])
-     if target in cmdline_str and p.info['pid'] != current_pid:
-      os.kill(p.info['pid'], signal.SIGTERM)
-    except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
-     continue
+
+   # Запуск завершения других процессов в отдельном потоке
+   self.start_cleanup_thread()
+
+   # Завершаем само приложение только после того, как поток завершит работу,
+   # В данном случае, так как вы хотите закрыть, используем accept() и sys.exit().
    event.accept()
    sys.exit(0)
-   event.ignore()
-   self.hide()
+
 
   def emunator_mouse(self, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):  # Основная функция эмуляциии  print(key[1])# список ключей  меняется
    # print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
@@ -1242,13 +1255,11 @@ class MouseSettingAppMethods:
     # Если никакой игры не запущено мы возвращаем предыдущую конфигурацию это директория. #   # print(new_path_game)#
     if game != new_path_game:  # игра которая сейчас на активной вкладке активного окна    #
      dict_save.set_cur_app(new_path_game)  # # dict_save.set_current_path_game(new_path_game)
-    if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального
-     # print(new_path_game)
+    if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального    # print(new_path_game)
      for t in list_threads:
       t.join()
       list_threads.remove(t)
-     break
-   print("exit")
+     break#   print("exit")
    a = key_work.keys_list + key_work.keys_list1
    for i in list(key):
     if i in defaut_list_mouse_buttons:
@@ -1257,7 +1268,6 @@ class MouseSettingAppMethods:
       # pyautogui.mouseUp(button='right')
      if i == 'LBUTTON':
       pyautogui.mouseUp(button='left')
-   
      if i == 'WHEEL_MOUSE_BUTTON':
       key_work.mouse_middle_donw()
      if i in a:  # print(i)
@@ -1295,9 +1305,7 @@ class MouseSettingAppMethods:
    set_button_map = '''#!/bin/bash\nsudo xinput set-button-map {0} {1} '''.format(id, new)
    subprocess.call(['bash', '-c', set_button_map])  # установить конфигурацию кнопок для мыши.   print(dict_save.get_state_thread())
    dict_save.set_cur_app(game)  # Текущая игра  # dict_save.set_current_path_game(game)# последний текущий путь # Запустить обработчик нажатий.  print(game, key, k, sep="\n")  #  print(key)  print(string_keys)
-   dict_save.set_current_path_game(game)
-   #dict_save.set_prev_game(game)# мы установили путь для предыдущей игры
-   # print(game)
+   dict_save.set_current_path_game(game)   #dict_save.set_prev_game(game)# мы установили путь для предыдущей игры
    # print("st")
    t1 = threading.Thread(target=self.emunator_mouse, args=( dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths,))
    t1.start()
@@ -1392,12 +1400,10 @@ class MouseSettingAppMethods:
  
    # Загружаем существующий скрипт для этой клавиши, если он есть
    res = dict_save.return_jnson()
-   current_app = res["current_app"]
-   print(current_app)
+   current_app = res["current_app"]#   print(current_app)
    dict_save.set_last_key_keyboard_script(key)  #
    content = res.get("keyboard_script", {}).get(current_app, {}).get("keys", "").get(key,{})
-   if content:
-      print(content)
+   if content:#    print(content)
       macro_window.text_widget.setPlainText(content)
    else:
      # Инициализируем структуры если их нет
@@ -1450,10 +1456,7 @@ class MouseSettingAppMethods:
     
     # Создаем клавиатуру с callback для записи макросов
     def record_macro_callback(key):# Открываем редактор для этой клавиши
-     print(key)
      self.keyboard_with_editor_for_script(key)
-#      self.create_keyboard_with_editor(dict_save, key)
-    
     keyboard_widget = KeyboardWidget(record_macro_callback)
     layout.addWidget(keyboard_widget)
     # Подсвечиваем кнопки, которые уже имеют макросы
@@ -1575,29 +1578,6 @@ class MouseSettingAppMethods:
     # res = dict_save.return_jnson()
     # res['current_app'] = game
     # dict_save.save_jnson(res)
-  def closeEvent(self, event):# Когда мы закрываем программу сохранить или нет
-    return
-    old_data = dict_save.return_old_data()
-    new_data = dict_save.return_jnson()
-    diff = DeepDiff(old_data, new_data)
-    if diff:
-      reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?",
-                                  QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
-      if reply == QMessageBox.Save:
-        dict_save.write_to_file(new_data)
-      elif reply == QMessageBox.Cancel:
-        return
-    target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"
-    current_pid = os.getpid()
-    for p in psutil.process_iter(['pid', 'cmdline']):
-      try:
-        cmdline_str = ' '.join(p.info['cmdline'])
-        if target in cmdline_str and p.info['pid'] != current_pid:
-          os.kill(p.info['pid'], signal.SIGTERM)
-      except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
-        continue
-    event.accept()
-    sys.exit(0)
  
   def checkbutton_changed(self, count):# снять и убрать галочку.
     res = dict_save.return_jnson()
