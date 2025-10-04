@@ -78,14 +78,12 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   def on_release(key):
    pass
    return True
-
   def start_listener():
    global listener
    listener = keyboard.Listener(on_press=on_press, on_release=on_release)
    listener.start()
 
   start_listener()  # Запускаем слушатель
- 
   self.setup_ui()
  
  def setup_ui(self):

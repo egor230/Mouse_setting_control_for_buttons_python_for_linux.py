@@ -92,7 +92,8 @@ class save_dict:
   self.current_path_game = ""  # Путь к запущенной к игре.
   self.last_key_keyboard_script = ""
   self.thr = 0
-
+  self.thread_exit=False# это флаг выхода из потоков
+  
  def get_last_key_keyboard_script(self):  #
   return self.last_key_keyboard_script
 
@@ -404,7 +405,6 @@ def get_visible_active_pid():
 
   # Преобразуем десятичное ID в шестнадцатеричное (например, 1234567 -> 0x01234567)
   window_id_hex = hex(int(window_id_dec))
-
   # Проверка: окно свернуто?
   xprop_output = subprocess.run(['xprop', '-id', window_id_dec, '_NET_WM_STATE'],
                                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True).stdout
@@ -412,7 +412,6 @@ def get_visible_active_pid():
   if "_NET_WM_STATE_HIDDEN" in xprop_output:
    print("Окно свернуто")
    return 0  # Окно свернуто
-
   # Получаем список окон с PID
   wmctrl_output = subprocess.run(['wmctrl', '-lp'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                  text=True).stdout
@@ -1182,7 +1181,7 @@ class MouseSettingAppMethods:
    
    tray_menu = QMenu()
    quit_action = tray_menu.addAction("Выход")
-   quit_action.triggered.connect(self.closeEvent)
+   quit_action.triggered.connect(self.close)
    
    self.tray_icon.setContextMenu(tray_menu)
    self.tray_icon.activated.connect(self.tray_icon_clicked)
@@ -1199,27 +1198,12 @@ class MouseSettingAppMethods:
    self.showNormal()
    self.activateWindow()
   
-  # def close_app(self):   # Закрываем приложение полностью
-  #  self.tray_icon.hide()
-  #  QApplication.quit()
+  def close_app(self):   # Закрываем приложение полностью
+   self.close()
 
-  def start_cleanup_thread(self):
-    self.cleanup_thread = threading.Thread(target=self._cleanup_processes)
-    self.cleanup_thread.daemon = True  # Позволяет потоку умереть, когда основная программа завершится
-    self.cleanup_thread.start()
-
-  def _cleanup_processes(self):
-    target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"
-    current_pid = os.getpid()
-    for p in psutil.process_iter(['pid', 'cmdline']):
-     try:
-      cmdline_str = ' '.join(p.info['cmdline'])
-      if target in cmdline_str and p.info['pid'] != current_pid:
-       os.kill(p.info['pid'], signal.SIGTERM)
-     except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
-      continue
-  def closeEvent(self, event=0):  # Переопределяем закрытие окна - скрываем в трей вместо закрытия
+  def closeEvent(self, event=None):  # Переопределяем закрытие окна - скрываем в трей вместо закрытия
    print("ds")
+   dict_save.thread_exit=True
    old_data = dict_save.return_old_data()
    new_data = dict_save.return_jnson()
    diff = deepdiff.DeepDiff(old_data, new_data)
@@ -1228,17 +1212,25 @@ class MouseSettingAppMethods:
                                  QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
     if reply == QMessageBox.Save:
      dict_save.write_to_file(new_data)
-    elif reply == QMessageBox.Cancel:
-     return
-
+   try:
+    os.kill(os.getpid(), signal.SIGKILL)  # Самоубийство через kill -9
+   except:
+    sys.exit(0)
+    
    # Запуск завершения других процессов в отдельном потоке
-   self.start_cleanup_thread()
+   # target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"mythread
+   # current_pid = os.getpid()
+   # for p in psutil.process_iter(['pid', 'cmdline']):
+   #  try:
+   #   cmdline_str = ' '.join(p.info['cmdline'])
+   #   if target in cmdline_str and p.info['pid'] != current_pid:
+   #    os.kill(p.info['pid'], signal.SIGTERM)
+   #  except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
+   #   continue
 
    # Завершаем само приложение только после того, как поток завершит работу,
    # В данном случае, так как вы хотите закрыть, используем accept() и sys.exit().
-   event.accept()
-   sys.exit(0)
-
+   # event.accept()
 
   def emunator_mouse(self, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):  # Основная функция эмуляциии  print(key[1])# список ключей  меняется
    # print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
@@ -1247,13 +1239,13 @@ class MouseSettingAppMethods:
     list_threads.append(f2)
     f2.start()
     return True
-   listener = mouse.Listener(on_click=on_click)
-   listener.start()  # Запуск слушателя  # print( game)#  print( dict_save.get_cur_app
+   mouse_listener = mouse.Listener(on_click=on_click)
+   mouse_listener.start()  # Запуск слушателя  # print( game)#  print( dict_save.get_cur_app
    game = dict_save.get_cur_app()  # какая игра сейчас текущая по вкладке.
-   while 1:  # time.sleep(3)   #print(dict_save.get_flag_thread())
+   while not dict_save.thread_exit:  # time.sleep(3)   #print(dict_save.get_flag_thread())
     new_path_game = check_current_active_window(dict_save, games_checkmark_paths)  # Текущая директория активного окна игры.
     # Если никакой игры не запущено мы возвращаем предыдущую конфигурацию это директория. #   # print(new_path_game)#
-    if game != new_path_game:  # игра которая сейчас на активной вкладке активного окна    #
+    if game != new_path_game :  # игра которая сейчас на активной вкладке активного окна    #
      dict_save.set_cur_app(new_path_game)  # # dict_save.set_current_path_game(new_path_game)
     if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального    # print(new_path_game)
      for t in list_threads:
@@ -1274,10 +1266,12 @@ class MouseSettingAppMethods:
       release = '''#!/bin/bash
         xte 'keyup {0}'    '''
       subprocess.call(['bash', '-c', release.format(key)])
-   listener.stop()
-   listener.join()  # Ожидание завершения
+   mouse_listener.stop()
+   mouse_listener.join()  # Ожидание завершения
    dict_save.set_thread(0)
- 
+   if dict_save.thread_exit: # Если флаг выхода выходим
+    print("e")
+    return
    t2 = threading.Thread(target=self.start_startup_now, args=(dict_save,))  # Запустить функцию, которая запускает эмуляцию заново.
    t2.daemon = True
    t2.start()  # print("cll")
