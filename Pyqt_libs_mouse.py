@@ -1215,20 +1215,7 @@ class MouseSettingAppMethods:
    try:
     os.kill(os.getpid(), signal.SIGKILL)  # Самоубийство через kill -9
    except:
-    sys.exit(0)
-    
-   # Запуск завершения других процессов в отдельном потоке
-   # target = "Pytq_mouse_setting_control_for_buttons_for_linux.py"mythread
-   # current_pid = os.getpid()
-   # for p in psutil.process_iter(['pid', 'cmdline']):
-   #  try:
-   #   cmdline_str = ' '.join(p.info['cmdline'])
-   #   if target in cmdline_str and p.info['pid'] != current_pid:
-   #    os.kill(p.info['pid'], signal.SIGTERM)
-   #  except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
-   #   continue
-
-   # Завершаем само приложение только после того, как поток завершит работу,
+    sys.exit(0)   # Завершаем само приложение только после того, как поток завершит работу,
    # В данном случае, так как вы хотите закрыть, используем accept() и sys.exit().
    # event.accept()
 
@@ -1363,6 +1350,15 @@ class MouseSettingAppMethods:
       self.buttons_script[i].setStyleSheet(""" QPushButton { border: 1px solid gray; padding: 5px;
                         color: black;  background-color: gray; } """)
       self.buttons_script[i].update()
+     self.Keyboard_button
+   script = res.get("keyboard_script", {}).get(game, {}).get("keys", {})
+   self.Keyboard_button.setStyleSheet("")
+   if script:
+    self.Keyboard_button.setStyleSheet(""" QPushButton { border: 1px solid gray; padding: 5px;
+                        color: black;  background-color: gray; } """)
+    self.Keyboard_button.update()
+     
+
    values = res["key_value"][game]  # Получить значение выпадающего списка для этой игры
    for button, value in zip(self.combo_box, values):
     # Предположим, что вы хотите установить значение value в кнопку (комбо-бокс)
@@ -1558,20 +1554,19 @@ class MouseSettingAppMethods:
         labels[index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
  
   def change_app(self, game=""):
-    pass
-    # if game == dict_save.get_cur_app() or game == "":
-    #   dict_save.set_cur_app("")
-    #   while True:
-    #     if "" == dict_save.get_cur_app():
-    #       break
-    #   dict_save.set_prev_game(game)
-    #   dict_save.set_cur_app(game)
-    #   while game != dict_save.get_cur_app():
-    #     time.sleep(1)
-    #
-    # res = dict_save.return_jnson()
-    # res['current_app'] = game
-    # dict_save.save_jnson(res)
+    if game == dict_save.get_cur_app() or game == "":
+      dict_save.set_cur_app("")
+      while True:
+        if "" == dict_save.get_cur_app():
+          break
+      dict_save.set_prev_game(game)
+      dict_save.set_cur_app(game)
+      while game != dict_save.get_cur_app():
+        time.sleep(1)
+
+    res = dict_save.return_jnson()
+    res['current_app'] = game
+    dict_save.save_jnson(res)
  
   def checkbutton_changed(self, count):# снять и убрать галочку.
     res = dict_save.return_jnson()
@@ -1734,7 +1729,6 @@ class MouseSettingAppMethods:
      ok_button = msg_box.addButton("Ок", QMessageBox.AcceptRole)
      msg_box.exec_()
      return
-
     profile = dict_save.get_cur_app()  # Текущая директория активной игры.
     res = dict_save.return_jnson()  # print(profile)
     list_paths = list(res["paths"].keys())
