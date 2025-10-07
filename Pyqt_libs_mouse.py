@@ -37,11 +37,10 @@ KEYS = {" ": 0x0, "LBUTTON": 'mouse left', "RBUTTON": 'mouse right', "WHEEL_MOUS
         "P": "P", "Q": "Q", "R": "R", "S": "S", "T": "T", "U": "U", "V": "V", "W": "W", "X": "X", "Y": "Y",
         "Z": "Z",
 
-        "APPS": 0x5D, "SLEEP": 0x5F, "NUMPAD0": 0x60, "NUMPAD1": 79,
-        "NUMPAD2": 80, "NUMPAD3": 81, "NUMPAD4": 82, "NUMPAD5": 83, "NUMPAD6": 84, "NUMPAD7": 85,
-        "NUMPAD8": 86, "NUMPAD9": 87, "MULTIPLY": 0x6A, "ADD": 78, "SEPARATOR": 0x6C, "SUBTRACT": 0x6D,
-        "DECIMAL": 0x6E, "DIVIDE": 0x6F, "F1": "F1", "F2": "F2", "F3": "F3", "F4": "F4", "F5": "F5",
-        "F6": "F6", "F7": "F7", "F8": "F8", "F9": "F9", "F10": "F10", "F11": "F11", "F12": "F12",
+        "APPS": 0x5D, "SLEEP": 0x5F, "NUMPAD0": 0x60, "NUMPAD1": 79, "NUMPAD2": 80, "NUMPAD3": 81, "NUMPAD4": 82,
+        "NUMPAD5": 83, "NUMPAD6": 84, "NUMPAD7": 85, "NUMPAD8": 86, "NUMPAD9": 87, "MULTIPLY": 0x6A, "ADD": 78,
+        "SEPARATOR": 0x6C, "SUBTRACT": 0x6D, "DECIMAL": 0x6E, "DIVIDE": 0x6F, "F1": "F1", "F2": "F2", "F3": "F3",
+        "F4": "F4", "F5": "F5", "F6": "F6", "F7": "F7", "F8": "F8", "F9": "F9", "F10": "F10", "F11": "F11", "F12": "F12",
 
         "F13": 0x7C, "F14": 0x7D, "F15": 0x7E, "F16": 0x7F, "F17": 0x80, "F18": 0x81, "F19": 0x82, "F20": 0x83, "F21": 0x84,
         "F22": 0x85, "F23": 0x86, "F24": 0x87, "NUMLOCK": "Num_Lock", "SCROLL": "Scroll_Lock", "OEM_FJ_JISHO": 0x92, "OEM_FJ_MASSHOU": 0x93,
@@ -246,9 +245,7 @@ class save_dict:
   for item in id_list:  # Разделение элемента на ключ (id устройства) и значение (кнопок).
    key, value = item.split(':', 1)
    button_map[int(key)] = value.strip()
-
   # Добавление в словарь button_map кнопок устройства с соответствующим идентификатором.
-
   self.dict_id_values = button_map  # Сохранение карты кнопок в атрибут объекта.
   id_list = list(button_map.keys())  # Сохранение списка идентификаторов в переменной id_list.
   id_list = sorted(id_list)
@@ -402,7 +399,6 @@ def get_visible_active_pid():
   if not window_id_dec:
    print("Не удалось получить ID активного окна")
    return 0
-
   # Преобразуем десятичное ID в шестнадцатеричное (например, 1234567 -> 0x01234567)
   window_id_hex = hex(int(window_id_dec))
   # Проверка: окно свернуто?
@@ -415,15 +411,13 @@ def get_visible_active_pid():
   # Получаем список окон с PID
   wmctrl_output = subprocess.run(['wmctrl', '-lp'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                  text=True).stdout
-
-  # Ищем строку с нужным ID окна
+ # Ищем строку с нужным ID окна
   for line in wmctrl_output.splitlines():
    parts = line.split()  # print(parts)
    if len(parts) >= 3 and parts[0] == window_id_hex:
     pid = int(parts[2])  # PID — третий элемент#   print(pid)
     return pid
   return 0  # PID не найден
-
  except Exception as e:
   print(f"Ошибка: {e}")
   return 0
@@ -462,8 +456,7 @@ def get_active_window_exe(user, id_active):
  try:
   result = subprocess.run(['ps', 'aux'], stdout=subprocess.PIPE, text=True).stdout
   lines = result.split('\n')
-  # Фильтруем строки по пользователю и PID
-  for line in lines:
+  for line in lines:  # Фильтруем строки по пользователю и PID
    if user in line:  # Проверяем наличие PID и имени пользователя
     parts = line.split(maxsplit=10)  # Разделяем строку, предполагая стандартный формат ps aux
     exe_path = parts[10]
@@ -511,8 +504,7 @@ def check_current_active_window(dict_save, games_checkmark_paths):  # Получ
   data_dict = get_pid_and_path_window()  # в котором есть директория игр
   id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
   file_path = data_dict[id_active]  # получаем путь
-  if data_dict[id_active] and is_path_in_list(file_path,
-                                              games_checkmark_paths):  # print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
+  if data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  # print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
    return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  #
   if id_active and '/PortProton/data/scripts/start.sh' in data_dict[id_active]:  # если он запущен через pp
    # print(data_dict[id_active])
@@ -1226,42 +1218,40 @@ class MouseSettingAppMethods:
     list_threads.append(f2)
     f2.start()
     return True
-   mouse_listener = mouse.Listener(on_click=on_click)
-   mouse_listener.start()  # Запуск слушателя  # print( game)#  print( dict_save.get_cur_app
-   game = dict_save.get_cur_app()  # какая игра сейчас текущая по вкладке.
-   while not dict_save.thread_exit:  # time.sleep(3)   #print(dict_save.get_flag_thread())
-    new_path_game = check_current_active_window(dict_save, games_checkmark_paths)  # Текущая директория активного окна игры.
-    # Если никакой игры не запущено мы возвращаем предыдущую конфигурацию это директория. #   # print(new_path_game)#
-    if game != new_path_game :  # игра которая сейчас на активной вкладке активного окна    #
-     dict_save.set_cur_app(new_path_game)  # # dict_save.set_current_path_game(new_path_game)
-    if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального    # print(new_path_game)
-     for t in list_threads:
-      t.join()
-      list_threads.remove(t)
-     break#   print("exit")
-   a = key_work.keys_list + key_work.keys_list1
-   for i in list(key):
-    if i in defaut_list_mouse_buttons:
-     if i == 'RBUTTON':
-      mouse_controller.release(mouse.Button.right)
-      # pyautogui.mouseUp(button='right')
-     if i == 'LBUTTON':
-      pyautogui.mouseUp(button='left')
-     if i == 'WHEEL_MOUSE_BUTTON':
-      key_work.mouse_middle_donw()
-     if i in a:  # print(i)
-      release = '''#!/bin/bash
-        xte 'keyup {0}'    '''
-      subprocess.call(['bash', '-c', release.format(key)])
-   mouse_listener.stop()
-   mouse_listener.join()  # Ожидание завершения
-   dict_save.set_thread(0)
-   if dict_save.thread_exit: # Если флаг выхода выходим
-    print("e")
-    return
-   t2 = threading.Thread(target=self.start_startup_now, args=(dict_save,))  # Запустить функцию, которая запускает эмуляцию заново.
-   t2.daemon = True
-   t2.start()  # print("cll")
+   try:
+    mouse_listener = mouse.Listener(on_click=on_click)
+    mouse_listener.start()  # Запуск слушателя  # print( game)#  print( dict_save.get_cur_app
+    game = dict_save.get_cur_app()  # какая игра сейчас текущая по вкладке.
+    while not dict_save.thread_exit:  # time.sleep(3)   #print(dict_save.get_flag_thread())
+     new_path_game = check_current_active_window(dict_save, games_checkmark_paths)  # Текущая директория активного окна игры.
+     # Если никакой игры не запущено мы возвращаем предыдущую конфигурацию это директория. #   # print(new_path_game)#
+     if game != new_path_game :  # игра которая сейчас на активной вкладке активного окна    #
+      dict_save.set_cur_app(new_path_game)  # # dict_save.set_current_path_game(new_path_game)
+     if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального    # print(new_path_game)
+      for t in list_threads:
+       t.join()
+       list_threads.remove(t)
+      break#   print("exit")
+    a = key_work.keys_list + key_work.keys_list1
+    # Перебираем все основные кнопки мыши и отпускаем их
+    for button in [Button.left, Button.right, Button.middle]:
+     mouse_controller.release(button)
+#    for i in list(key):
+    #   if i in a:  # print(i)
+    #    release = '''#!/bin/bash
+    #      xte 'keyup {0}'    '''
+    #    subprocess.call(['bash', '-c', release.format(key)])
+    mouse_listener.stop()
+    mouse_listener.join()  # Ожидание завершения
+    dict_save.set_thread(0)
+    if dict_save.thread_exit: # Если флаг выхода выходим
+     print("e")
+     return
+    t2 = threading.Thread(target=self.start_startup_now, args=(dict_save,))  # Запустить функцию, которая запускает эмуляцию заново.
+    t2.daemon = True
+    t2.start()  # print("cll")
+   except:
+    pass
 
   def prepare(self, dict_save, res, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
    id = res["id"]  # Получаем id устройства  print(id)
