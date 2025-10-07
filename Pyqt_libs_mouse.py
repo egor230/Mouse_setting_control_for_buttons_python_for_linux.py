@@ -3,7 +3,7 @@ import keyboard as keybord_from
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox,
                              QTextEdit, QTabWidget, QScrollArea, QFrame, QCheckBox, QLineEdit, QMessageBox, QStyleFactory,
                              QToolTip, QGridLayout, QDialog, QPlainTextEdit, QSystemTrayIcon, QMenu)
-from PyQt5.QtCore import Qt, pyqtSignal, QThread, QTimer
+from PyQt5.QtCore import Qt, pyqtSignal, QThread, QTimer, QObject, QEvent
 from PyQt5.QtGui import QFont, QIcon, QColor, QPalette, QTextCursor
 from pynput import mouse, keyboard
 from pynput.mouse import Button as Button_Controller, Controller
@@ -1161,7 +1161,7 @@ class MouseSettingAppMethods:
    self.current_keyboard_window = None
    self.tray_icon = None
    self.create_tray_icon()  # Создаем трей-иконку при запуске
-   QTimer.singleShot(0, self.hide) # Это гарантирует, что команда скрытия выполнится после того, как окно полностью инициализировано.
+   # QTimer.singleShot(0, self.hide) # Это гарантирует, что команда скрытия.
   
   def create_tray_icon(self):  # создания трей-иконки (немного модифицированный)
    icon = QIcon("/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/mouse/tmpovhwj8so.png")
@@ -1209,7 +1209,6 @@ class MouseSettingAppMethods:
    except:
     sys.exit(0)   # Завершаем само приложение только после того, как поток завершит работу,
    # В данном случае, так как вы хотите закрыть, используем accept() и sys.exit().
-   # event.accept()
 
   def emunator_mouse(self, dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths):  # Основная функция эмуляциии  print(key[1])# список ключей  меняется
    # print(key)  # ['LBUTTON', 'W', ' ', ' ', 'R', 'SPACE', 'KP_Enter']   # game=game
@@ -1249,7 +1248,6 @@ class MouseSettingAppMethods:
    t2 = threading.Thread(target=self.start_startup_now, args=(dict_save,))  # Запустить функцию, которая запускает эмуляцию заново.
    t2.daemon = True
    t2.start()  # print("cll")
-
 
   def prepare(self, dict_save, res, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
    id = res["id"]  # Получаем id устройства  print(id)
@@ -1320,7 +1318,6 @@ class MouseSettingAppMethods:
    res["current_app"] = game
    labels[count].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
    list_check_buttons = res.get("mouse_press", {}).get(game, [])
-
    # print("ch")
    res["current_app"] = game
    for idx, check in enumerate(self.mouse_check_buttons):
@@ -1679,7 +1676,6 @@ class MouseSettingAppMethods:
     name_games.clear()
     var_list.clear()
     labels_with_checkmark.clear()
-  
     dict_save.count += 1  # Увеличиваем счётчик (исправлена опечатка)
   
     res['current_app'] = path_to_file  # Выбранная игра.

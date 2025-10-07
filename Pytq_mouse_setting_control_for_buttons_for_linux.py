@@ -1,6 +1,64 @@
 from Pyqt_libs_mouse import *
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/myenv/lib/python3.12/site-packages/PyQt5/Qt5/plugins"
 
+
+class ChangeNameDialog(QDialog):
+    """Диалоговое окно для изменения названия игры"""
+ def __init__(self, old_name, res, count, labels, parent=None):
+   super().__init__(parent)
+   self.old_name = old_name
+   self.res = res
+   self.count = count
+   self.labels = labels
+ 
+   self.setWindowTitle("Изменить название")
+   self.setGeometry(750, 400, 350, 150)
+   self.setStyleSheet("background-color: DimGray;")
+ 
+   layout = QVBoxLayout(self)
+ 
+   self.input = QLineEdit(self)
+   self.input.setText(old_name)
+   self.input.setPlaceholderText("Введите новое название")
+   self.input.selectAll()
+   layout.addWidget(self.input)
+ 
+   ok_btn = QPushButton("OK", self)
+   ok_btn.clicked.connect(self.apply_change)
+   layout.addWidget(ok_btn)
+ 
+   # Enter = OK
+   self.input.returnPressed.connect(self.apply_change)
+ 
+ def apply_change(self):
+   new_name = self.input.text().strip()
+   if new_name and new_name != self.old_name:
+       key = list(self.res["paths"])[self.count]
+       self.res["paths"][key] = new_name
+       self.labels[self.count].setText(new_name)
+   self.accept()
+
+class EventFilter(QObject):  """Фильтр событий, реагирующий на двойной клик"""
+ def __init__(self, parent=None):
+   super().__init__(parent)
+  def eventFilter(self, obj, event):
+   # Отладочный вывод
+   # print("Event type:", event.type())
+   if event.type() == QEvent.MouseButtonDblClick and obj == self.parent():
+    if event.button() == Qt.LeftButton:
+      print("Двойной клик — открываем окно изменения имени")
+      labels = dict_save.return_labels()
+      res = dict_save.return_jnson()
+      # Для примера всегда меняем элемент с индексом 1
+      count = 1
+      old_name = res["paths"][list(res["paths"])[count]]
+
+      dialog = ChangeNameDialog(old_name, res, count, labels, obj)
+      dialog.exec_()
+      return True  # Событие обработано
+ 
+   return super().eventFilter(obj, event)
+
 class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  def __init__(self):
   super().__init__()
@@ -56,8 +114,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
      if key_event.keystate == key_event.key_down: # Получаем название клавиши и преобразуем его
       key_name = key_event.keycode
       simple_name = simple_key_map.get(key_name, key_name)  # Если клавиша не в словаре, оставляем как есть
-      if simple_name in ["7\nHome", "8\n↑", "9\nPgUp", "4\n←", "5\n", "6\n→", "1\nEnd", "2\n↓", "KP_Down"
-                                                                                         "3\nPgDn"]:
+      if simple_name in ["7\nHome", "8\n↑", "9\nPgUp", "4\n←", "5\n", "6\n→", "1\nEnd", "2\n↓", "KP_Down", "3\nPgDn"]:
        key = simple_name
        break
     if "keys" in res.get("keyboard_script", {}).get(current_app, {}):  # Проверяем наличие текущего приложения в "keyboard_script"
@@ -141,6 +198,9 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
    label.setStyleSheet("padding: 4px; font-weight: bold;")
    label.setFixedWidth(150)
    label.setAlignment(Qt.AlignCenter)
+   event_filter = EventFilter()
+   event_filter.setParent(label)  # Устанавливаем родителя для фильтра
+   label.installEventFilter(event_filter)  # Устанавливаем фильтр на label
    lab.append(label)
    combo = QComboBox()# Установить все значения выпадающего списка
    combo.addItems(LIST_KEYS)
