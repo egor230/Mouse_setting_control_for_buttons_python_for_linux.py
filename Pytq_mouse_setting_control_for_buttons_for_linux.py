@@ -2,21 +2,6 @@ from Pyqt_libs_mouse import *
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/myenv/lib/python3.12/site-packages/PyQt5/Qt5/plugins"
 
 
-class EventFilter(QObject):#Фильтр событий, реагирующий на двойной клик"""
- 
- def __init__(self, parent=None):
-  super().__init__(parent)
- 
- def eventFilter(self, obj, event):
-  # Отладочный вывод
-  # print("Event type:", event.type())
-  if event.type() == QEvent.MouseButtonDblClick and obj == self.parent():
-   if event.button() == Qt.LeftButton:
-    print("Двойной клик — открываем окно изменения имени")
-    return True  # Событие обработано
-  
-  return super().eventFilter(obj, event)
-
 class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  def __init__(self):
   super().__init__()
@@ -155,10 +140,6 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
    label = QLabel(LIST_MOUSE_BUTTONS[i])
    label.setStyleSheet("padding: 4px; font-weight: bold;")
    label.setFixedWidth(150)
-   label.setAlignment(Qt.AlignCenter)
-   event_filter = EventFilter()
-   event_filter.setParent(label)  # Устанавливаем родителя для фильтра
-   label.installEventFilter(event_filter)  # Устанавливаем фильтр на label
    lab.append(label)
    combo = QComboBox()# Установить все значения выпадающего списка
    combo.addItems(LIST_KEYS)

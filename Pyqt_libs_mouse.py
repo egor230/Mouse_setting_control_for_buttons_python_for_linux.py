@@ -1161,7 +1161,7 @@ class MouseSettingAppMethods:
    self.current_keyboard_window = None
    self.tray_icon = None
    self.create_tray_icon()  # Создаем трей-иконку при запуске
-   # QTimer.singleShot(0, self.hide) # Это гарантирует, что команда скрытия.
+   QTimer.singleShot(0, self.hide) # Это гарантирует, что команда скрытия.
   
   def create_tray_icon(self):  # создания трей-иконки (немного модифицированный)
    icon = QIcon("/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/mouse/tmpovhwj8so.png")
@@ -1306,7 +1306,7 @@ class MouseSettingAppMethods:
    else:  # Вывод ошибки.
     QMessageBox.information(self, "Ошибка", "Нужно выбрать приложение")
 
-  def check_label_changed(self, dict_save, count):  # установить текущую активную игру
+  def check_label_changed(self, count):  # установить текущую активную игру
    res = dict_save.return_jnson()
    labels = dict_save.return_labels()
    keys_list = list(res["key_value"].keys())
@@ -1525,7 +1525,8 @@ class MouseSettingAppMethods:
       label.setFixedWidth(200)
       label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
       label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-      label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
+      
+      label.mousePressEvent = lambda event, c=count: self.label_clicked(event, c)
       label.setContextMenuPolicy(Qt.CustomContextMenu)
       label.customContextMenuRequested.connect(lambda pos, c=count: self.show_change_name_menu(c))
       name_games.append(game_name)
@@ -1565,7 +1566,7 @@ class MouseSettingAppMethods:
    labels = dict_save.return_labels()
    var_list = dict_save.return_var_list()
    for count, label in enumerate(labels):    # ИЗМЕНЕНО: Более надёжная перепривязка (lambda с default c=count захватывается правильно)
-    label.mousePressEvent = lambda event, c=count: self.label_clicked(event, dict_save, c)
+    label.mousePressEvent = lambda event, c=count: self.label_clicked(event, c)
     if count < len(var_list):
      try:    # ИЗМЕНЕНО: disconnect с try-except для безопасности (если уже отключено)
       var_list[count].stateChanged.disconnect()
@@ -1642,10 +1643,53 @@ class MouseSettingAppMethods:
      res["id"]=current_value
      dict_save.save_jnson(res)# Сохранить новое значение для выпадающего списка
      self.change_app()
-  def label_clicked(self, event, dict_save, count):
-    if event.button() == Qt.LeftButton:
-      self.check_label_changed(dict_save, count)
+
+  def change(self, window, new_name, old_name, res, count, labels): # Окно изменение названия игры
+   new_name_text = new_name.text()  # print(new_name_text, old_name, end=" , ")
+   if new_name_text != "" and new_name_text != old_name:
+    res["paths"][list(res["paths"])[count]] = new_name_text
+    labels[count].setText(new_name_text)  # res["paths"][dict_save.get_cur_app()] = new_name.get()
+    dict_save.save_jnson(res)
+   window.close()  # Закрытие окна после сохранения изменений
+
+   # Обновляем привязки событий
+   self.update_labels_bindings()
+
+  def change_name_label(self, count):  # Изменить название игры
+   window = QDialog()  # основа
+   window.setWindowTitle("change_name")  # заголовок
+   window.resize(350, 150)  # Ширина и высота
+   window.move(750, 400)  # x и y координаты на экране
  
+   labels = dict_save.return_labels()
+   res = dict_save.return_jnson()
+   old_name = res["paths"][list(res["paths"])[count]]  # Получить прежнее название игры
+ 
+   layout = QVBoxLayout()
+ 
+   new_name = QLineEdit()
+   new_name.setFixedWidth(250)  # Аналог width=25 в Tkinter (примерно)
+   new_name.setText(old_name)
+   new_name.setFocus()  # Фокусируемся на текстовом поле
+   layout.addWidget(new_name)
+ 
+   # Кнопка теперь является частью нового диалогового окна `window`
+   ok_button = QPushButton("Ok")
+   ok_button.clicked.connect(lambda: self.change(window, new_name, old_name, res, count, labels))
+   layout.addWidget(ok_button)
+ 
+   # Bind Enter key to change function
+   new_name.returnPressed.connect(lambda: self.change(window, new_name, old_name, res, count, labels))
+ 
+   window.setLayout(layout)
+   window.exec_()  # Показать модальное окно (аналог grid placement)
+
+  def label_clicked(self, event, count):
+   if event.button() == Qt.LeftButton:
+    self.check_label_changed(count)
+   if event.type() == QEvent.MouseButtonDblClick:#    print(11111)
+    self.change_name_label(count)# изменить название игры
+
   def check_mouse_press_button(self, count, state):
     res = dict_save.return_jnson()
     curr_name = dict_save.get_cur_app()
