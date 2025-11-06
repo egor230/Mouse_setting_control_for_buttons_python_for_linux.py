@@ -172,7 +172,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
    button.setFixedWidth(150)
    button.setStyleSheet("padding: 4px;")
    button_column_layout.addWidget(button)
-   button.clicked.connect(lambda _, i=idx: self.create_keyboard_with_editor(i))
+   button.clicked.connect(lambda _, i=idx: self.mouse_scrpt_keyboard_with_editor(i))
    self.buttons_script.append(button)
   
   control_widget = QWidget()
@@ -196,7 +196,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   control_layout.addWidget(self.move_element_down)
   
   self.Keyboard_button = QPushButton("Клавиатура")
-  self.Keyboard_button.clicked.connect(lambda: self.create_virtual_keyboard(dict_save))
+  button.clicked.connect(lambda _, i=idx: self.create_keyboard_with_editor(i))
   control_layout.addWidget(self.Keyboard_button)
   self.show_devices_button = QPushButton("Показать список устройств")
   control_layout.addWidget(self.show_devices_button)
