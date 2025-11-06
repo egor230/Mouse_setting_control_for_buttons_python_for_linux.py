@@ -1,7 +1,6 @@
 from Pyqt_libs_mouse import *
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/myenv/lib/python3.12/site-packages/PyQt5/Qt5/plugins"
 
-
 class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  def __init__(self):
   super().__init__()
@@ -173,7 +172,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
    button.setFixedWidth(150)
    button.setStyleSheet("padding: 4px;")
    button_column_layout.addWidget(button)
-   button.clicked.connect(lambda _, i=idx: self.create_keyboard_with_editor(dict_save, i))
+   button.clicked.connect(lambda _, i=idx: self.create_keyboard_with_editor(i))
    self.buttons_script.append(button)
   
   control_widget = QWidget()
