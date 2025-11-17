@@ -1161,10 +1161,10 @@ class MouseSettingAppMethods:
    self.current_keyboard_window = None
    self.tray_icon = None
    self.create_tray_icon()  # Создаем трей-иконку при запуске
-   # QTimer.singleShot(0, self.hide)  # Это гарантирует, что команда скрытия.
+   QTimer.singleShot(0, self.hide)  # Это гарантирует, что команда скрытия.
 
   def create_keyboard_with_editor(self, key):  # Создает клавиатуру с блокнотом для редактирования макросов для конкретной клавиши i
-   print(key)
+   print("keyboarи ")
    # Скрываем основное окно клавиатуры
    if self.current_keyboard_window:
     self.current_keyboard_window.hide()
@@ -1212,40 +1212,45 @@ class MouseSettingAppMethods:
    macro_window.show()
    self.keyboard_editor = macro_window
 
-  def kill_notebook(self, event, window, section):  # Обработчик закрытия окна - сохраняет скрипт и закрывает окно"""
-   if section != "keyboard_script":
-    key=section
-   else:
-     key = dict_save.get_last_key_keyboard_script()
-   # Получаем текст скрипта
-   script_text = window.text_widget.toPlainText().strip()
-   current_app = dict_save.get_cur_app()
+  def kill_notebook(self, event, window, section):
    res = dict_save.return_jnson()
-   # Создаём структуру, если её нет
-   res.setdefault("script_mouse", {}).setdefault(current_app, {}).setdefault(key, {})
-   # Проверяем, пустой ли скрипт
-   if not script_text or script_text == "#!/bin/bash":
-    # Удаляем ключ, если он существует
-    if key in res["script_mouse"][current_app]:
-     del res["script_mouse"][current_app][key]
+   current_app = dict_save.get_cur_app()
+   # читаем содержимое
+   context = window.text_widget.toPlainText().strip()
+   # определяем ключ
+
+   # обработка клавиатурных скриптов
+   if section == "keyboard_script":
+    key = dict_save.get_last_key_keyboard_script()
+    if context and context != "#!/bin/bash":
+     res.setdefault("keyboard_script", {}).setdefault(current_app, {}).setdefault("keys", {})
+     res["keyboard_script"][current_app]["keys"][key] = context
+    else:
+     if (current_app in res.get("keyboard_script", {}) and
+       key in res["keyboard_script"][current_app].get("keys", {})):
+      del res["keyboard_script"][current_app]["keys"][key]
+
+   # обработка мышиных скриптов
    else:
-     # Сохраняем скрипт
-    res["script_mouse"][current_app][key] = script_text
+    key = section
+    if context and context != "#!/bin/bash":
+     res.setdefault("script_mouse", {}).setdefault(current_app, {})
+     res["script_mouse"][current_app][key] = context
+    else:
+     if (current_app in res.get("script_mouse", {}) and
+       key in res["script_mouse"][current_app]):
+      del res["script_mouse"][current_app][key]
 
-    # Сохраняем изменения
-   dict_save.save_jnson(res)
+   dict_save.save_jnson(res)  # сохранить json
+   # показываем основную клавиатуру, если нужно
+   if section == "keyboard_script" and self.current_keyboard_window:
+    self.current_keyboard_window.show()
+    self.update_keyboard_display(dict_save)
 
-   # Закрываем окно
    if event:
     event.accept()
    else:
     window.close()
-
-   # Показываем основную клавиатуру снова ТОЛЬКО если это клавиатура
-   if section == "keyboard_script" and self.current_keyboard_window:
-    self.current_keyboard_window.show()
-    # Обновляем отображение основной клавиатуры
-    self.update_keyboard_display(dict_save)
   def mouse_scrpt_keyboard_with_editor(self, i):  # Создает клавиатуру с блокнотом для редактирования макросов для кнопки мыши i
    # Скрываем основное окно клавиатуры
    if self.current_keyboard_window:
@@ -1253,9 +1258,11 @@ class MouseSettingAppMethods:
    # Закрываем предыдущее окно редактора, если оно открыто
    if self.keyboard_editor:
     self.keyboard_editor.close()
+   print(i)
    key = defaut_list_mouse_buttons[i]
    # Создаем окно с блокнотом сверху и клавиатурой снизу
    macro_window = QMainWindow(self)
+   print(key)
    macro_window.setWindowTitle(f"Запись макроса для клавиши мыши {key}")
    macro_window.setGeometry(140, 480, 1410, 600)
    central_widget = QWidget()
@@ -1269,10 +1276,10 @@ class MouseSettingAppMethods:
    res = dict_save.return_jnson()
    current_app = res["current_app"]
    # print(current_app)
-   dict_save.set_last_key_keyboard_script(key)  # Используем тот же метод для простоты, но логика разделена в kill_notebook
+   # dict_save.set_last_key_keyboard_script(key)  # Используем тот же метод для простоты, но логика разделена в kill_notebook
    content = res.get("script_mouse", {}).get(current_app, {}).get(key, "")
    if content:
-    print(content)
+    # print(content)
     macro_window.text_widget.setPlainText(content)
    else:
     # Инициализируем структуры если их нет
@@ -1284,7 +1291,6 @@ class MouseSettingAppMethods:
    cursor.movePosition(QTextCursor.End)
    macro_window.text_widget.setTextCursor(cursor)
 
-   # self.dict_save = dict_save # ← Добавьте эту строку!
    # 2. Клавиатура (KeyboardWidget) - снизу
    def add_key_command_local(key_local):  # """Функция для вставки команд xte при нажатии клавиш"""
     add_text_pytq5(key_local, macro_window.text_widget)
@@ -1294,9 +1300,10 @@ class MouseSettingAppMethods:
    # Переопределяем обработчик закрытия окна для сохранения
    macro_window.closeEvent = lambda event: self.kill_notebook(event, macro_window, key)
    macro_window.show()
-#   self.keyboard_editor = macro_window
+   self.keyboard_editor = macro_window
 
   def create_virtual_keyboard(self, dict_save, callback_record_macro=None):  # Создает виртуальную клавиатуру без блокнота"""
+   print("0000000000")
    # Закрываем предыдущее окно клавиатуры, если оно открыто
    if self.current_keyboard_window:
     self.current_keyboard_window.close()

@@ -166,6 +166,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   
   button_column_layout = QVBoxLayout()
   button_column_layout.setSpacing(5)
+
   dict_save.save_labels(lab)
   for idx, name in enumerate(LIST_MOUSE_BUTTONS):# Кнопки для скриптов
    button = QPushButton(name)
@@ -196,7 +197,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   control_layout.addWidget(self.move_element_down)
   
   self.Keyboard_button = QPushButton("Клавиатура")
-  button.clicked.connect(lambda _, i=idx: self.create_keyboard_with_editor(i))
+  self.Keyboard_button.clicked.connect(lambda _, i=idx: self.create_keyboard_with_editor(i))
   control_layout.addWidget(self.Keyboard_button)
   self.show_devices_button = QPushButton("Показать список устройств")
   control_layout.addWidget(self.show_devices_button)
