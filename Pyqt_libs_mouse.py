@@ -838,14 +838,6 @@ def set_list_box(dict_save, index=0):
  dict_save.set_box_values()  # Установить значения выпадающего списка.
  dict_save.set_values_box()
 
-def hide_window():  # Функция для сворачивания окна в трей
- root.withdraw()  # Скрываем окно
- icon.run()  # Запускаем значок в трее
-
-def quit_app(icon, item):  # Функция для выхода из приложения
- icon.stop()  # Останавливаем значок
- root.destroy()  # Закрываем приложение
-
 def reorder_keys_in_dict(res, idx1, idx2):  # ИЗМЕНЕНО: Новая/доработанная функция (self для метода, если нужно; или статичная)
  # ИЗМЕНЕНО: Проверки на валидность
  if 'paths' not in res or not isinstance(res['paths'], dict):
@@ -1257,8 +1249,7 @@ class MouseSettingAppMethods:
     self.current_keyboard_window.hide()
    # Закрываем предыдущее окно редактора, если оно открыто
    if self.keyboard_editor:
-    self.keyboard_editor.close()
-   print(i)
+    self.keyboard_editor.close()#   print(i)
    key = defaut_list_mouse_buttons[i]
    # Создаем окно с блокнотом сверху и клавиатурой снизу
    macro_window = QMainWindow(self)
@@ -1275,8 +1266,7 @@ class MouseSettingAppMethods:
    # Загружаем существующий скрипт для этой клавиши, если он есть
    res = dict_save.return_jnson()
    current_app = res["current_app"]
-   # print(current_app)
-   # dict_save.set_last_key_keyboard_script(key)  # Используем тот же метод для простоты, но логика разделена в kill_notebook
+   # print(current_app) # dict_save.set_last_key_keyboard_script(key)  # Используем тот же метод для простоты, но логика разделена в kill_notebook
    content = res.get("script_mouse", {}).get(current_app, {}).get(key, "")
    if content:
     # print(content)
@@ -1405,6 +1395,9 @@ class MouseSettingAppMethods:
    if diff:
     reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?",
                                  QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
+    if new_data["current_app"] =="":
+     new_data["current_app"]=dict_save.get_current_path_game()
+
     if reply == QMessageBox.Save:
      dict_save.write_to_file(new_data)
    try:
@@ -1426,7 +1419,7 @@ class MouseSettingAppMethods:
    while not dict_save.thread_exit:  # time.sleep(3)   #print(dict_save.get_flag_thread())
     new_path_game = check_current_active_window(dict_save, games_checkmark_paths)  # Текущая директория активного окна игры.
     # Если никакой игры не запущено мы возвращаем предыдущую конфигурацию это директория. #   # print(new_path_game)#
-    if game != new_path_game :  # игра которая сейчас на активной вкладке активного окна    #
+    if game != new_path_game:  # игра которая сейчас на активной вкладке активного окна    #
      dict_save.set_cur_app(new_path_game)  # # dict_save.set_current_path_game(new_path_game)
     if dict_save.get_current_path_game() != dict_save.get_cur_app():  # Если у нас текущий путь к игре отличает от начального    # print(new_path_game)
      for t in list_threads:
@@ -1453,7 +1446,7 @@ class MouseSettingAppMethods:
    t2.start()  # print("cll")
 
   def prepare(self, dict_save, res, games_checkmark_paths):  # функция эмуляций.  # games_checkmark_paths - Список игр с галочкой
-   id = res["id"]  # Получаем id устройства  print(id)
+   id = res["id"]  # Получаем id устройства   print(id)#   input()
    old = dict_save.get_default_id_value(id).split()  # Получить конфигурацию по умолчанию
    game = str(res['current_app'])
    key = res["key_value"][game]

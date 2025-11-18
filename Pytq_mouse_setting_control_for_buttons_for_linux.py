@@ -200,6 +200,8 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   self.Keyboard_button.clicked.connect(lambda _, i=idx: self.create_keyboard_with_editor(i))
   control_layout.addWidget(self.Keyboard_button)
   self.show_devices_button = QPushButton("Показать список устройств")
+  self.show_devices_button.clicked.connect(lambda: show_list_id_callback())
+
   control_layout.addWidget(self.show_devices_button)
   
   if os.getgid() != 0:
