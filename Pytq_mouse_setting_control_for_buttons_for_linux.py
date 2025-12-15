@@ -1,6 +1,4 @@
 from Pyqt_libs_mouse import *
-os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/mnt/807EB5FA7EB5E954/софт/виртуальная машина/linux must have/python_linux/Project/myenv/lib/python3.12/site-packages/PyQt5/Qt5/plugins"
-
 class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  def __init__(self):
   super().__init__()
@@ -106,8 +104,8 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   
   self.scroll_area = QScrollArea()
   self.scroll_area.setWidgetResizable(True)
-  self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-  self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+  self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+  self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
   self.scroll_area.setFixedHeight(280)
   
   self.scroll_widget = QWidget()
@@ -244,7 +242,23 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   self.start_startup_now(dict_save)# Запуск эмуляции.
   
 if __name__ == "__main__":
- app = QApplication(sys.argv)
- window = MouseSettingApp()
- window.show()
- sys.exit(app.exec_())
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    palette = app.palette()
+    palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+    palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+    app.setPalette(palette)
+    window = MouseSettingApp()
+    window.show()
+    sys.exit(app.exec())
