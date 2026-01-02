@@ -1215,8 +1215,7 @@ class MouseSettingAppMethods:
         macro_window.show()
         self.keyboard_editor = macro_window
 
-    def create_virtual_keyboard(self, dict_save, callback_record_macro=None):  # Создает виртуальную клавиатуру без блокнота"""
-        print("0000000000")
+    def create_virtual_keyboard(self, dict_save, callback_record_macro=None):  # Создает виртуальную клавиатуру без блокнота
         # Закрываем предыдущее окно клавиатуры, если оно открыто
         if self.current_keyboard_window:
             self.current_keyboard_window.close()
@@ -1316,13 +1315,12 @@ class MouseSettingAppMethods:
         new_data = dict_save.return_jnson()
         diff = deepdiff.DeepDiff(old_data, new_data)
         if diff:
-            reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?",
-                                         QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
-            if new_data["current_app"] =="":
-                new_data["current_app"]=dict_save.get_current_path_game()
+         reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?", QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
+         if new_data["current_app"] =="":
+          new_data["current_app"]=dict_save.get_current_path_game()
 
-            if reply == QMessageBox.StandardButton.Save:
-                dict_save.write_to_file(new_data)
+         if reply == QMessageBox.StandardButton.Save:
+            dict_save.write_to_file(new_data)
         try:
             os.kill(os.getpid(), signal.SIGKILL)  # Самоубийство через kill -9
         except:

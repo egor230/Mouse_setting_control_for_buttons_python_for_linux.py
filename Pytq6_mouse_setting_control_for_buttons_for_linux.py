@@ -1,4 +1,4 @@
-from Pyqt_libs_mouse import *
+from Pyqt6_libs_mouse import *
 class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  def __init__(self):
   super().__init__()
@@ -195,7 +195,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   control_layout.addWidget(self.move_element_down)
   
   self.Keyboard_button = QPushButton("Клавиатура")
-  self.Keyboard_button.clicked.connect(lambda _, i=idx: self.create_keyboard_with_editor(i))
+  self.Keyboard_button.clicked.connect(lambda: self.create_virtual_keyboard(dict_save))
   control_layout.addWidget(self.Keyboard_button)
   self.show_devices_button = QPushButton("Показать список устройств")
   self.show_devices_button.clicked.connect(lambda: show_list_id_callback())
