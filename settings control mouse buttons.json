@@ -2,28 +2,30 @@
   "games_checkmark": {
     "C:/Windows/explorer.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": true,
-    "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": true,
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": true,
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": true,
-    "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": true
+    "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": true,
+    "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": true
   },
   "paths": {
     "C:/Windows/explorer.exe": "По умолчанию",
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": "FarCry",
-    "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": "Need for speed mw",
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": "Splinter Cell - Chaos Theory",
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": "Alien Isolation",
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": "Oblivion",
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": "Quantum Break",
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": "Serious Sam",
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": "Cold Fear",
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": "Medal of Honor Allied Assault",
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": "SeriousSam",
-    "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": "Dark Messiah of Might and Magic"
+    "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": "Dark Messiah of Might and Magic",
+    "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": "Need for speed mw"
   },
   "key_value": {
     "C:/Windows/explorer.exe": [
@@ -42,15 +44,6 @@
       "F",
       "C",
       "RBUTTON",
-      "SCROLL_DOWN"
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": [
-      "LBUTTON",
-      "RBUTTON",
-      "WHEEL_MOUSE_BUTTON",
-      " ",
-      " ",
-      "SCROLL_UP",
       "SCROLL_DOWN"
     ],
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": [
@@ -75,6 +68,15 @@
       "LBUTTON",
       "W",
       "E",
+      "F",
+      "C",
+      "RBUTTON",
+      "SCROLL_DOWN"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": [
+      "LBUTTON",
+      "W",
+      " ",
       "F",
       "C",
       "RBUTTON",
@@ -124,6 +126,15 @@
       "C",
       "RBUTTON",
       "SCROLL_DOWN"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": [
+      "LBUTTON",
+      "RBUTTON",
+      "WHEEL_MOUSE_BUTTON",
+      " ",
+      " ",
+      "W",
+      "SCROLL_DOWN"
     ]
   },
   "mouse_press": {
@@ -137,15 +148,6 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": [
       false,
       false,
       false,
@@ -173,6 +175,15 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": [
       false,
       false,
       false,
@@ -225,6 +236,15 @@
       false,
       false,
       false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
     ]
   },
   "id": 9,
@@ -251,6 +271,9 @@
     },
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown R\"\nxte \"keyup R\"\nxte \"keydown F\"\nxte \"keyup F\"\n"
+    },
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": {
+      "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\nxte \"keydown F\"\nsleep 0.23\nxte \"keyup F\""
     }
   },
   "keyboard_script": {
