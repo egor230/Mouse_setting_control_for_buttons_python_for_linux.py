@@ -902,12 +902,12 @@ def add_text_pytq5(key, text_widget):
     if k in mouse_map:
         down, up = mouse_map[k]
         sc = f'xte "{down}"\n' \
-             f'sleep 0.23\n' \
+             f'sleep 0.02\n' \
              f'xte "{up}"\n'
     else:
         key_for_xte = k.replace('"', '\\"')
         sc = f'xte "keydown {key_for_xte}"\n' \
-             f'sleep 0.23\n' \
+             f'sleep 0.02\n' \
              f'xte "keyup {key_for_xte}"\n'
 
     if text_widget is not None:
@@ -924,22 +924,25 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
                                "SCROLL_DOWN": Button_Controller.scroll_down}  # print(list_mouse_button_names)
     res = dict_save.return_jnson()  # print(key)
     try:
-        for i in string_keys:  # print(i)
-            a = list_buttons[i]  # объект  for i in string_keys:   # print(i)
-            number_key = list_buttons[a]  # получаем номер кнопки в списке.  # and len(str(key[number_key])) > 1:    # print(key) # print(button)
-            if str(key[number_key]) != ' ' and str(key[number_key]) != " " and \
-               str(i) == str(button) and list_buttons[i].get_hook_flag_mouse() == True:  # это кнопка нажата?    print(key[number_key] )
-                if check_mouse_script(res, dict_save, defaut_list_mouse_buttons, number_key):  # На эту кнопку назначен скрипт
-                    key_mouse_script = res["script_mouse"][dict_save.get_cur_app()][defaut_list_mouse_buttons[number_key]]
-                    thread1 = threading.Thread(target=execute_script, args=(key_mouse_script,))
-                    thread1.daemon = True
-                    thread1.start()
-                else:  # print("else") # кнопки мыши     print(key)
-                    if key[number_key] in list(list_mouse_button_names.keys()):  # если нужно эмулировать кнопку мыши
-                        mouse_key(key, number_key, press_button, list_mouse_button_names, pres, a)  # print("mnouse")
-                    # иначе клавиши клавиатуры.
-                    else:  #
-                        keyboard_press_button(key, pres, number_key, a, press_button)  # Работа с клавой.
+     for i in string_keys:  # print(i)
+      a = list_buttons[i]  # объект  for i in string_keys:   # print(i)
+      number_key = list_buttons[a]  # получаем номер кнопки в списке.  # and len(str(key[number_key])) > 1:
+      if str(key[number_key]) != ' ' and str(key[number_key]) != " " and \
+        str(i) == str(button) and list_buttons[i].get_hook_flag_mouse() == True:  # это кнопка нажата?
+        # print(button)
+        if check_mouse_script(res, dict_save, defaut_list_mouse_buttons, number_key):  # На эту кнопку назначен скрипт
+          key_mouse_script = res["script_mouse"][dict_save.get_cur_app()][defaut_list_mouse_buttons[number_key]]
+          # print(key_mouse_script )
+          thread1 = threading.Thread(target=execute_script, args=(key_mouse_script,))
+          thread1.daemon = True
+          thread1.start()
+        else:  # print("else") # кнопки мыши     print(key)
+         if key[number_key] in list(list_mouse_button_names.keys()):  # если нужно эмулировать кнопку мыши
+          # print("mouse")
+          mouse_key(key, number_key, press_button, list_mouse_button_names, pres, a)
+          # иначе клавиши клавиатуры.
+         else:  #
+           keyboard_press_button(key, pres, number_key, a, press_button)  # Работа с клавой.
     except Exception as e:
         save_dict.write_in_log(e)
         pass

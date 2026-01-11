@@ -4,8 +4,10 @@
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": true,
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": true,
@@ -18,8 +20,10 @@
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": "FarCry",
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": "Splinter Cell - Chaos Theory",
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": "Alien Isolation",
+    "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": "Tomb Raider",
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": "Oblivion",
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": "Quantum Break",
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia2",
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": "Serious Sam",
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": "Cold Fear",
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": "Medal of Honor Allied Assault",
@@ -42,7 +46,7 @@
       "W",
       " ",
       "F",
-      "C",
+      "Q",
       "RBUTTON",
       "SCROLL_DOWN"
     ],
@@ -64,6 +68,15 @@
       "SCROLL_UP",
       "SCROLL_DOWN"
     ],
+    "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": [
+      "LBUTTON",
+      "W",
+      "MBUTTON",
+      "E",
+      "C",
+      "RBUTTON",
+      "SPACE"
+    ],
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": [
       "LBUTTON",
       "W",
@@ -79,6 +92,15 @@
       " ",
       "F",
       "C",
+      "RBUTTON",
+      "SCROLL_DOWN"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
+      "LBUTTON",
+      "W",
+      " ",
+      "F",
+      "Q",
       "RBUTTON",
       "SCROLL_DOWN"
     ],
@@ -174,6 +196,15 @@
       false,
       false
     ],
+    "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": [
       false,
       false,
@@ -184,6 +215,15 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
       false,
       false,
       false,
@@ -263,6 +303,12 @@
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown space\"\nsleep 0.23\nxte \"keyup space\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n"
     },
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": {
+      "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\nxte \"keydown F\"\nsleep 0.23\nxte \"keyup F\""
+    },
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": {
+      "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\nxte \"keydown F\"\nsleep 0.23\nxte \"keyup F\""
+    },
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown W\"\nsleep 1.23\nxte \"keydown space\"\nsleep 0.23\nxte \"keyup space\"\nxte \"keyup W\"\n"
     },
@@ -272,8 +318,11 @@
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown R\"\nxte \"keyup R\"\nxte \"keydown F\"\nxte \"keyup F\"\n"
     },
-    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": {
-      "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\nxte \"keydown F\"\nsleep 0.23\nxte \"keyup F\""
+    "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": {
+      "XBUTTON2": "#!/bin/bash\nxte \"keydown space\"\nsleep 0.23\nxte \"keyup space\"\nxte \"keydown F\"\nsleep 0.23\nxte \"keyup F\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"",
+      "WHEEL_MOUSE_BUTTON": "#!/bin/bash\nxte \"keydown E\"\nsleep 10.23\nxte \"keyup E\"",
+      "SCROLL_DOWN": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"",
+      "SCROLL_UP": "#!/bin/bash\nxte \"keydown E\"\nsleep 10.02\nxte \"keyup E\""
     }
   },
   "keyboard_script": {
@@ -303,6 +352,13 @@
       "keys": {
         "up": "#!/bin/bash\nxte \"keydown W\"",
         "Down": "#!/bin/bash\nxte \"keyup W\""
+      }
+    },
+    "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": {
+      "keys": {
+        "L": "#!/bin/bash\nxte \"keydown Left\"\nsleep 0.02\nxte \"keyup Left\"\nxte \"keydown Right\"\nsleep 0.02\nxte \"keyup Right\"\nxte \"keydown Left\"\nsleep 0.02\nxte \"keyup Left\"\nxte \"keydown Right\"\nsleep 0.02\nxte \"keyup Right\"\nxte \"keydown Left\"\nsleep 0.02\nxte \"keyup Left\"\nxte \"keydown Right\"\nsleep 0.02\nxte \"keyup Right\"\nxte \"keydown Left\"\nsleep 0.02\nxte \"keyup Left\"\nxte \"keydown Right\"\nsleep 0.02\nxte \"keyup Right\"\nxte \"keydown Left\"\nsleep 0.02\nxte \"keyup Left\"\nxte \"keydown Right\"\nsleep 0.02\nxte \"keyup Right\"",
+        "D": "#!/bin/bash\nxte \"keydown Right\"\nsleep 0.02\nxte \"keydown space\"\nsleep 0.02\nxte \"keyup space\"\nxte \"keyup Right\"",
+        "A": "#!/bin/bash\nxte \"keydown Left\"\nsleep 0.02\nxte \"keydown space\"\nsleep 0.02\nxte \"keyup space\"\"\nsleep 0.02\nxte \"keyup Left\""
       }
     }
   }
