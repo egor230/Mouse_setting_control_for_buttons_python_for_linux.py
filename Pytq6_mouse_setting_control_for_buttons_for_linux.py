@@ -41,33 +41,43 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   devices = [InputDevice(path) for path in list_devices()]
   for dev in devices:
    if "Keyboard\"" in str(dev) and ' phys ' in str(dev):
-    self.board = dev#    print(dev)
+    self.board = dev#
+    print(dev)
     break
   if self.board is None:
    print("Клавиатура не найдена!")
-  def on_press(key):  # обработчик клави.  # print(key )
+
+  def on_press(key):  # обработчик клави.
    current_app = dict_save.get_cur_app()  # Получаем текущую игру
-   res = dict_save.return_jnson()
-   for event in self.board.read_loop():  # Подписываемся на события
-    if event.type == ecodes.EV_KEY:
-     key_event = categorize(event)
-     if key_event.keystate == key_event.key_down: # Получаем название клавиши и преобразуем его
-      key_name = key_event.keycode
-      simple_name = simple_key_map.get(key_name, key_name)  # Если клавиша не в словаре, оставляем как есть
-      if simple_name in ["7\nHome", "8\n↑", "9\nPgUp", "4\n←", "5\n", "6\n→", "1\nEnd", "2\n↓", "KP_Down", "3\nPgDn"]:
-       key = simple_name
-       break
-    if "keys" in res.get("keyboard_script", {}).get(current_app, {}):  # Проверяем наличие текущего приложения в "keyboard_script"
+   res = dict_save.return_jnson()  # print(key)
+
+   # Чтобы избежать ошибки BlockingIOError, используем try
+   try:
+    for event in self.board.read():  # Подписываемся на события
+     if event.type == ecodes.EV_KEY:
+      key_event = categorize(event)
+      if key_event.keystate == key_event.key_down:  # Получаем название клавиши и преобразуем его
+       key_name = key_event.keycode
+       simple_name = simple_key_map.get(key_name, key_name)  # Если клавиша не в словаре, оставляем как есть
+       if simple_name in ["7\nHome", "8\n↑", "9\nPgUp", "4\n←", "5\n", "6\n→", "1\nEnd", "2\n↓", "KP_Down", "3\nPgDn"]:
+        key = simple_name
+        break
+   except BlockingIOError:
+    pass  # Если данных в буфере evdev нет, просто идем дальше к обработке pynput
+#  print(key)
+   if "keyboard_script" in res and current_app in res["keyboard_script"]:
+    if "keys" in res["keyboard_script"][current_app]:  # Проверяем наличие текущего приложения в "keyboard_script"
      keys_active = res["keyboard_script"][current_app]["keys"].keys()  # Получаем полное имя клавиши без нормализации
-     key = str(key).replace(" ", "").replace('\'', '').replace("Key.", "").replace("KEY.", "").lower()  # Очищаем от ненужного     print(key)
+     key = str(key).replace(" ", "").replace("'", "").replace("Key.", "").replace("KEY.", "").lower()  # Очищаем от ненужного
+ #    print(key)
      for i in list(keys_active):  # Получаем клавиши которые являются макросами.
       i = str(i)
       if key in ru_to_en.keys():  # нужно перевести нужно перевести русскую клавишу в английскую.
        key = ru_to_en[key]
       if key.lower() == i.lower():  # теперь нужно перевести ее в нижней регистр.
-       script = res["keyboard_script"][current_app]["keys"][i]  # print(script)
+       script = res["keyboard_script"][current_app]["keys"][i]  #  print(script)
        listener.stop()
-       t = threading.Thread(target=lambda: subprocess.call(['bash', '-c', script]))
+       t = threading.Thread(target=lambda: subprocess.call(["bash", "-c", script]))
        t.start()
        t.join()
        start_listener()
