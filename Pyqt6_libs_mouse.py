@@ -241,6 +241,7 @@ class save_dict:
 
         # Выполнение вышеуказанной команды shell в подпроцессе и декодирование результата в строку.
         id_list = subprocess.check_output(['bash', '-c', get_ids]).decode().splitlines()
+        # print(id_list)
         button_map = {}  # Создание словаря для хранения соответствия между идентификаторами устройств и их кнопками.
 
         # Перебор всех элементов в списке id устройств.
@@ -460,13 +461,13 @@ def get_active_window_exe(user, id_active):
         result = subprocess.run(['ps', 'aux'], stdout=subprocess.PIPE, text=True).stdout
         lines = result.split('\n')
         for line in lines:  # Фильтруем строки по пользователю и PID
-            if user in line:  # Проверяем наличие PID и имени пользователя
-                parts = line.split(maxsplit=10)  # Разделяем строку, предполагая стандартный формат ps aux
-                exe_path = parts[10]
-                pid = int(parts[1])
-                if id_active == pid:  # "PortProton" in cmdline:# and id_active==pid:
-                    # print(exe_path)     # print(line)
-                    return exe_path
+         if user in line:  # Проверяем наличие PID и имени пользователя
+          parts = line.split(maxsplit=10)  # Разделяем строку, предполагая стандартный формат ps aux
+          exe_path = parts[10]
+          pid = int(parts[1])
+          if id_active == pid:  # "PortProton" in cmdline:# and id_active==pid:
+              # print(exe_path)     # print(line)
+              return exe_path
         output = subprocess.check_output(['ps', '-eo', 'pid,user,args'], text=True)
         for line in output.strip().split('\n')[1:]:
             parts = line.split(None, 2)
@@ -624,20 +625,20 @@ class work_key:
     exit 0 '''
         key1 = key.lower()
         if key1 in self.keys_list or key in self.keys_list1:
-            if number_key != 3 or number_key != 4:
-                thread0 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))  # thread.daemon = True  # Установка атрибута daemon в значение True
-                thread0.daemon = True
-                thread0.start()
-                return 0
-            if number_key == 3 or 4:
-                thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))  # thread.daemon = True  # Установка атрибута daemon в значение True
-                thread.start()
-                thread.join()
-                thread1 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', release.format(key)]))
-                # thread1.daemon
-                thread1.start()  # print(key1)     # subprocess.call(['bash', '-c', press.format(key1)])
-                thread1.join()
-                return 0
+         if number_key != 3 or number_key != 4:
+           thread0 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))  # thread.daemon = True  # Установка атрибута daemon в значение True
+           thread0.daemon = True
+           thread0.start()
+           return 0
+         if number_key == 3 or 4:
+           thread = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))  # thread.daemon = True  # Установка атрибута daemon в значение True
+           thread.start()
+           thread.join()
+           thread1 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', release.format(key)]))
+           # thread1.daemon
+           thread1.start()  # print(key1)     # subprocess.call(['bash', '-c', press.format(key1)])
+           thread1.join()
+           return 0
         else:
             keybord_from.press(KEYS[key[number_key]])
 
@@ -797,12 +798,12 @@ def check_star():
     a = []
     try:
         for process in process_list:  # print(process['name'])
-            if 'Mouse_setting_control_for_buttons_python_for_linux' in process['name']:
-                a.append(process)
-                if len(process_list) > 1:
-                    return False
-                else:
-                    return True
+         if 'Mouse_setting_control_for_buttons_python_for_linux' in process['name']:
+          a.append(process)
+          if len(process_list) > 1:
+           return False
+          else:
+           return True
     except psutil.NoSuchProcess:
         pass
 
@@ -1320,7 +1321,7 @@ class MouseSettingAppMethods:
         if diff:
          reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?", QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
          if new_data["current_app"] =="":
-          new_data["current_app"]=dict_save.get_current_path_game()
+          new_data["current_app"]="C:/Windows/explorer.exe"
 
          if reply == QMessageBox.StandardButton.Save:
             dict_save.write_to_file(new_data)
