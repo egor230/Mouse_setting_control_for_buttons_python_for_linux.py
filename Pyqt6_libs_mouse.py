@@ -29,8 +29,8 @@ KEYS = {" ": 0x0, "LBUTTON": 'mouse left', "RBUTTON": 'mouse right', "WHEEL_MOUS
         "Shift_L": "Shift_L", "CONTROL": "CONTROL", "MENU": 0x12, "PAUSE": 0x13, "CAPITAL": 0x14,
         "KANA": 0x15, "JUNJA": 0x17, "FINAL": 0x18, "KANJI": 0x19, "ESCAPE": 0x1B,
         "CONVERT": 0x1C, "NONCONVERT": 0x1D, "ACCEPT": 0x1E, "MODECHANGE": 0x1F, "SPACE": "space",
-        "PRIOR": 0x21, "NEXT": 0x22, "END": "0x23", "HOME": "Home", "LEFT": 0x25, "UP": 0x26,
-        "RIGHT": 0x27, "DOWN": 0x28, "SELECT": 0x29, "PRINT": 0x2A, "EXECUTE": 0x2B, "SNAPSHOT": 0x2C,
+        "PRIOR": 0x21, "NEXT": 0x22, "END": "0x23", "HOME": "Home", "LEFT": "Left", "UP": "Up",
+        "RIGHT": "Right", "DOWN": "Down", "SELECT": 0x29, "PRINT": 0x2A, "EXECUTE": 0x2B, "SNAPSHOT": 0x2C,
         "INSERT": 0x2D, "DELETE": "Delete", "HELP": 0x2F, "LWIN": "Super_L", "RWIN": "Super_R",
 
         "KEY0": 0, "KEY1": 1, "KEY2": 2, "KEY3": 3, "KEY4": 4, "KEY5": 5, "KEY6": 6,
@@ -615,15 +615,16 @@ class work_key:
 
     def key_press(self, key, number_key):  # Нажать.
         press = '''#!/bin/bash
-    xte 'keydown {0}'
-    exit 0 '''
-
+             xte 'keydown {0}'
+             exit 0 '''
+         
         release = '''#!/bin/bash
-    xte 'keyup {0}'
-    sleep 0.1    # Небольшая пауза для надёжности
-    xte 'keyup {0}'
-    exit 0 '''
+             xte 'keyup {0}'
+             sleep 0.1    # Небольшая пауза для надёжности
+             xte 'keyup {0}'
+             exit 0 '''
         key1 = key.lower()
+        # print(key1)
         if key1 in self.keys_list or key in self.keys_list1:
          if number_key != 3 or number_key != 4:
            thread0 = threading.Thread(target=lambda: subprocess.call(['bash', '-c', press.format(key)]))  # thread.daemon = True  # Установка атрибута daemon в значение True

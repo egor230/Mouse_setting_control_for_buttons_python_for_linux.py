@@ -39,14 +39,17 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   dict_save.set_prev_game(res["current_app"])
   dict_save.set_current_app_path(res['current_app'])
   devices = [InputDevice(path) for path in list_devices()]
-  for dev in devices:
-   if "Keyboard\"" in str(dev) and ' phys ' in str(dev):
-    self.board = dev#
-    print(dev)
-    break
-  if self.board is None:
-   print("Клавиатура не найдена!")
-
+  # print(devicesс
+  try:
+   for dev in devices:
+    if "Keyboard\"" in str(dev) and ' phys ' in str(dev):
+     self.board = dev#
+     print(dev)
+     break
+   if self.board is None:
+    print("Клавиатура не найдена!")
+  except Exception as e:
+   pass
   def on_press(key):  # обработчик клави.
    current_app = dict_save.get_cur_app()  # Получаем текущую игру
    res = dict_save.return_jnson()  # print(key)
