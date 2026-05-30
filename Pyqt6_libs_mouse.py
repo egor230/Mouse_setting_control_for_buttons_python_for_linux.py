@@ -908,6 +908,8 @@ def add_text_pytq5(key, text_widget):
              f'xte "{up}"\n'
     else:
         key_for_xte = k.replace('"', '\\"')
+        if "?\n/" in key_for_xte:
+         key_for_xte="slash"
         sc = f'xte "keydown {key_for_xte}"\n' \
              f'sleep 0.02\n' \
              f'xte "keyup {key_for_xte}"\n'
