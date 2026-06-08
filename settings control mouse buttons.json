@@ -67,7 +67,7 @@
     ],
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": [
       "LBUTTON",
-      "UP",
+      "W",
       "WHEEL_MOUSE_BUTTON",
       "C",
       " ",
@@ -106,7 +106,7 @@
       "W",
       "E",
       "F",
-      "C",
+      "RBUTTON",
       "RBUTTON",
       "SCROLL_DOWN"
     ],
@@ -347,7 +347,7 @@
       false
     ]
   },
-  "id": 9,
+  "id": 6,
   "current_app": "C:/Windows/explorer.exe",
   "script_mouse": {
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": {
@@ -371,7 +371,8 @@
       "SCROLL_UP": "#!/bin/bash\nxte \"keydown E\"\nsleep 10.02\nxte \"keyup E\""
     },
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": {
-      "XBUTTON2": "#!/bin/bash\nxte \"keydown space\"\nsleep 0.23\nxte \"keyup space\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n"
+      "XBUTTON2": "#!/bin/bash\nxte \"keydown space\"\nsleep 0.23\nxte \"keyup space\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n",
+      "XBUTTON1": "#!/bin/bash\nxte \"keydown C\"\nsleep 0.02\nxte \"keyup C\"\nxte \"mouseclick 3\"  # 3 = правый клика"
     },
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\nxte \"keydown F\"\nsleep 0.23\nxte \"keyup F\""
@@ -392,7 +393,7 @@
       "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown R\"\nxte \"keyup R\"\nxte \"keydown F\"\nxte \"keyup F\"\n"
     },
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": {
-      "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.02\nxte \"keyup R\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown G\"\nsleep 0.02\nxte \"keyup G\""
+      "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.02\nxte \"keyup R\"\nxte \"keydown G\"\nsleep 0.02\nxte \"keyup G\"\nxte \"keydown slash\"\nsleep 0.02\nxte \"keyup slash\""
     }
   },
   "keyboard_script": {
