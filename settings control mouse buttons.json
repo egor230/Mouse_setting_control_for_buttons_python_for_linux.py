@@ -8,7 +8,7 @@
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": true,
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": true,
-    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": true,
@@ -110,7 +110,7 @@
       "RBUTTON",
       "SCROLL_DOWN"
     ],
-    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": [
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": [
       "LBUTTON",
       "W",
       " ",
@@ -265,7 +265,7 @@
       false,
       false
     ],
-    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": [
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": [
       false,
       false,
       false,
@@ -374,7 +374,7 @@
       "XBUTTON2": "#!/bin/bash\nxte \"keydown space\"\nsleep 0.23\nxte \"keyup space\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n",
       "XBUTTON1": "#!/bin/bash\nxte \"keydown C\"\nsleep 0.02\nxte \"keyup C\"\nxte \"mouseclick 3\"  # 3 = правый клика"
     },
-    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": {
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\nxte \"keydown F\"\nsleep 0.23\nxte \"keyup F\""
     },
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": {
