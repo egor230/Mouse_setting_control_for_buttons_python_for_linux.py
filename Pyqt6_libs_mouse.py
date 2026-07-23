@@ -434,27 +434,181 @@ def is_window_minimized(window_id):
     except Exception:
         return True  # Если ошибка, считаем окно свернутым
 
+  # Регулярное выражение для поиска путей к .exe файлам
+  # print("11")
+  # pattern = re.compile(r'.*\.(exe|sh)$', re.IGNORECASE)
+  # for proc in psutil.process_iter(['pid', 'username', 'cmdline']):
+  #  if proc.info['username'] == user and proc.info['cmdline']:
+  #   for arg in proc.info['cmdline']:
+  #      arg_clean = arg.replace('\\', '/').strip('"')  # Приводим к нормальному виду
+  #      match = pattern.search(arg_clean)
+  #      if match:
+  #          file_path = match.group(0)
+  #          data_dict[proc.info['pid']] = file_path
+  #          threads = proc.threads()
+  #          for thread in threads:
+  #              data_dict[thread.id] = file_path
 def get_pid_and_path_window():  # Получаем идентификатор активного окна
-    try:  # Регулярное выражение для поиска путей к .exe файлам
-        pattern = re.compile(r'(\/mnt\/.*?\.exe)|([A-Z]:\\.*?\.exe)|(.*?\.sh)', re.IGNORECASE)
-        data_dict = {}  # Один проход по всем процессам пользователя
-        for proc in psutil.process_iter(['pid', 'username', 'cmdline']):
-            if proc.info['username'] == user and proc.info['cmdline']:
-                for arg in proc.info['cmdline']:
-                    arg_clean = arg.replace('\\', '/').strip('"')  # Приводим к нормальному виду
-                    match = pattern.search(arg_clean)
-                    if match:
-                        file_path = match.group(0)
-                        data_dict[proc.info['pid']] = file_path
-                        threads = proc.threads()
-                        for thread in threads:
-                            data_dict[thread.id] = file_path
-        if not data_dict:  # Не найдено процессов с .exe для пользователя.
-            return {}
-        # update_dict= replace_path_in_dict(data_dict) # Обновляем словарь с помощью внешних функций (если они есть)
-        return data_dict  # Обновленный словарь путей.
-    except:
-        pass
+  my_pid = os.getpid()
+  data_dict = {}  # Один проход по всем процессам пользователя
+  for proc in psutil.process_iter(["pid", "name", "cmdline"]):
+   try:
+    info = proc.info
+    pid = info["pid"]
+    
+    if pid == my_pid:
+     continue
+    
+    cmdline_parts = info["cmdline"] or []
+    
+    # Получаем cwd
+    try:
+     cwd = os.readlink(f"/proc/{pid}/cwd")
+    except (FileNotFoundError, PermissionError):
+     cwd = None
+    
+    # Получаем exe
+    try:
+     exe_link = os.readlink(f"/proc/{pid}/exe")
+    except (FileNotFoundError, PermissionError):
+     exe_link = None
+    
+    # Проверяем, это Wine-процесс?
+    is_wine = False
+    if exe_link and ('wine-preloader' in exe_link or 'wine64-preloader' in exe_link or 'wine' in exe_link):
+     is_wine = True
+    elif any('.exe' in arg.lower() for arg in cmdline_parts):
+     is_wine = True
+    
+    # === WINE-процесс ===
+    if is_wine:
+     # Ищем .exe в аргументах
+     win_exe = None
+     for arg in cmdline_parts:
+      if arg.lower().endswith('.exe'):
+       win_exe = arg
+       break
+     
+     if not win_exe:
+      data_dict[pid] = "N/A"
+      continue
+     
+     exe_name = os.path.basename(win_exe.replace('\\', '/'))
+     found = False
+     
+     # 1. Абсолютный Windows-путь (C:\...)
+     if len(win_exe) >= 2 and win_exe[1] == ':':
+      # Пробуем winepath
+      try:
+       result = subprocess.run(
+        ['winepath', '-u', win_exe],
+        capture_output=True,
+        text=True,
+        timeout=3
+       )
+       if result.returncode == 0:
+        linux_path = result.stdout.strip()
+        if os.path.isfile(linux_path):
+         data_dict[pid] = linux_path
+         found = True
+      except Exception:
+       pass
+      
+      # Ищем по basename в cwd
+      if not found and cwd:
+       candidate = os.path.join(cwd, exe_name)
+       if os.path.isfile(candidate):
+        data_dict[pid] = candidate
+        found = True
+     
+     # 2. Относительный путь (dx11\Game.exe)
+     if not found and cwd:
+      # Заменяем \ на / и склеиваем
+      rel = win_exe.replace('\\', '/')
+      candidate = os.path.normpath(os.path.join(cwd, rel))
+      if os.path.isfile(candidate):
+       data_dict[pid] = candidate
+       found = True
+      
+      # Просто basename
+      if not found:
+       candidate = os.path.join(cwd, exe_name)
+       if os.path.isfile(candidate):
+        data_dict[pid] = candidate
+        found = True
+     
+     # 3. Fallback: find
+     if not found and cwd and exe_name:
+      try:
+       result = subprocess.run(
+        ['find', cwd, '-maxdepth', '4', '-iname', exe_name, '-type', 'f'],
+        capture_output=True,
+        text=True,
+        timeout=5
+       )
+       if result.returncode == 0 and result.stdout.strip():
+        first = result.stdout.strip().split('\n')[0]
+        data_dict[pid] = first
+        found = True
+      except Exception:
+       pass
+     
+     if not found:
+      data_dict[pid] = "N/A"
+    
+    # === Обычный Linux-процесс ===
+    else:
+     if not cmdline_parts:
+      data_dict[pid] = exe_link if exe_link else "N/A"
+      continue
+     
+     relative_exe = cmdline_parts[0]
+     relative_exe = relative_exe.replace("\\", "/")
+     
+     # Если абсолютный путь
+     if relative_exe.startswith('/'):
+      full_path = relative_exe
+     elif cwd and relative_exe:
+      full_path = os.path.normpath(os.path.join(cwd, relative_exe))
+     else:
+      full_path = None
+     
+     # Проверяем существование
+     if full_path and os.path.isfile(full_path):
+      data_dict[pid] = full_path
+     else:
+      # Fallback на exe_link
+      data_dict[pid] = exe_link if exe_link else "N/A"
+   except Exception as e:
+    pass
+  
+  # === НОВОЕ: исключаем все записи со значением "N/A" ===
+  data_dict = {pid: path for pid, path in data_dict.items() if path != "N/A"}
+  # expanded = dict(data_dict)
+  #
+  # for game_pid, game_path in list(data_dict.items()):
+  #  try:
+  #   proc = psutil.Process(game_pid)
+  #
+  #   # ---------- Родители ----------
+  #   parent = proc.parent()
+  #   while parent:
+  #    expanded[parent.pid] = game_path
+  #    parent = parent.parent()
+  #
+  #   # ---------- Потомки ----------
+  #   for child in proc.children(recursive=True):
+  #    expanded[child.pid] = game_path
+  #
+  #  except (psutil.NoSuchProcess, psutil.AccessDenied):
+  #   pass
+  #
+  # data_dict = expanded
+  if not data_dict:  # Не найдено процессов с .exe/.sh для пользователя
+   return {}
+  return data_dict  # Обновленный словарь путей.
+  # print(data_dict)
+  # update_dict= replace_path_in_dict(data_dict) # Обновляем словарь с помощью внешних функций (если они есть)
 
 def get_active_window_exe(user, id_active):
     try:
@@ -508,6 +662,9 @@ def check_current_active_window(dict_save, games_checkmark_paths):  # Получ
         data_dict = get_pid_and_path_window()  # в котором есть директория игр
         id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
         file_path = data_dict[id_active]  # получаем путь
+        # print(data_dict[id_active])
+        # print(file_path)
+        # time.sleep(6)
         if data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  # print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
             return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  #
         if id_active and '/PortProton/data/scripts/start.sh' in data_dict[id_active]:  # если он запущен через pp

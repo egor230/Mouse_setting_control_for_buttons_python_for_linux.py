@@ -27,7 +27,7 @@
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": "Tomb Raider",
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": "Silent Downpour",
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": "Oblivion",
-    "/mnt/807EB5FA7EB5E954/games/Quantum Break/launcher64.exe": "Quantum Break",
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": "Quantum Break",
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia2",
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": "Serious Sam",
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": "Cold Fear",
@@ -357,7 +357,7 @@
       "XBUTTON2": "#!/bin/bash\nxte \"keydown Shift_R\"\nxte \"keyup Shift_R\"\nxte \"keydown Shift_L\"\nxte \"keyup Shift_L\""
     },
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": {
-      "XBUTTON1": "#!/bin/bash\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown R\"\nxte \"keyup R\"",
+      "XBUTTON1": "#!/bin/bash\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown E\"\nxte \"keyup E\n\"xte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\n\nxte \"keydown R\"\nxte \"keyup R\"",
       "SCROLL_DOWN": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\n"
     },
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": {
