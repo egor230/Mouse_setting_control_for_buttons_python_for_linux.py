@@ -433,183 +433,7 @@ def is_window_minimized(window_id):
         return "_NET_WM_STATE_HIDDEN" in xprop_output
     except Exception:
         return True  # Если ошибка, считаем окно свернутым
-
-  # Регулярное выражение для поиска путей к .exe файлам
-  # print("11")
-  # pattern = re.compile(r'.*\.(exe|sh)$', re.IGNORECASE)
-  # for proc in psutil.process_iter(['pid', 'username', 'cmdline']):
-  #  if proc.info['username'] == user and proc.info['cmdline']:
-  #   for arg in proc.info['cmdline']:
-  #      arg_clean = arg.replace('\\', '/').strip('"')  # Приводим к нормальному виду
-  #      match = pattern.search(arg_clean)
-  #      if match:
-  #          file_path = match.group(0)
-  #          data_dict[proc.info['pid']] = file_path
-  #          threads = proc.threads()
-  #          for thread in threads:
-  #              data_dict[thread.id] = file_path
-def get_pid_and_path_window():  # Получаем идентификатор активного окна
-  my_pid = os.getpid()
-  data_dict = {}  # Один проход по всем процессам пользователя
-  for proc in psutil.process_iter(["pid", "name", "cmdline"]):
-   try:
-    info = proc.info
-    pid = info["pid"]
-    
-    if pid == my_pid:
-     continue
-    
-    cmdline_parts = info["cmdline"] or []
-    
-    # Получаем cwd
-    try:
-     cwd = os.readlink(f"/proc/{pid}/cwd")
-    except (FileNotFoundError, PermissionError):
-     cwd = None
-    
-    # Получаем exe
-    try:
-     exe_link = os.readlink(f"/proc/{pid}/exe")
-    except (FileNotFoundError, PermissionError):
-     exe_link = None
-    
-    # Проверяем, это Wine-процесс?
-    is_wine = False
-    if exe_link and ('wine-preloader' in exe_link or 'wine64-preloader' in exe_link or 'wine' in exe_link):
-     is_wine = True
-    elif any('.exe' in arg.lower() for arg in cmdline_parts):
-     is_wine = True
-    
-    # === WINE-процесс ===
-    if is_wine:
-     # Ищем .exe в аргументах
-     win_exe = None
-     for arg in cmdline_parts:
-      if arg.lower().endswith('.exe'):
-       win_exe = arg
-       break
-     
-     if not win_exe:
-      data_dict[pid] = "N/A"
-      continue
-     
-     exe_name = os.path.basename(win_exe.replace('\\', '/'))
-     found = False
-     
-     # 1. Абсолютный Windows-путь (C:\...)
-     if len(win_exe) >= 2 and win_exe[1] == ':':
-      # Пробуем winepath
-      try:
-       result = subprocess.run(
-        ['winepath', '-u', win_exe],
-        capture_output=True,
-        text=True,
-        timeout=3
-       )
-       if result.returncode == 0:
-        linux_path = result.stdout.strip()
-        if os.path.isfile(linux_path):
-         data_dict[pid] = linux_path
-         found = True
-      except Exception:
-       pass
-      
-      # Ищем по basename в cwd
-      if not found and cwd:
-       candidate = os.path.join(cwd, exe_name)
-       if os.path.isfile(candidate):
-        data_dict[pid] = candidate
-        found = True
-     
-     # 2. Относительный путь (dx11\Game.exe)
-     if not found and cwd:
-      # Заменяем \ на / и склеиваем
-      rel = win_exe.replace('\\', '/')
-      candidate = os.path.normpath(os.path.join(cwd, rel))
-      if os.path.isfile(candidate):
-       data_dict[pid] = candidate
-       found = True
-      
-      # Просто basename
-      if not found:
-       candidate = os.path.join(cwd, exe_name)
-       if os.path.isfile(candidate):
-        data_dict[pid] = candidate
-        found = True
-     
-     # 3. Fallback: find
-     if not found and cwd and exe_name:
-      try:
-       result = subprocess.run(
-        ['find', cwd, '-maxdepth', '4', '-iname', exe_name, '-type', 'f'],
-        capture_output=True,
-        text=True,
-        timeout=5
-       )
-       if result.returncode == 0 and result.stdout.strip():
-        first = result.stdout.strip().split('\n')[0]
-        data_dict[pid] = first
-        found = True
-      except Exception:
-       pass
-     
-     if not found:
-      data_dict[pid] = "N/A"
-    
-    # === Обычный Linux-процесс ===
-    else:
-     if not cmdline_parts:
-      data_dict[pid] = exe_link if exe_link else "N/A"
-      continue
-     
-     relative_exe = cmdline_parts[0]
-     relative_exe = relative_exe.replace("\\", "/")
-     
-     # Если абсолютный путь
-     if relative_exe.startswith('/'):
-      full_path = relative_exe
-     elif cwd and relative_exe:
-      full_path = os.path.normpath(os.path.join(cwd, relative_exe))
-     else:
-      full_path = None
-     
-     # Проверяем существование
-     if full_path and os.path.isfile(full_path):
-      data_dict[pid] = full_path
-     else:
-      # Fallback на exe_link
-      data_dict[pid] = exe_link if exe_link else "N/A"
-   except Exception as e:
-    pass
   
-  # === НОВОЕ: исключаем все записи со значением "N/A" ===
-  data_dict = {pid: path for pid, path in data_dict.items() if path != "N/A"}
-  # expanded = dict(data_dict)
-  #
-  # for game_pid, game_path in list(data_dict.items()):
-  #  try:
-  #   proc = psutil.Process(game_pid)
-  #
-  #   # ---------- Родители ----------
-  #   parent = proc.parent()
-  #   while parent:
-  #    expanded[parent.pid] = game_path
-  #    parent = parent.parent()
-  #
-  #   # ---------- Потомки ----------
-  #   for child in proc.children(recursive=True):
-  #    expanded[child.pid] = game_path
-  #
-  #  except (psutil.NoSuchProcess, psutil.AccessDenied):
-  #   pass
-  #
-  # data_dict = expanded
-  if not data_dict:  # Не найдено процессов с .exe/.sh для пользователя
-   return {}
-  return data_dict  # Обновленный словарь путей.
-  # print(data_dict)
-  # update_dict= replace_path_in_dict(data_dict) # Обновляем словарь с помощью внешних функций (если они есть)
-
 def get_active_window_exe(user, id_active):
     try:
         result = subprocess.run(['ps', 'aux'], stdout=subprocess.PIPE, text=True).stdout
@@ -657,34 +481,245 @@ if [[ -n "$active_window_id" && "$active_window_id" != "0" && "$active_window_id
 fi
 exit'''
 
+
+def Get_pid_and_path_window():  # Получаем идентификатор активного окна
+ """
+  Собирает информацию о всех процессах и определяет PID активного окна.
+  Возвращает: (data_dict, window_pid)
+    data_dict: {pid: путь_к_исполняемому_файлу} для всех процессов (расширено на родителей и потомков)
+    window_pid: PID активного окна (или None)
+ """
+
+ print("0")
+ my_pid = os.getpid()
+ data_dict = {}
+ 
+ # ---- Сбор всех процессов ----
+ for proc in psutil.process_iter(["pid", "name", "cmdline"]):
+  try:
+   info = proc.info
+   pid = info["pid"]
+   if pid == my_pid:
+    continue
+   
+   cmdline_parts = info["cmdline"] or []
+   try:
+    cwd = os.readlink(f"/proc/{pid}/cwd")
+   except:
+    cwd = None
+   try:
+    exe_link = os.readlink(f"/proc/{pid}/exe")
+   except:
+    exe_link = None
+   
+   # Проверка на Wine
+   is_wine = False
+   if exe_link and ('wine-preloader' in exe_link or 'wine64-preloader' in exe_link):
+    is_wine = True
+   elif any('.exe' in arg.lower() for arg in cmdline_parts):
+    is_wine = True
+   elif exe_link and exe_link.lower().endswith('.exe'):
+    is_wine = True
+   
+   resolved_path = None
+   
+   if is_wine:
+    win_exe = None
+    for arg in cmdline_parts:
+     if arg.lower().endswith('.exe'):
+      win_exe = arg
+      break
+    if win_exe:
+     exe_name = os.path.basename(win_exe.replace('\\', '/'))
+     found = False
+     
+     # Попытка получить путь через winepath
+     if len(win_exe) >= 2 and win_exe[1] == ':':
+      try:
+       result = subprocess.run(
+        ['winepath', '-u', win_exe],
+        capture_output=True, text=True, timeout=3
+       )
+       if result.returncode == 0:
+        linux_path = result.stdout.strip()
+        if os.path.isfile(linux_path):
+         resolved_path = linux_path
+         found = True
+      except:
+       pass
+      if not found and cwd:
+       candidate = os.path.join(cwd, exe_name)
+       if os.path.isfile(candidate):
+        resolved_path = candidate
+        found = True
+     if not found and cwd:
+      rel = win_exe.replace('\\', '/')
+      candidate = os.path.normpath(os.path.join(cwd, rel))
+      if os.path.isfile(candidate):
+       resolved_path = candidate
+       found = True
+      elif not found:
+       candidate = os.path.join(cwd, exe_name)
+       if os.path.isfile(candidate):
+        resolved_path = candidate
+        found = True
+     if not found and cwd and exe_name:
+      try:
+       result = subprocess.run(
+        ['find', cwd, '-maxdepth', '4', '-iname', exe_name, '-type', 'f'],
+        capture_output=True, text=True, timeout=5
+       )
+       if result.returncode == 0 and result.stdout.strip():
+        resolved_path = result.stdout.strip().split('\n')[0]
+        found = True
+      except:
+       pass
+    if resolved_path:
+     data_dict[pid] = resolved_path
+    else:
+     data_dict[pid] = "N/A"
+   else:
+    # Обычный Linux-процесс
+    if not cmdline_parts:
+     data_dict[pid] = exe_link if exe_link else "N/A"
+     continue
+    relative_exe = cmdline_parts[0].replace("\\", "/")
+    if relative_exe.startswith('/'):
+     full_path = relative_exe
+    elif cwd and relative_exe:
+     full_path = os.path.normpath(os.path.join(cwd, relative_exe))
+    else:
+     full_path = None
+    if full_path and os.path.isfile(full_path):
+     data_dict[pid] = full_path
+    elif exe_link:
+     data_dict[pid] = exe_link
+    else:
+     data_dict[pid] = "N/A"
+  except:
+   pass
+ 
+ # Удаляем N/A
+ data_dict = {pid: path for pid, path in data_dict.items() if path != "N/A"}
+ 
+ # Расширяем на родителей и потомков (чтобы все процессы в цепочке имели путь)
+ expanded = dict(data_dict)
+ for game_pid, game_path in list(data_dict.items()):
+  try:
+   proc = psutil.Process(game_pid)
+   parent = proc.parent()
+   while parent and parent.pid > 1:
+    expanded[parent.pid] = game_path
+    parent = parent.parent()
+   for child in proc.children(recursive=True):
+    expanded[child.pid] = game_path
+  except:
+   pass
+ data_dict = expanded
+ 
+ # ---- Получаем PID активного окна ----
+ window_pid = None
+ # xdotool
+ try:
+  result = subprocess.run(['xdotool', 'getactivewindow'], capture_output=True, text=True, timeout=3)
+  window_id = result.stdout.strip()
+  if window_id and window_id.isdigit() and int(window_id) > 0:
+   result = subprocess.run(['xdotool', 'getwindowpid', window_id], capture_output=True, text=True, timeout=3)
+   pid_str = result.stdout.strip()
+   if pid_str and pid_str.isdigit():
+    window_pid = int(pid_str)
+ except:
+  pass
+ 
+ # fallback: xprop
+ if not window_pid:
+  try:
+   result = subprocess.run(['xprop', '-root', '_NET_ACTIVE_WINDOW'], capture_output=True, text=True, timeout=3)
+   for part in result.stdout.split():
+    if part.startswith('0x'):
+     window_hex = part.lstrip('#')
+     result2 = subprocess.run(['xprop', '-id', window_hex, '_NET_WM_PID'], capture_output=True, text=True, timeout=3)
+     for token in result2.stdout.split():
+      if token.isdigit() and int(token) > 1:
+       window_pid = int(token)
+       break
+     break
+  except:
+   pass
+ 
+ # fallback: wmctrl
+ if not window_pid:
+  try:
+   result = subprocess.run(['wmctrl', '-a', ':ACTIVE:', '-p'], capture_output=True, text=True, timeout=3)
+   parts = result.stdout.split()
+   if len(parts) >= 3 and parts[2].isdigit():
+    window_pid = int(parts[2])
+  except:
+   pass
+ 
+ if not window_pid:
+  return None, None
+ 
+ # ---- Поиск игры среди процессов, связанных с окном ----
+ # Вспомогательная проверка на игру (не лаунчер) – встроена без отдельной функции
+ def is_game(path):
+  # Проверяет, является ли процесс игрой (не лаунчером)
+  if not path:
+   return False
+  path_lower = path.lower()
+  if 'launcher' in path_lower or 'launcher64' in path_lower:
+   return False
+  return path_lower.endswith('.exe')
+ 
+ # Сначала смотрим, является ли само окно игрой
+ if window_pid in data_dict:
+  path = data_dict[window_pid]
+  if path and not ('launcher' in path.lower() or 'launcher64' in path.lower()) and path.lower().endswith('.exe'):
+   return data_dict, window_pid
+ 
+ # Ищем среди потомков (рекурсивно) — сначала те, которые являются игрой
+ try:
+  proc = psutil.Process(window_pid)
+  for child in proc.children(recursive=True):
+   if child.pid in data_dict:
+    path = data_dict[child.pid]
+    if path and not ('launcher' in path.lower() or 'launcher64' in path.lower()) and path.lower().endswith('.exe'):
+     return data_dict, child.pid
+ except:
+  pass
+ 
+ # Если ничего не нашли — значит, активное окно не принадлежит игре (лаунчер или скрипт)
+ return None, None
+
 def check_current_active_window(dict_save, games_checkmark_paths):  # Получаем путь  активного ок
     try:
-        data_dict = get_pid_and_path_window()  # в котором есть директория игр
-        id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
-        file_path = data_dict[id_active]  # получаем путь
-        # print(data_dict[id_active])
-        # print(file_path)
-        # time.sleep(6)
-        if data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  # print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
-            return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  #
-        if id_active and '/PortProton/data/scripts/start.sh' in data_dict[id_active]:  # если он запущен через pp
-            # print(data_dict[id_active])
-            for p in data_dict.values():  # пути извлекаем все пути к играм, которые запущены
-                if is_path_in_list(p, games_checkmark_paths):
-                    return games_checkmark_paths[get_index_of_path(p, games_checkmark_paths)]  # активного окна
-        if id_active and not is_window_minimized(id_active):
-            return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+      data_dict, id_active = Get_pid_and_path_window()  # в котором есть директория игр
+      # id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
+      file_path = data_dict[id_active]  # получаем путь
+      # print(data_dict)
+      # print(data_dict[id_active])
+      # print(file_path)
+      # time.sleep(6)
+      if data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  # print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
+       return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  #
+      if id_active and '/PortProton/data/scripts/start.sh' in data_dict[id_active]:  # если он запущен через pp
+          # print(data_dict[id_active])
+       for p in data_dict.values():  # пути извлекаем все пути к играм, которые запущены
+          if is_path_in_list(p, games_checkmark_paths):
+           return games_checkmark_paths[get_index_of_path(p, games_checkmark_paths)]  # активного окна
+      if id_active and not is_window_minimized(id_active):
+          return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
 
-        if isinstance(data_dict, dict) and data_dict and id_active != 0:
-            key_paths = get_active_window_exe(user, id_active)  # print(key_paths)
-            if key_paths == None or ".exe" and ".sh" not in key_paths.lower():
-                return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
-            if ".sh" in key_paths.lower():
-                key_paths1 = os.path.basename(key_paths.split()[-1])[:-3]  # Берём всё после последнего '/'
-                file_path2 = next((p for p in games_checkmark_paths if key_paths1.lower() in p.lower()), None)  #
-                if file_path2 and ".exe" in file_path2.lower():  # print(file_path2)
-                    return games_checkmark_paths[get_index_of_path(file_path2, games_checkmark_paths)]
-        return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+      if isinstance(data_dict, dict) and data_dict and id_active != 0:
+          key_paths = get_active_window_exe(user, id_active)  # print(key_paths)
+          if key_paths == None or ".exe" and ".sh" not in key_paths.lower():
+              return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+          if ".sh" in key_paths.lower():
+              key_paths1 = os.path.basename(key_paths.split()[-1])[:-3]  # Берём всё после последнего '/'
+              file_path2 = next((p for p in games_checkmark_paths if key_paths1.lower() in p.lower()), None)  #
+              if file_path2 and ".exe" in file_path2.lower():  # print(file_path2)
+                  return games_checkmark_paths[get_index_of_path(file_path2, games_checkmark_paths)]
+      return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
     except Exception as e:
         pass
         return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
