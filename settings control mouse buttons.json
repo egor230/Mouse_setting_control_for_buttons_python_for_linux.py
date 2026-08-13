@@ -7,14 +7,16 @@
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": true,
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": true,
-    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": true,
-    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": true,
     "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": true
   },
@@ -26,14 +28,16 @@
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": "Assassins Creed IV Black Flag",
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": "Tomb Raider",
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": "Silent Downpour",
+    "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe": "Splinter Cell Blacklist",
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": "Oblivion",
+    "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": "Portal 2 community edition",
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": "Quantum Break",
-    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia2",
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": "Serious Sam",
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia2",
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": "Serious Sam Revolution",
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": "Cold Fear",
     "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe": "Deus Ex Human Revolution",
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": "Medal of Honor Allied Assault",
-    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": "SeriousSam",
     "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": "Dark Messiah of Might and Magic",
     "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": "Need for speed mw"
   },
@@ -60,8 +64,8 @@
       "LBUTTON",
       "W",
       "RBUTTON",
-      "SCROLL_UP",
-      "SCROLL_DOWN",
+      "Q",
+      "C",
       "SPACE",
       "SCROLL_DOWN"
     ],
@@ -101,6 +105,15 @@
       "R",
       "SCROLL_DOWN"
     ],
+    "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe": [
+      "LBUTTON",
+      "W",
+      "RBUTTON",
+      "Q",
+      "C",
+      "SPACE",
+      "SCROLL_DOWN"
+    ],
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": [
       "LBUTTON",
       "W",
@@ -109,6 +122,15 @@
       "RBUTTON",
       "RBUTTON",
       "SCROLL_DOWN"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": [
+      "LBUTTON",
+      "W",
+      "E",
+      "SPACE",
+      "F",
+      "RBUTTON",
+      "E"
     ],
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": [
       "LBUTTON",
@@ -119,16 +141,25 @@
       "RBUTTON",
       "SCROLL_DOWN"
     ],
-    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": [
       "LBUTTON",
       "W",
       " ",
+      " ",
+      " ",
+      "RBUTTON",
+      "SPACE"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
+      "LBUTTON",
+      "W",
+      "E",
       "F",
-      "Q",
+      "SPACE",
       "RBUTTON",
       "SCROLL_DOWN"
     ],
-    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": [
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
       "LBUTTON",
       "W",
       " ",
@@ -163,15 +194,6 @@
       "SCROLL_DOWN",
       "RBUTTON",
       "Shift_L"
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
-      "LBUTTON",
-      "W",
-      " ",
-      " ",
-      " ",
-      "RBUTTON",
-      "SPACE"
     ],
     "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": [
       "LBUTTON",
@@ -256,7 +278,25 @@
       false,
       false
     ],
+    "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": [
       false,
       false,
       false,
@@ -274,6 +314,15 @@
       false,
       false
     ],
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
       false,
       false,
@@ -283,7 +332,7 @@
       false,
       false
     ],
-    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": [
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
       false,
       false,
       false,
@@ -298,7 +347,7 @@
       false,
       false,
       false,
-      true,
+      false,
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe": [
@@ -311,15 +360,6 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
       false,
       false,
       false,
@@ -370,6 +410,9 @@
       "SCROLL_DOWN": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\n\"xte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"",
       "SCROLL_UP": "#!/bin/bash\nxte \"keydown E\"\nsleep 10.02\nxte \"keyup E\""
     },
+    "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": {
+      "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.02\nxte \"keyup R\"\nxte \"keydown G\"\nsleep 0.02\nxte \"keyup G\"\nxte \"keydown slash\"\nsleep 0.02\nxte \"keyup slash\""
+    },
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown space\"\nsleep 0.23\nxte \"keyup space\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\n",
       "XBUTTON1": "#!/bin/bash\nxte \"keydown C\"\nsleep 0.02\nxte \"keyup C\"\nxte \"mouseclick 3\"  # 3 = правый клика"
@@ -377,11 +420,11 @@
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\nxte \"keydown F\"\nsleep 0.23\nxte \"keyup F\""
     },
-    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": {
-      "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\nxte \"keydown F\"\nsleep 0.23\nxte \"keyup F\""
-    },
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown W\"\nsleep 1.23\nxte \"keydown space\"\nsleep 0.23\nxte \"keyup space\"\nxte \"keyup W\"\n"
+    },
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": {
+      "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\nxte \"keydown F\"\nsleep 0.23\nxte \"keyup F\""
     },
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.23\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.23\nxte \"keyup R\"\n"
@@ -392,9 +435,7 @@
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": {
       "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nxte \"keyup E\"\nxte \"keydown R\"\nxte \"keyup R\"\nxte \"keydown F\"\nxte \"keyup F\"\n"
     },
-    "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": {
-      "XBUTTON2": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown R\"\nsleep 0.02\nxte \"keyup R\"\nxte \"keydown G\"\nsleep 0.02\nxte \"keyup G\"\nxte \"keydown slash\"\nsleep 0.02\nxte \"keyup slash\""
-    }
+    "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": {}
   },
   "keyboard_script": {
     "C:/Windows/explorer.exe": {
@@ -422,6 +463,11 @@
         "K": "#!/bin/bash\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"\nxte \"keydown F\"\nsleep 0.02\nxte \"keyup F\"",
         "N": "#!/bin/bash\nxte 'mouseclick 1' 'usleep 100000' 'mouseclick 1'\nxte 'mouseclick 1' 'usleep 100000' 'mouseclick 1'\nxte 'mouseclick 1' 'usleep 100000' 'mouseclick 1'\nxte 'mouseclick 1' 'usleep 100000' 'mouseclick 1'",
         "M": "#!/bin/bash\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\"\nxte \"keydown E\"\nsleep 0.02\nxte \"keyup E\""
+      }
+    },
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": {
+      "keys": {
+        "N": "#!/bin/bash\nxte \"keydown W\"\nsleep 0.02\nxte \"keyup W\"\nsleep 1.02\nxte \"keydown space\"\nsleep 0.02\nxte \"keyup space\"\nxte \"keyup W\""
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": {

@@ -483,6 +483,8 @@ exit'''
 
 def Get_pid_and_path_window():  # Получаем идентификатор активного окна
  # Имя пользователя (один раз)
+ 
+ # Имя пользователя (один раз)
  user = (
    os.environ.get('USER')
    or os.environ.get('LOGNAME')
@@ -714,37 +716,19 @@ def check_current_active_window(dict_save, games_checkmark_paths):  # Получ
       data_dict, id_active = Get_pid_and_path_window()  # в котором есть директория игр
       # id_active = int(subprocess.run(['bash'], input=get_main_id, stdout=subprocess.PIPE, text=True).stdout.strip())
       file_path = data_dict[id_active]  # получаем путь
-      # print(data_dict)
-      # print(data_dict[id_active])
-      # print(file_path)
-      # time.sleep(6)
-      
       has_exe = any('.exe' in p for p in data_dict.values())
-      if id_active in data_dict and has_exe and data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  # print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])     print("000000")  print(file_path)
+      if id_active in data_dict and has_exe and data_dict[id_active] and is_path_in_list(file_path, games_checkmark_paths):  # print( games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)])     # print(dict_save.get_pid_and_path_window()[dict_save.get_process_id_active()])
+       # print(file_path)
        return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]  #
       has_portproton = any('/PortProton/data' in p and '.exe' in p for p in data_dict.values())
       if has_portproton:
        if id_active in data_dict:
-        # print("PortProton")
-        # print(f"PID окна={id_active}")
-        # print(data_dict[id_active])
-        # print(data_dict)
         for p in data_dict.values():  # пути извлекаем все пути к играм, которые запущены
           if is_path_in_list(p, games_checkmark_paths):
            # print(p)
            return games_checkmark_paths[get_index_of_path(p, games_checkmark_paths)]  # активного окна
       if id_active and not is_window_minimized(id_active):
           return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
-
-      # if isinstance(data_dict, dict) and data_dict and id_active != 0:
-      #     key_paths = get_active_window_exe(user, id_active)  # print(key_paths)
-      #     if key_paths == None or ".exe" and ".sh" not in key_paths.lower():
-      #         return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
-      #     if ".sh" in key_paths.lower():
-      #         key_paths1 = os.path.basename(key_paths.split()[-1])[:-3]  # Берём всё после последнего '/'
-      #         file_path2 = next((p for p in games_checkmark_paths if key_paths1.lower() in p.lower()), None)  #
-      #         if file_path2 and ".exe" in file_path2.lower():  # print(file_path2)
-      #             return games_checkmark_paths[get_index_of_path(file_path2, games_checkmark_paths)]
       return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
     except Exception as e:
         pass
@@ -901,12 +885,12 @@ def mouse_key(key, number_key, press_button, list_mouse_button_names, pres, a):
     global sticking_right_mouse
     try:  # list_buttons = {"Button.button10": a6}  # , "Button.button11"]
         # нет залипание кнопок мыши. Оно press_button[number_key] == False отвечает за это
-        if press_button[number_key] == False and key[number_key] == "SCROLL_DOWN" or key[number_key] == "SCROLL_UP":  # print(key[number_key])
+        if press_button[number_key] == False and (key[number_key] == "SCROLL_DOWN" or key[number_key] == "SCROLL_UP"):  # print(key[number_key])
             if pres == True:  # колёсика мышки.
                 a.resume()
             if pres == False:
                 a.pause()
-        if press_button[number_key] == False and key[number_key] != "SCROLL_DOWN" or key[number_key] != "SCROLL_UP":
+        if press_button[number_key] == False and key[number_key] != "SCROLL_DOWN" and key[number_key] != "SCROLL_UP":
             if pres == True:  # Кнопка  мышки.
                 if str(key[number_key]) == 'RBUTTON':
                     key_work.mouse_right_donw()
@@ -915,7 +899,7 @@ def mouse_key(key, number_key, press_button, list_mouse_button_names, pres, a):
                     key_work.mouse_middle_donw()
 
         # Есть ли залипание есть
-        if press_button[number_key] and key[number_key] != "SCROLL_DOWN" or key[number_key] != "SCROLL_UP":
+        if press_button[number_key] and key[number_key] != "SCROLL_DOWN" and key[number_key] != "SCROLL_UP":
             if pres == True:  # Кнопка мышки нажата.     # print(sticking_right_mouse)
                 if str(key[number_key]) == 'RBUTTON':
                     if sticking_right_mouse == False:  # нет залипание.
@@ -1160,7 +1144,7 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
           thread1.start()
         else:  # print("else") # кнопки мыши     print(key)
          if key[number_key] in list(list_mouse_button_names.keys()):  # если нужно эмулировать кнопку мыши
-          # print("mouse")
+          print("mouse")
           mouse_key(key, number_key, press_button, list_mouse_button_names, pres, a)
           # иначе клавиши клавиатуры.
          else:  #
@@ -1170,129 +1154,129 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
         pass
 
 class KeyboardWidget(QWidget):
-    def __init__(self, callback_func=None, row_shifts=None):
-        super().__init__()
-        self.callback_func = callback_func
-        self.row_shifts = row_shifts or {}
-        self.create_keyboard_layout()
-
-    def create_keyboard_layout(self):
-        layout = QVBoxLayout(self)
-        keyboard_widget = QWidget()
-        keyboard_widget.setMinimumSize(850, 340)
-
-        BUTTON_WIDTH = 60
-        BUTTON_HEIGHT = 40
-        BASE_X_STEP = 70
-        BASE_Y_STEP = 50
-        X_OFFSET = 6
-        Y_OFFSET = 6
-
-        keyboard_layout = [['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'Delete', 'Home',
-                            'End', 'PgUp', 'PgDn'], ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0',
-                            '_\n-', '+\n=', 'Backspace', 'Num Lock', '/', '*', '-']
-            , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', ' 7\nHome', '8\n↑', '9\nPgUp',
-               '+'], ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
-            , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
-            , ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
-            , ['Left', 'Down', 'Right']]
-        buttons = {}
-
-        style_sheet = """  QPushButton {  background-color: lightgray;
-                          border: 1px solid gray; padding: 2px;    }
-                      QPushButton:hover { background-color: #CCCCFF;        }
-                      QPushButton:pressed {  background-color: blue;
-                          color: white;   }   """
-        keyboard_widget.setStyleSheet(style_sheet)
-        numpad_shifts = {'first': 69, 'second': 140, 'third': 210}
-        first_column_keys = [' 7\nHome', '8\n↑', '9\nPgUp', '+']
-        second_column_keys = ['4\n←', '5\n', '6\n→']
-        third_column_keys = ['1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
-
-        for i, row in enumerate(keyboard_layout):
-            current_x = X_OFFSET
-            current_y = BASE_Y_STEP * i + Y_OFFSET
-            last_x_end = X_OFFSET
-
-            for j, key in enumerate(row):
-                x1 = BASE_X_STEP * j + X_OFFSET
-                y1 = BASE_Y_STEP * i + Y_OFFSET
-
-                w = BUTTON_WIDTH
-                h = BUTTON_HEIGHT
-
-                btn = QPushButton(key, keyboard_widget)
-
-                if self.callback_func:
-                    btn.clicked.connect(lambda checked, k=key.strip(): self.callback_func(k))
-                buttons[btn] = key
-                x_pos = x1 + self.row_shifts.get(i, 0)
-                y_pos = y1
-
-                if key == 'Backspace':
-                    w = 120
-
-                elif i == 1 and j > 13:
-                    x_pos = x1 + 69
-
-                if i >= 2:
-                    if key in first_column_keys:
-                        x_pos += numpad_shifts['first']
-                        if key == "+":
-                            btn.setText(" + ")
-
-                    if key in second_column_keys:
-                        x_pos += numpad_shifts['second']
-
-                    if key in third_column_keys:
-                        x_pos += numpad_shifts['third']
-                        if key == "KEnter":
-                            h = BUTTON_HEIGHT * 2 + 5
-                            btn.setText(" Enter ")
-                            btn.resize(w, h)
-                            btn.move(x_pos, y_pos)
-                            continue
-
-                if key == '\nEnter\n':
-                    w = 140
-                    h = BUTTON_HEIGHT * 2 + 5
-                    btn.resize(w, h)
-                    btn.move(x_pos, y_pos)
-                    continue
-
-                if i == 5:
-                    if key in ['Ctrl', 'Windows', 'Alt_L']:
-                        pass
-
-                    elif key == "space":
-                        w = 300
-                        x_pos = x1
-
-                    elif key in ['Alt_r', 'Fn', 'Menu', 'Ctrl_r']:
-                        x_pos = x1 + 210
-                        w = BUTTON_WIDTH
-
-                    elif key == 'up':
-                        x_pos = x1 + 280
-                        w = BUTTON_WIDTH
-
-                    elif key == "0\nIns":
-                        x_pos = x1 + 420
-                        w = 120
-
-                    elif key == ' . ':
-                        x_pos = x1 + 490
-                        w = BUTTON_WIDTH
-
-                if i == 6:
-                    if key in ['Left', 'Down', 'Right']:
-                        x_pos = x1 + 770
-                        y_pos = y1 - 9
-                        w = BUTTON_WIDTH
-                btn.resize(w, h)
-                btn.move(x_pos, y_pos)
-
-        layout.addWidget(keyboard_widget)
+ def __init__(self, callback_func=None, row_shifts=None):
+   super().__init__()
+   self.callback_func = callback_func
+   self.row_shifts = row_shifts or {}
+   self.create_keyboard_layout()
+ 
+ def create_keyboard_layout(self):
+   layout = QVBoxLayout(self)
+   keyboard_widget = QWidget()
+   keyboard_widget.setMinimumSize(850, 340)
+ 
+   BUTTON_WIDTH = 60
+   BUTTON_HEIGHT = 40
+   BASE_X_STEP = 70
+   BASE_Y_STEP = 50
+   X_OFFSET = 6
+   Y_OFFSET = 6
+ 
+   keyboard_layout = [['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'Delete', 'Home',
+                       'End', 'PgUp', 'PgDn'], ['~\n`', '!\n1', '@\n2', '#\n3', '$\n4', '%\n5', '^\n6', '&\n7', '*\n8', '(\n9', ')\n0',
+                       '_\n-', '+\n=', 'Backspace', 'Num Lock', '/', '*', '-']
+       , ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{\n[', '}\n]', '|\n\\', ' 7\nHome', '8\n↑', '9\nPgUp',
+          '+'], ['Caps Lock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':\n;', '"\n\'', '\nEnter\n', '4\n←', '5\n', '6\n→']
+       , ['Shift_L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<\n,', '>\n.', '?\n/', 'Shift', '1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
+       , ['Ctrl', 'Windows', 'Alt_L', 'space', 'Alt_r', 'Fn', 'Menu', 'Ctrl_r', 'up', '0\nIns', ' . ']
+       , ['Left', 'Down', 'Right']]
+   buttons = {}
+ 
+   style_sheet = """  QPushButton {  background-color: lightgray;
+                     border: 1px solid gray; padding: 2px;    }
+                 QPushButton:hover { background-color: #CCCCFF;        }
+                 QPushButton:pressed {  background-color: blue;
+                     color: white;   }   """
+   keyboard_widget.setStyleSheet(style_sheet)
+   numpad_shifts = {'first': 69, 'second': 140, 'third': 210}
+   first_column_keys = [' 7\nHome', '8\n↑', '9\nPgUp', '+']
+   second_column_keys = ['4\n←', '5\n', '6\n→']
+   third_column_keys = ['1\nEnd', '2\n↓', '3\nPgDn', 'KEnter']
+ 
+   for i, row in enumerate(keyboard_layout):
+       current_x = X_OFFSET
+       current_y = BASE_Y_STEP * i + Y_OFFSET
+       last_x_end = X_OFFSET
+ 
+       for j, key in enumerate(row):
+           x1 = BASE_X_STEP * j + X_OFFSET
+           y1 = BASE_Y_STEP * i + Y_OFFSET
+ 
+           w = BUTTON_WIDTH
+           h = BUTTON_HEIGHT
+ 
+           btn = QPushButton(key, keyboard_widget)
+ 
+           if self.callback_func:
+               btn.clicked.connect(lambda checked, k=key.strip(): self.callback_func(k))
+           buttons[btn] = key
+           x_pos = x1 + self.row_shifts.get(i, 0)
+           y_pos = y1
+ 
+           if key == 'Backspace':
+               w = 120
+ 
+           elif i == 1 and j > 13:
+               x_pos = x1 + 69
+ 
+           if i >= 2:
+               if key in first_column_keys:
+                   x_pos += numpad_shifts['first']
+                   if key == "+":
+                       btn.setText(" + ")
+ 
+               if key in second_column_keys:
+                   x_pos += numpad_shifts['second']
+ 
+               if key in third_column_keys:
+                   x_pos += numpad_shifts['third']
+                   if key == "KEnter":
+                       h = BUTTON_HEIGHT * 2 + 5
+                       btn.setText(" Enter ")
+                       btn.resize(w, h)
+                       btn.move(x_pos, y_pos)
+                       continue
+ 
+           if key == '\nEnter\n':
+               w = 140
+               h = BUTTON_HEIGHT * 2 + 5
+               btn.resize(w, h)
+               btn.move(x_pos, y_pos)
+               continue
+ 
+           if i == 5:
+               if key in ['Ctrl', 'Windows', 'Alt_L']:
+                   pass
+ 
+               elif key == "space":
+                   w = 300
+                   x_pos = x1
+ 
+               elif key in ['Alt_r', 'Fn', 'Menu', 'Ctrl_r']:
+                   x_pos = x1 + 210
+                   w = BUTTON_WIDTH
+ 
+               elif key == 'up':
+                   x_pos = x1 + 280
+                   w = BUTTON_WIDTH
+ 
+               elif key == "0\nIns":
+                   x_pos = x1 + 420
+                   w = 120
+ 
+               elif key == ' . ':
+                   x_pos = x1 + 490
+                   w = BUTTON_WIDTH
+ 
+           if i == 6:
+               if key in ['Left', 'Down', 'Right']:
+                   x_pos = x1 + 770
+                   y_pos = y1 - 9
+                   w = BUTTON_WIDTH
+           btn.resize(w, h)
+           btn.move(x_pos, y_pos)
+ 
+   layout.addWidget(keyboard_widget)
 
 class MouseSettingAppMethods:
     def __init__(self):
@@ -1975,3 +1959,20 @@ class MouseSettingAppMethods:
 
     def show_change_name_menu(self, count):
         pass
+
+
+
+
+      # if isinstance(data_dict, dict) and data_dict and id_active != 0:
+      #     key_paths = get_active_window_exe(user, id_active)  # print(key_paths)
+      #     if key_paths == None or ".exe" and ".sh" not in key_paths.lower():
+      #         return dict_save.get_prev_game()  # то есть мы возвышаемся директорию из get_prev_game
+      #     if ".sh" in key_paths.lower():
+      #         key_paths1 = os.path.basename(key_paths.split()[-1])[:-3]  # Берём всё после последнего '/'
+      #         file_path2 = next((p for p in games_checkmark_paths if key_paths1.lower() in p.lower()), None)  #
+      #         if file_path2 and ".exe" in file_path2.lower():  # print(file_path2)
+      #             return games_checkmark_paths[get_index_of_path(file_path2, games_checkmark_paths)]
+    
+    
+    
+    

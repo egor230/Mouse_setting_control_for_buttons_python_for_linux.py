@@ -1,0 +1,30 @@
+--- a/Pyqt6_libs_mouse.py
++++ b/Pyqt6_libs_mouse.py
+@@ -885,19 +885,19 @@
+     global sticking_right_mouse
+     try:  # list_buttons = {"Button.button10": a6}  # , "Button.button11"]
+         # нет залипание кнопок мыши. Оно press_button[number_key] == False отвечает за это
+-        if press_button[number_key] == False and key[number_key] == "SCROLL_DOWN" or key[number_key] == "SCROLL_UP":  # print(key[number_key])
++        if press_button[number_key] == False and (key[number_key] == "SCROLL_DOWN" or key[number_key] == "SCROLL_UP"):  # print(key[number_key])
+             if pres == True:  # колёсика мышки.
+                 a.resume()
+             if pres == False:
+                 a.pause()
+-        if press_button[number_key] == False and key[number_key] != "SCROLL_DOWN" or key[number_key] != "SCROLL_UP":
++        if press_button[number_key] == False and key[number_key] != "SCROLL_DOWN" and key[number_key] != "SCROLL_UP":
+             if pres == True:  # Кнопка  мышки.
+                 if str(key[number_key]) == 'RBUTTON':
+                     key_work.mouse_right_donw()
+ 
+                 if str(key[number_key]) == 'WHEEL_MOUSE_BUTTON':
+                     key_work.mouse_middle_donw()
+ 
+         # Есть ли залипание есть
+-        if press_button[number_key] and key[number_key] != "SCROLL_DOWN" or key[number_key] != "SCROLL_UP":
++        if press_button[number_key] and key[number_key] != "SCROLL_DOWN" and key[number_key] != "SCROLL_UP":
+             if pres == True:  # Кнопка мышки нажата.     # print(sticking_right_mouse)
+                 if str(key[number_key]) == 'RBUTTON':
+                     if sticking_right_mouse == False:  # нет залипание.
+@@ -911,4 +911,4 @@
+     except Exception as e:  # save_dict.write_in_log(e)
+         pass
