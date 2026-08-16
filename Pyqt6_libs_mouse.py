@@ -221,6 +221,9 @@ class save_dict:
         return self
 
     def write_to_file(self, new_data):
+        # Перед записью удаляем пустые записи скриптов, но не трогаем
+        # обязательные разделы профилей и пустые значения комбинаций.
+        new_data = cleanup_empty_script_entries(copy.deepcopy(new_data))
         # Сериализуем JSON с отступами и прогоняем через _format_scripts_in_json:
         # экранированные \n внутри bash-скриптов (script_mouse / keyboard_script)
         # превращаются в НАСТОЯЩИЕ переводы строк, чтобы в текстовом редакторе
@@ -303,6 +306,59 @@ class save_dict:
         file_relus = '''#!/bin/bash
                        chmod a+rw {}   '''.format("log.txt")
         subprocess.call(['bash', '-c', file_relus])  # Дать доступ на чтение и запись любому
+
+
+def cleanup_empty_script_entries(data):
+    """Удалить пустые записи и конфликтующие скрипты из настроек."""
+    # Уже сохранённый профиль может содержать старый XBUTTON-скрипт,
+    # хотя в key_value пользователь выбрал клавишу R/W/etc. В таком случае
+    # dispatch запускал старый скрипт вместо выбранной клавиши.
+    script_profiles = data.get("script_mouse", {})
+    key_profiles = data.get("key_value", {})
+    if isinstance(script_profiles, dict) and isinstance(key_profiles, dict):
+        for profile, assignments in key_profiles.items():
+            profile_scripts = script_profiles.get(profile)
+            if not isinstance(profile_scripts, dict) or not isinstance(assignments, list):
+                continue
+            for index in (5, 6):
+                if index < len(assignments) and str(assignments[index]).strip() != "":
+                    profile_scripts.pop("XBUTTON1", None)
+                    profile_scripts.pop("XBUTTON2", None)
+            if not profile_scripts:
+                script_profiles.pop(profile, None)
+        if not script_profiles:
+            data.pop("script_mouse", None)
+
+    for section in ("script_mouse", "keyboard_script"):
+        container = data.get(section)
+        if not isinstance(container, dict):
+            continue
+        for profile in list(container):
+            profile_data = container.get(profile)
+            if not isinstance(profile_data, dict):
+                container.pop(profile, None)
+                continue
+            if section == "script_mouse":
+                for button in list(profile_data):
+                    value = profile_data.get(button)
+                    if not isinstance(value, str) or not value.strip() or value.strip() == "#!/bin/bash":
+                        profile_data.pop(button, None)
+            else:
+                keys = profile_data.get("keys")
+                if isinstance(keys, dict):
+                    for key in list(keys):
+                        value = keys.get(key)
+                        if not isinstance(value, str) or not value.strip() or value.strip() == "#!/bin/bash":
+                            keys.pop(key, None)
+                    if not keys:
+                        profile_data.pop("keys", None)
+                if not profile_data:
+                    container.pop(profile, None)
+            if section == "script_mouse" and not profile_data:
+                container.pop(profile, None)
+        if not container:
+            data.pop(section, None)
+    return data
 
 
 def _format_scripts_in_json(text):
@@ -453,7 +509,11 @@ class SmartTyper:
         if self._ui is None:
             self._create_device()
         if self._ui is None:
-            return False
+            try:
+                return subprocess.run(['xdotool', 'keydown', str(action)], check=False,
+                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+            except OSError:
+                return False
         try:
             with self._lock:
                 if code not in self._pressed_codes:
@@ -476,7 +536,11 @@ class SmartTyper:
         if self._ui is None:
             self._create_device()
         if self._ui is None:
-            return False
+            try:
+                return subprocess.run(['xdotool', 'keyup', str(action)], check=False,
+                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+            except OSError:
+                return False
         try:
             with self._lock:
                 self._ui.write(ecodes.EV_KEY, code, 0)
@@ -992,8 +1056,11 @@ class MouseProfileRuntime:
         (2, 2, '12', 'Button.button12', {' ', 'WHEEL_MOUSE_BUTTON'}),
         (3, 4, '13', 'Button.button13', {'SCROLL_UP'}),
         (4, 5, '14', 'Button.button14', {' ', 'SCROLL_DOWN'}),
-        (5, 9, '16', 'Button.button16', {'XBUTTON1'}),
-        (6, 8, '15', 'Button.button15', {'XBUTTON2'}),
+        # В конфигурации пользователя верхняя боковая кнопка приходит
+        # как физическая 9 / Button.button16. Поэтому она соответствует
+        # строке «1 боковая», а физическая 8 — строке «2 боковая».
+        (5, 9, '16', 'Button.button16', {'XBUTTON1', 'XBUTTON2'}),
+        (6, 8, '15', 'Button.button15', {'XBUTTON2', 'XBUTTON1'}),
     )
     MOUSE_ACTIONS = {
         'LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'MBUTTON',
@@ -1007,6 +1074,16 @@ class MouseProfileRuntime:
         self.device_id = self.settings['id']
         self.assignments = list(self.settings['key_value'][self.game])
         self.hold_flags = list(self.settings['mouse_press'][self.game])
+        durations = self.settings.get('mouse_hold_repeat_seconds', {}).get(self.game, [None] * 7)
+        self.hold_durations = list(durations) if isinstance(durations, list) else [None] * 7
+        repeats = self.settings.get('mouse_repeat', {}).get(self.game, [False] * 7)
+        self.repeat_flags = list(repeats) if isinstance(repeats, list) else [False] * 7
+        self.repeat_flags += [False] * (7 - len(self.repeat_flags))
+        self.repeat_flags = self.repeat_flags[:7]
+        self.hold_durations += [None] * (7 - len(self.hold_durations))
+        self.hold_durations = self.hold_durations[:7]
+        self._timed_holds = {}
+        self._timed_holds_lock = threading.RLock()
         self.enabled_profiles = tuple(
             path for path, enabled in self.settings['games_checkmark'].items() if enabled
         )
@@ -1022,7 +1099,14 @@ class MouseProfileRuntime:
             worker = Job(self.assignments[slot])
             worker.start()
             worker.pause()
-            self.bindings[listener_button] = MouseBinding(listener_button, slot, worker)
+            # В Linux боковые кнопки могут приходить под разными именами.
+            listener_names = {listener_button}
+            if slot == 5:
+                listener_names.update({'Button.x1', 'Button.button9', 'Button.button16'})
+            elif slot == 6:
+                listener_names.update({'Button.x2', 'Button.button8', 'Button.button15'})
+            for listener_name in listener_names:
+                self.bindings[listener_name] = MouseBinding(listener_name, slot, worker)
             self.virtual_by_physical_button[physical] = virtual
 
     def apply_button_map(self):
@@ -1094,6 +1178,27 @@ class MouseProfileRuntime:
         slot = binding.slot
         action = self.assignments[slot]
         hold = self.hold_flags[slot]
+        duration = self.hold_durations[slot]
+        try:
+            duration = int(duration) if duration not in (None, '', 0, '0') else None
+        except (TypeError, ValueError):
+            duration = None
+        if duration not in (20, 30, 60):
+            duration = None
+
+        if hold and action in {'SCROLL_UP', 'SCROLL_DOWN'} and pressed:
+            if duration is None:
+                if binding.worker.get_sw():
+                    binding.worker.set_sw(False)
+                    binding.worker.pause()
+                else:
+                    binding.worker.set_sw(True)
+                    binding.worker.resume()
+            else:
+                binding.worker.set_sw(True)
+                binding.worker.resume()
+                threading.Thread(target=self._pause_worker_after, args=(binding.worker, duration), daemon=True).start()
+            return
 
         if not hold and action in {'SCROLL_UP', 'SCROLL_DOWN'}:
             if pressed:
@@ -1110,6 +1215,15 @@ class MouseProfileRuntime:
             return
 
         if hold and pressed and action == 'RBUTTON':
+            if duration is not None:
+                if sticking_right_mouse:
+                    mouse_controller.release(mouse.Button.right)
+                    sticking_right_mouse = False
+                else:
+                    mouse_controller.press(mouse.Button.right)
+                    sticking_right_mouse = True
+                    threading.Thread(target=self._release_right_mouse_after, args=(duration,), daemon=True).start()
+                return
             if sticking_right_mouse:
                 mouse_controller.release(mouse.Button.right)
                 sticking_right_mouse = False
@@ -1117,14 +1231,58 @@ class MouseProfileRuntime:
                 mouse_controller.press(mouse.Button.right)
                 sticking_right_mouse = True
 
+    def _pause_worker_after(self, worker, duration):
+        time.sleep(duration)
+        if not self.stop_requested.is_set():
+            worker.pause()
+            worker.set_sw(False)
+
     def _handle_keyboard_action(self, binding, pressed):
         slot = binding.slot
         key_value = str(KEYS[self.assignments[slot]])
+        duration = self.hold_durations[slot]
+        try:
+            duration = int(duration) if duration not in (None, '', 0, '0') else None
+        except (TypeError, ValueError):
+            duration = None
+        if duration not in (20, 30, 60):
+            duration = None
+        # «Повторять» — одно нажатие запускает цикл на весь выбранный
+        # общий срок. Отпускание физической кнопки цикл не прерывает.
+        if self.repeat_flags[slot] and duration is not None:
+            if not pressed:
+                return
+            with self._timed_holds_lock:
+                if self._timed_holds.get(slot, False):
+                    self._timed_holds[slot] = False
+                    key_work.key_release(key_value, slot)
+                else:
+                    self._timed_holds[slot] = True
+                    threading.Thread(
+                        target=self._repeat_key_for_duration,
+                        args=(slot, key_value, duration),
+                        daemon=True,
+                    ).start()
+            return
+
         if not self.hold_flags[slot]:
             if pressed:
                 key_work.key_press(key_value, slot)
             else:
                 key_work.key_release(key_value, slot)
+            return
+
+        if duration is not None:
+            if not pressed:
+                return
+            with self._timed_holds_lock:
+                active = self._timed_holds.get(slot, False)
+                self._timed_holds[slot] = not active
+            if active:
+                key_work.key_release(key_value, slot)
+            else:
+                key_work.key_press(key_value, slot)
+                threading.Thread(target=self._release_timed_key, args=(slot, key_value, duration), daemon=True).start()
             return
 
         if pressed and binding.worker.get_sw():
@@ -1133,6 +1291,39 @@ class MouseProfileRuntime:
         elif pressed:
             binding.worker.set_sw(True)
             key_work.key_release(key_value, slot)
+
+    def _release_right_mouse_after(self, duration):
+        global sticking_right_mouse
+        time.sleep(duration)
+        if sticking_right_mouse and not self.stop_requested.is_set():
+            mouse_controller.release(mouse.Button.right)
+            sticking_right_mouse = False
+
+    def _repeat_key_for_duration(self, slot, key_value, total_duration):
+        """Repeat a mapped key after one click for the selected total duration."""
+        deadline = time.monotonic() + total_duration
+        try:
+            while time.monotonic() < deadline and not self.stop_requested.is_set():
+                with self._timed_holds_lock:
+                    if not self._timed_holds.get(slot, False):
+                        break
+                key_work.key_press(key_value, slot)
+                time.sleep(0.05)
+                key_work.key_release(key_value, slot)
+                time.sleep(0.05)
+        finally:
+            with self._timed_holds_lock:
+                self._timed_holds[slot] = False
+            key_work.key_release(key_value, slot)
+
+    def _release_timed_key(self, slot, key_value, duration):
+        """Release a non-repeat hold after its selected duration."""
+        time.sleep(duration)
+        with self._timed_holds_lock:
+            if not self._timed_holds.get(slot, False) or self.stop_requested.is_set():
+                return
+            self._timed_holds[slot] = False
+        key_work.key_release(key_value, slot)
 
 
 class work_key:
@@ -1589,6 +1780,7 @@ class MouseSettingAppMethods:
                     key in res["script_mouse"][current_app]):
                     del res["script_mouse"][current_app][key]
 
+        res = cleanup_empty_script_entries(res)
         dict_save.save_jnson(res)  # сохранить json
         # показываем основную клавиатуру, если нужно
         if section == "keyboard_script" and self.current_keyboard_window:
@@ -1629,9 +1821,7 @@ class MouseSettingAppMethods:
             # print(content)
             macro_window.text_widget.setPlainText(content)
         else:
-            # Инициализируем структуры если их нет
-            res.setdefault("script_mouse", {}).setdefault(current_app, {}).setdefault(key, {})
-            # Начальный скрипт
+            # Пустой редактор не создаёт запись в словаре до фактического сохранения.
             macro_window.text_widget.setPlainText("#!/bin/bash\n")
         # Перемещаем курсор в конец текста
         cursor = macro_window.text_widget.textCursor()
@@ -1669,8 +1859,9 @@ class MouseSettingAppMethods:
         keys_active = []
         if content:
             keys_active = list(res["keyboard_script"][current_app]["keys"].keys())
-        else:  # Инициализируем структуры если их нет
-            res.setdefault("keyboard_script", {}).setdefault(current_app, {"keys": {}})
+        else:
+            # Пустая клавиатура не создаёт запись в словаре до сохранения скрипта.
+            pass
 
         # Создаем клавиатуру с callback для записи макросов
         def record_macro_callback(key):  # Открываем редактор для этой клавиши
@@ -1789,9 +1980,21 @@ class MouseSettingAppMethods:
             # Save this before cleanup: a profile switch should restart the
             # listener, whereas an explicit UI replacement must not restart it.
             was_stopped_externally = runtime.stop_requested.is_set()
-            listener.stop()
-            # Do not join here.  Active-window discovery can be slow; waiting
-            # for the old listener made the new profile appear only much later.
+            # pynput/Xlib может закрыть Display раньше, чем старый listener
+            # успеет выполнить stop(). В этом случае record_disable_context()
+            # падает с AttributeError: request_queue is None. Остановка
+            # listener не должна ронять emunator_mouse или мешать новому runtime.
+            try:
+                listener.stop()
+            except (AttributeError, RuntimeError, OSError) as exc:
+                try:
+                    runtime.store.write_in_log('pynput listener stop ignored: ' + str(exc))
+                except Exception:
+                    pass
+            try:
+                listener.join(timeout=1.0)
+            except (AttributeError, RuntimeError, OSError):
+                pass
             runtime.stop_workers()
             if getattr(self, '_active_runtime', None) is runtime:
                 self._active_runtime = None
@@ -1889,6 +2092,19 @@ class MouseSettingAppMethods:
             self.Keyboard_button.setStyleSheet(""" QPushButton { border: 1px solid gray; padding: 5px;
                                     color: black;  background-color: gray; } """)
             self.Keyboard_button.update()
+
+        repeats = res.get("mouse_repeat", {}).get(game, [False] * 7)
+        for idx, repeat_checkbox in enumerate(getattr(self, "mouse_repeat_check_buttons", [])):
+            repeat_checkbox.blockSignals(True)
+            repeat_checkbox.setChecked(bool(repeats[idx]) if idx < len(repeats) else False)
+            repeat_checkbox.blockSignals(False)
+
+        durations = res.get("mouse_hold_repeat_seconds", {}).get(game, [None] * 7)
+        for idx, duration_combo in enumerate(getattr(self, "mouse_hold_duration_combos", [])):
+            value = durations[idx] if idx < len(durations) else None
+            duration_combo.blockSignals(True)
+            duration_combo.setCurrentText("" if value in (None, "", 0, "0") else str(value))
+            duration_combo.blockSignals(False)
 
         values = res["key_value"][game]  # Получить значение выпадающего списка для этой игры
         for button, value in zip(self.combo_box, values):
@@ -2028,12 +2244,35 @@ class MouseSettingAppMethods:
             print(f"Ошибка при перемещении элемента: {e}")
             return -1
 
+    def apply_settings_now(self):
+        """Перезапустить активный runtime без ожидания смены профиля."""
+        QTimer.singleShot(0, lambda: self.start_startup_now(dict_save))
+
     def update_button(self, index):  # обновить, когда выбираем другое значение для кнопки мыши
         res = dict_save.return_jnson()
         game = res["current_app"]
         current_value = self.combo_box[index].currentText()
         res["key_value"][game][index] = current_value
+        # Выпадающее назначение и скрипт одной и той же кнопки не должны
+        # конкурировать. Если пользователь выбрал R/W/другую клавишу,
+        # удаляем старый script_mouse для этого слота, иначе dispatch
+        # запускал бы старый bash-скрипт и до R никогда не доходил.
+        button_name = defaut_list_mouse_buttons[index]
+        script_profiles = res.get("script_mouse", {})
+        profile_scripts = script_profiles.get(game)
+        if index in (5, 6):
+            button_names = {"XBUTTON1", "XBUTTON2"}
+        else:
+            button_names = {button_name}
+        if isinstance(profile_scripts, dict) and current_value.strip() != "":
+            for stale_button_name in button_names:
+                profile_scripts.pop(stale_button_name, None)
+            if not profile_scripts:
+                script_profiles.pop(game, None)
+            if not script_profiles:
+                res.pop("script_mouse", None)
         dict_save.save_jnson(res)  # Сохранить новое значение для выпадающего списка
+        self.apply_settings_now()
 
     def update_profile(self):  # обновить профиль
         res = dict_save.return_jnson()
@@ -2095,8 +2334,36 @@ class MouseSettingAppMethods:
 
         if curr_name not in res.get("mouse_press", {}):
             res["mouse_press"][curr_name] = [False] * 7
-        res["mouse_press"][curr_name][count] = (state == Qt.CheckState.Checked)
+        res["mouse_press"][curr_name][count] = bool(state)
         dict_save.save_jnson(res)
+        self.apply_settings_now()
+
+    def update_mouse_repeat(self, count, state):
+        res = dict_save.return_jnson()
+        curr_name = dict_save.get_cur_app()
+        repeats = res.setdefault("mouse_repeat", {}).setdefault(curr_name, [False] * 7)
+        repeats += [False] * (7 - len(repeats))
+        repeats[count] = bool(state)
+        if not any(repeats):
+            res["mouse_repeat"].pop(curr_name, None)
+            if not res["mouse_repeat"]:
+                res.pop("mouse_repeat", None)
+        dict_save.save_jnson(res)
+        self.apply_settings_now()
+
+    def update_mouse_hold_duration(self, count):
+        res = dict_save.return_jnson()
+        curr_name = dict_save.get_cur_app()
+        durations = res.setdefault("mouse_hold_repeat_seconds", {}).setdefault(curr_name, [None] * 7)
+        durations += [None] * (7 - len(durations))
+        selected = self.mouse_hold_duration_combos[count].currentText().strip()
+        durations[count] = int(selected) if selected in {"20", "30", "60"} else None
+        if all(value is None for value in durations):
+            res["mouse_hold_repeat_seconds"].pop(curr_name, None)
+            if not res["mouse_hold_repeat_seconds"]:
+                res.pop("mouse_hold_repeat_seconds", None)
+        dict_save.save_jnson(res)
+        self.apply_settings_now()
 
     def add_file(self):  # Добавить новые игры
         path_to_file = return_file_path(dict_save)

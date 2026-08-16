@@ -1,4 +1,47 @@
 from Pyqt6_libs_mouse import *
+
+
+def evdev_key_to_label(code):
+    # Преобразует evdev-имя клавиши (напр. 'KEY_EQUAL') в нормализованную метку,
+    # под которой макросы лежат в keyboard_script.
+    # Нумпад +/- НАМЕРЕННО оставляем с префиксом 'KEY_', чтобы они НЕ совпадали
+    # с основными +/- (требование пользователя: различать нумпад и основную клавиатуру).
+    if not isinstance(code, str) or not code.startswith("KEY_"):
+        return None
+    name = code[4:]
+    # Нумпад: цифры/навигация -> метки как в simple_key_map (совместимо со старым поведением),
+    # но +/- выделяем отдельно.
+    if name.startswith("KP"):
+        if name in ("KPPLUS", "KPMINUS"):
+            return code  # 'KEY_KPPLUS' / 'KEY_KPMINUS' — не совпадают с '+' / '-'
+        return simple_key_map.get(code, name)  # напр. 'KEY_KP7' -> ' 7\nHome'
+    special = {
+        "SPACE": "space", "ENTER": "enter", "KPENTER": "enter", "TAB": "tab",
+        "ESC": "esc", "GRAVE": "`", "MINUS": "-", "EQUAL": "+",
+        "LEFTBRACE": "[", "RIGHTBRACE": "]", "BACKSLASH": "\\",
+        "SEMICOLON": ";", "APOSTROPHE": "'", "COMMA": ",", "DOT": ".",
+        "SLASH": "/", "KPASTERISK": "*", "BACKSPACE": "backspace",
+        "DELETE": "delete", "HOME": "home", "END": "end",
+        "PAGEUP": "page_up", "PAGEDOWN": "page_down", "INSERT": "insert",
+        "LEFT": "left", "RIGHT": "right", "UP": "up", "DOWN": "down",
+        "LEFTSHIFT": "shift_l", "RIGHTSHIFT": "shift_r",
+        "LEFTCTRL": "control_l", "RIGHTCTRL": "control_r",
+        "LEFTALT": "alt_l", "RIGHTALT": "alt_r",
+        "LEFTMETA": "meta_l", "RIGHTMETA": "meta_r",
+        "CAPSLOCK": "caps_lock", "NUMLOCK": "num_lock",
+        "SCROLLLOCK": "scroll_lock", "PRINT": "print", "PAUSE": "pause",
+    }
+    if name in special:
+        return special[name]
+    if len(name) == 1 and name.isalpha():
+        return name.lower()
+    if len(name) == 1 and name.isdigit():
+        return name
+    if name.startswith("F") and name[1:].isdigit():
+        return name.lower()
+    return name.lower()
+
+
 class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  def __init__(self):
   super().__init__()
@@ -9,13 +52,20 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   self.mouse_button_labels = []
   self.mouse_button_combos = []
   self.mouse_check_buttons = []
+  self.mouse_repeat_check_buttons = []
+  self.mouse_hold_duration_combos = []
   self.buttons_script = []
   self.board = None
   data = dict_save.data
   if os.path.exists(data):
-   with open(data) as json_file:
-    res = json.load(json_file)
-    dict_save.save_old_data(res)
+    with open(data) as json_file:
+     # strict=False: разрешаем реальные переносы строк внутри bash-скриптов (script_mouse / keyboard_script)
+     res = json.load(json_file, strict=False)
+     res = scripts_to_text(res)  # убрать отступы продолжения строк из скриптов (нормализация)
+     # Удаляем старые XBUTTON-скрипты, если в профиле уже выбрана
+     # клавиша K/R/etc.; иначе старый script_mouse перехватит боковую кнопку.
+     res = cleanup_empty_script_entries(res)
+     dict_save.save_old_data(res)
     dict_save.save_jnson(res)
   else:
    res = {'games_checkmark': {'C:/Windows/explorer.exe': True},
@@ -39,67 +89,114 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   dict_save.set_prev_game(res["current_app"])
   dict_save.set_current_app_path(res['current_app'])
   devices = [InputDevice(path) for path in list_devices()]
-  # print(devicesс
+  # Надёжный выбор физической клавиатуры: старый фильтр ("Keyboard\"" + ' phys ')
+  # первым ловил виртуальное uinput-устройство (Smart-Virtual-Keyboard), и
+  # реальные нажатия терялись. Теперь берём настоящую клавиатуру: пропускаем
+  # виртуальные устройства и мыши, оставляем те, у которых есть буквы/Enter,
+  # и выбираем самую «полную» (больше всего клавиш EV_KEY).
   try:
+   candidates = []
    for dev in devices:
-    if "Keyboard\"" in str(dev) and ' phys ' in str(dev):
-     self.board = dev#
-     print(dev)
-     break
+    try:
+     caps = dev.capabilities().get(ecodes.EV_KEY, [])
+    except Exception:
+     continue
+    name = (dev.name or "").lower()
+    phys = (dev.phys or "").lower()
+    if "virtual" in name or "uinput" in phys or "mouse" in name:
+     continue
+    if ecodes.KEY_A in caps or ecodes.KEY_ENTER in caps or ecodes.KEY_SPACE in caps:
+     candidates.append(dev)
+   if candidates:
+    candidates.sort(key=lambda d: len(d.capabilities().get(ecodes.EV_KEY, [])), reverse=True)
+    self.board = candidates[0]
+    print("Клавиатура найдена:", self.board.name)
    if self.board is None:
     print("Клавиатура не найдена!")
   except Exception as e:
-   pass
-  def on_press(key):  # обработчик клави.
-   current_app = dict_save.get_cur_app()  # Получаем текущую игру
-   res = dict_save.return_jnson()  # print(key)
-
-   # Чтобы избежать ошибки BlockingIOError, используем try
-   try:
-    for event in self.board.read():  # Подписываемся на события
-     if event.type == ecodes.EV_KEY:
-      key_event = categorize(event)
-      if key_event.keystate == key_event.key_down:  # Получаем название клавиши и преобразуем его
-       key_name = key_event.keycode
-       simple_name = simple_key_map.get(key_name, key_name)  # Если клавиша не в словаре, оставляем как есть
-       if simple_name in ["7\nHome", "8\n↑", "9\nPgUp", "4\n←", "5\n", "6\n→", "1\nEnd", "2\n↓", "KP_Down", "3\nPgDn"]:
-        key = simple_name
-        break
-   except BlockingIOError:
-    pass  # Если данных в буфере evdev нет, просто идем дальше к обработке pynput
-#  print(key)
-   if "keyboard_script" in res and current_app in res["keyboard_script"]:
-    if "keys" in res["keyboard_script"][current_app]:  # Проверяем наличие текущего приложения в "keyboard_script"
-     keys_active = res["keyboard_script"][current_app]["keys"].keys()  # Получаем полное имя клавиши без нормализации
-     key = str(key).replace(" ", "").replace("'", "").replace("Key.", "").replace("KEY.", "").lower()  # Очищаем от ненужного
- #    print(key)
-     for i in list(keys_active):  # Получаем клавиши которые являются макросами.
-      i = str(i)
-      if key in ru_to_en.keys():  # нужно перевести нужно перевести русскую клавишу в английскую.
-       key = ru_to_en[key]
-      if key.lower() == i.lower():  # теперь нужно перевести ее в нижней регистр.
-       script = res["keyboard_script"][current_app]["keys"][i]  #  print(script)
-       listener.stop()
-       t = threading.Thread(target=lambda: subprocess.call(["bash", "-c", script]))
-       t.start()
-       t.join()
-       start_listener()
-
-  def on_release(key):
-   pass
-   return True
-  def start_listener():
-   global listener
-   listener = keyboard.Listener(on_press=on_press, on_release=on_release)
-   listener.start()
-
-  start_listener()  # Запускаем слушатель
+   print("Ошибка поиска клавиатуры:", e)
+  # Вариант B: evdev — единственный источник событий клавиатуры. Корректно
+  # различает нумпад (+/-) и основную клавиатуру, не падает при отсутствии устройства.
+  self.start_keyboard_listener()  # Запускаем evdev-слушатель
   self.setup_ui()
- 
+
+ def start_keyboard_listener(self):
+  # Запуск evdev-слушателя клавиатуры в отдельном потоке (Вариант B:
+  # evdev — единственный источник событий, корректно различает нумпад и основную клавиатуру).
+  self.keyboard_thread_exit = True
+  old = getattr(self, "keyboard_thread", None)
+  if old is not None and old.is_alive():
+   try:
+    old.join(timeout=1)
+   except Exception:
+    pass
+  self.keyboard_thread_exit = False
+  self.keyboard_thread = threading.Thread(target=self.keyboard_evdev_loop, daemon=True)
+  self.keyboard_thread.start()
+
+ def keyboard_evdev_loop(self):
+  board = self.board
+  if board is None:
+   print("Клавиатура (evdev) не найдена — макросы клавиатуры отключены.")
+   return
+  pressed = set()
+  while not self.keyboard_thread_exit:
+   try:
+    events = board.read()
+    for event in events:
+     if event.type != ecodes.EV_KEY:
+      continue
+     ke = categorize(event)
+     if ke.keystate != ke.key_down:
+      pressed.discard(ke.keycode)
+      continue
+     code = ke.keycode
+     if isinstance(code, tuple):
+      code = code[0]
+     if code in pressed:
+      continue  # защита от автоповтора (key_hold)
+     pressed.add(code)
+     label = evdev_key_to_label(code)
+     if label is not None:
+      self.handle_keyboard_macro(label)
+   except BlockingIOError:
+    time.sleep(0.01)  # буфер evdev пуст — не блокируем поток/GUI
+    continue
+   except Exception:
+    time.sleep(0.05)
+    continue
+
+ def handle_keyboard_macro(self, key_label):
+  # Та же логика сопоставления, что была в старом on_press: ищем макрос в keyboard_script
+  # для текущего приложения и запускаем bash-скрипт. Без остановки/рестарта слушателя
+  # (цикл непрерывный, поэтому повторные нажатия не теряются).
+  current_app = dict_save.get_cur_app()
+  res = dict_save.return_jnson()
+  if "keyboard_script" not in res or current_app not in res["keyboard_script"]:
+   return
+  if "keys" not in res["keyboard_script"][current_app]:
+   return
+  keys_active = res["keyboard_script"][current_app]["keys"].keys()
+  key = key_label.lower().replace(" ", "_")  # 'Caps Lock' -> 'caps_lock' и т.п.
+  for i in list(keys_active):
+   i = str(i).replace(" ", "_")
+   k = key
+   # Перевод русской БУКВЫ в английскую. Символы (+, -, ,, . и т.п.) НЕ трогаем:
+   # в ru_to_en есть '+' -> ',' и '-' -> '.', что ломало сопоставление с макросами
+   # "+"/"-" (физическая клавиша уже дана в нейтральном виде).
+   if k.isalpha() and k in ru_to_en.keys():
+    k = ru_to_en[k]
+   if k == i.lower():
+    script = res["keyboard_script"][current_app]["keys"][i]
+    t = threading.Thread(target=lambda s=script: subprocess.call(["bash", "-c", s]))
+    t.start()
+    t.join()
+    break
+  
  def setup_ui(self):
   self.setWindowTitle("Mouse setting control for buttons python")
-  self.setGeometry(400, 340, 910, 386)
-  self.setFixedSize(940, 346)
+  self.setGeometry(400, 340, 1045, 386)
+  self.setFixedSize(1085, 346)
   central_widget = QWidget()
   self.setCentralWidget(central_widget)
   
@@ -166,12 +263,27 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
    checkbox = QCheckBox()
    checkbox.setToolTip("Держать нажатой")
    checkbox.stateChanged.connect(lambda state, i=i: self.check_mouse_press_button(i, state))
+
+   repeat_checkbox = QCheckBox()
+   repeat_checkbox.setToolTip("Повторять")
+   repeat_checkbox.stateChanged.connect(lambda state, i=i: self.update_mouse_repeat(i, state))
+   self.mouse_repeat_check_buttons.append(repeat_checkbox)
+
+   duration_combo = QComboBox()
+   duration_combo.addItems(["", "20", "30", "60"])
+   duration_combo.setFixedWidth(52)
+   duration_combo.setToolTip("Время удержания в секундах.\nПусто — до повторного нажатия.")
+   duration_combo.currentIndexChanged.connect(lambda _idx, i=i: self.update_mouse_hold_duration(i))
+   self.mouse_hold_duration_combos.append(duration_combo)
+
    self.mouse_button_labels.append(label)
    self.mouse_button_combos.append(combo)
    self.mouse_check_buttons.append(checkbox)
    row_layout.addWidget(label)
    row_layout.addWidget(combo, 1)
    row_layout.addWidget(checkbox)
+   row_layout.addWidget(repeat_checkbox)
+   row_layout.addWidget(duration_combo)
    
    rows_layout.addLayout(row_layout)
   
