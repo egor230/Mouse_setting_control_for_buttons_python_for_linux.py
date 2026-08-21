@@ -6,15 +6,16 @@
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": true,
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": true,
-    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": true,
     "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": true,
@@ -28,15 +29,16 @@
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": "Alien Isolation",
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": "Assassins Creed IV Black Flag",
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": "Tomb Raider",
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia2",
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": "Portal 2 community edition",
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": "Silent Downpour",
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe": "Splinter Cell Blacklist",
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": "Oblivion",
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": "Quantum Break",
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": "Serious Sam",
-    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia2",
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": "Serious Sam Revolution",
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": "Cold Fear",
+    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": "GTA V",
     "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe": "Deus Ex Human Revolution",
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": "Medal of Honor Allied Assault",
     "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": "Portal Stories Mel",
@@ -98,6 +100,15 @@
       "RBUTTON",
       "SPACE"
     ],
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
+      "LBUTTON",
+      "W",
+      "E",
+      "F",
+      "SPACE",
+      "RBUTTON",
+      "SCROLL_DOWN"
+    ],
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": [
       "LBUTTON",
       "W",
@@ -152,15 +163,6 @@
       "RBUTTON",
       "SPACE"
     ],
-    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
-      "LBUTTON",
-      "W",
-      "E",
-      "F",
-      "SPACE",
-      "RBUTTON",
-      "SCROLL_DOWN"
-    ],
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
       "LBUTTON",
       "W",
@@ -178,6 +180,15 @@
       "SCROLL_DOWN",
       "RBUTTON",
       "Shift_L"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": [
+      "LBUTTON",
+      "W",
+      "RBUTTON",
+      "Q",
+      "C",
+      "SPACE",
+      "SCROLL_DOWN"
     ],
     "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe": [
       "LBUTTON",
@@ -280,6 +291,15 @@
       false,
       false
     ],
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": [
       false,
       false,
@@ -334,15 +354,6 @@
       false,
       false
     ],
-    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ],
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
       false,
       false,
@@ -353,6 +364,15 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": [
       false,
       false,
       false,
@@ -410,93 +430,7 @@
   "id": 6,
   "current_app": "C:/Windows/explorer.exe",
   "script_mouse": {
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown F\"
-                   sleep 0.23
-                   xte \"keyup F\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown Shift_R\"
-                   xte \"keyup Shift_R\"
-                   xte \"keydown Shift_L\"
-                   xte \"keyup Shift_L\""
-    },
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": {
-      "XBUTTON1": "#!/bin/bash
-                   xte \"keydown E\"
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   xte \"keyup E
-                   \"xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   
-                   xte \"keydown R\"
-                   xte \"keyup R\"",
       "SCROLL_DOWN": "#!/bin/bash
                       xte \"keydown E\"
                       sleep 0.23
@@ -530,12 +464,6 @@
                       xte \"keyup R\""
     },
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown Shift_L\"
-                   sleep 0.02
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"",
       "SCROLL_DOWN": "#!/bin/bash
                       xte \"keyup Shift_L\"
                       xte \"keydown E\"
@@ -543,19 +471,6 @@
                       xte \"keyup E\""
     },
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown space\"
-                   sleep 0.23
-                   xte \"keyup space\"
-                   xte \"keydown F\"
-                   sleep 0.23
-                   xte \"keyup F\"
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown R\"
-                   sleep 0.23
-                   xte \"keyup R\"",
       "WHEEL_MOUSE_BUTTON": "#!/bin/bash
                              xte \"keydown E\"
                              sleep 10.23
@@ -610,132 +525,9 @@
                     xte \"keydown E\"
                     sleep 10.02
                     xte \"keyup E\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": {},
-    "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown R\"
-                   sleep 0.02
-                   xte \"keyup R\"
-                   xte \"keydown G\"
-                   sleep 0.02
-                   xte \"keyup G\"
-                   xte \"keydown slash\"
-                   sleep 0.02
-                   xte \"keyup slash\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown space\"
-                   sleep 0.23
-                   xte \"keyup space\"
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"",
-      "XBUTTON1": "#!/bin/bash
-                   xte \"keydown C\"
-                   sleep 0.02
-                   xte \"keyup C\"
-                   xte \"mouseclick 3\"  # 3 = правый клика"
-    },
-    "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown R\"
-                   sleep 0.23
-                   xte \"keyup R\"
-                   xte \"keydown F\"
-                   sleep 0.23
-                   xte \"keyup F\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown W\"
-                   sleep 1.23
-                   xte \"keydown space\"
-                   sleep 0.23
-                   xte \"keyup space\"
-                   xte \"keyup W\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown R\"
-                   sleep 0.23
-                   xte \"keyup R\"
-                   xte \"keydown F\"
-                   sleep 0.23
-                   xte \"keyup F\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown E\"
-                   sleep 0.23
-                   xte \"keyup E\"
-                   xte \"keydown R\"
-                   sleep 0.23
-                   xte \"keyup R\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown Q\"
-                   sleep 0.02
-                   xte \"keyup Q\"
-                   xte \"keydown E\"
-                   sleep 0.02
-                   xte \"keyup E\"
-                   xte \"keydown F\"
-                   sleep 0.02
-                   xte \"keyup F\"
-                   xte \"keydown R\"
-                   sleep 0.02
-                   xte \"keyup R\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown E\"
-                   xte \"keyup E\"
-                   xte \"keydown R\"
-                   xte \"keyup R\"
-                   xte \"keydown F\"
-                   xte \"keyup F\""
     }
   },
   "keyboard_script": {
-    "C:/Windows/explorer.exe": {
-      "keys": {
-        "+": "xte \"keydown R\"",
-        "-": "xte \"keydown E\""
-      }
-    },
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": {
       "keys": {
         "J": "#!/bin/sh

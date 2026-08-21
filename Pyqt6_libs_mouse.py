@@ -418,145 +418,218 @@ def scripts_to_text(data):
 
 
 class SmartTyper:
-    """Virtual keyboard for mouse-to-key assignments.
+  """Virtual keyboard for mouse-to-key assignments.
 
-    Keyboard actions selected in the profile UI are emitted through evdev.UInput,
-    not through xte.  The class owns a single virtual keyboard device and is safe
-    to call from the listener's worker threads.  Existing bash macros are not
-    modified: a macro remains an explicit user script and may still use xte.
-    """
+  Keyboard actions selected in the profile UI are emitted through evdev.UInput,
+  not through xdotool/xte.  The class owns a single virtual keyboard device and
+  is safe to call from the listener's worker threads.  Existing bash macros are
+  not modified: a macro remains an explicit user script and may still use xte.
+  """
 
-    _ACTION_TO_ECODE = {
-        'BACKSPACE': 'KEY_BACKSPACE', 'TAB': 'KEY_TAB', 'RETURN': 'KEY_ENTER',
-        'KP_ENTER': 'KEY_KPENTER', 'ESCAPE': 'KEY_ESC', 'SPACE': 'KEY_SPACE',
-        'HOME': 'KEY_HOME', 'END': 'KEY_END', 'LEFT': 'KEY_LEFT', 'RIGHT': 'KEY_RIGHT',
-        'UP': 'KEY_UP', 'DOWN': 'KEY_DOWN', 'INSERT': 'KEY_INSERT', 'DELETE': 'KEY_DELETE',
-        'PRIOR': 'KEY_PAGEUP', 'NEXT': 'KEY_PAGEDOWN', 'PAGE_UP': 'KEY_PAGEUP',
-        'PAGE_DOWN': 'KEY_PAGEDOWN', 'SNAPSHOT': 'KEY_SYSRQ', 'PAUSE': 'KEY_PAUSE',
-        'CAPITAL': 'KEY_CAPSLOCK', 'CAPS_LOCK': 'KEY_CAPSLOCK', 'NUMLOCK': 'KEY_NUMLOCK',
-        'NUM_LOCK': 'KEY_NUMLOCK', 'SCROLL': 'KEY_SCROLLLOCK', 'SCROLL_LOCK': 'KEY_SCROLLLOCK',
-        'LWIN': 'KEY_LEFTMETA', 'RWIN': 'KEY_RIGHTMETA', 'SHIFT_L': 'KEY_LEFTSHIFT',
-        'SHIFT_R': 'KEY_RIGHTSHIFT', 'LCONTROL': 'KEY_RIGHTALT',
-        'RCONTROL': 'KEY_RIGHTCTRL', 'CONTROL': 'KEY_LEFTCTRL',
-        'CONTROL_L': 'KEY_LEFTCTRL', 'CONTROL_R': 'KEY_RIGHTCTRL',
-        'ALT_L': 'KEY_LEFTALT', 'ALT_R': 'KEY_RIGHTALT', 'LMENU': 'KEY_LEFTALT',
-        'RMENU': 'KEY_RIGHTALT', 'MENU': 'KEY_COMPOSE', 'APPS': 'KEY_COMPOSE',
-        'ISO_NEXT_GROUP': 'KEY_RIGHTALT', 'ADD': 'KEY_KPPLUS', 'SUBTRACT': 'KEY_KPMINUS',
-        'MULTIPLY': 'KEY_KPASTERISK', 'DIVIDE': 'KEY_KPSLASH', 'DECIMAL': 'KEY_KPDOT',
-    }
+  _ACTION_TO_ECODE = {
+    'BACKSPACE': 'KEY_BACKSPACE', 'TAB': 'KEY_TAB', 'RETURN': 'KEY_ENTER',
+    'KP_ENTER': 'KEY_KPENTER', 'ESCAPE': 'KEY_ESC', 'SPACE': 'KEY_SPACE',
+    'HOME': 'KEY_HOME', 'END': 'KEY_END', 'LEFT': 'KEY_LEFT', 'RIGHT': 'KEY_RIGHT',
+    'UP': 'KEY_UP', 'DOWN': 'KEY_DOWN', 'INSERT': 'KEY_INSERT', 'DELETE': 'KEY_DELETE',
+    'PRIOR': 'KEY_PAGEUP', 'NEXT': 'KEY_PAGEDOWN', 'PAGE_UP': 'KEY_PAGEUP',
+    'PAGE_DOWN': 'KEY_PAGEDOWN', 'SNAPSHOT': 'KEY_SYSRQ', 'PAUSE': 'KEY_PAUSE',
+    'CAPITAL': 'KEY_CAPSLOCK', 'CAPS_LOCK': 'KEY_CAPSLOCK', 'NUMLOCK': 'KEY_NUMLOCK',
+    'NUM_LOCK': 'KEY_NUMLOCK', 'SCROLL': 'KEY_SCROLLLOCK', 'SCROLL_LOCK': 'KEY_SCROLLLOCK',
+    'LWIN': 'KEY_LEFTMETA', 'RWIN': 'KEY_RIGHTMETA', 'SHIFT_L': 'KEY_LEFTSHIFT',
+    'SHIFT_R': 'KEY_RIGHTSHIFT', 'LCONTROL': 'KEY_RIGHTALT',
+    'RCONTROL': 'KEY_RIGHTCTRL', 'CONTROL': 'KEY_LEFTCTRL',
+    'CONTROL_L': 'KEY_LEFTCTRL', 'CONTROL_R': 'KEY_RIGHTCTRL',
+    'ALT_L': 'KEY_LEFTALT', 'ALT_R': 'KEY_RIGHTALT', 'LMENU': 'KEY_LEFTALT',
+    'RMENU': 'KEY_RIGHTALT', 'MENU': 'KEY_COMPOSE', 'APPS': 'KEY_COMPOSE',
+    'ISO_NEXT_GROUP': 'KEY_RIGHTALT', 'ADD': 'KEY_KPPLUS', 'SUBTRACT': 'KEY_KPMINUS',
+    'MULTIPLY': 'KEY_KPASTERISK', 'DIVIDE': 'KEY_KPSLASH', 'DECIMAL': 'KEY_KPDOT',
+  }
 
-    def __init__(self):
-        self._lock = threading.RLock()
-        self._pressed_codes = set()
-        self._ui = None
-        self._create_device()
+  def __init__(self):
+    self._lock = threading.RLock()
+    self._pressed_codes = set()
+    self._ui = None
+    self._physical_keyboard = None
+    self._create_device()
 
-    def _create_device(self):
-        try:
-            self._ui = UInput(
-                {ecodes.EV_KEY: list(range(1, 256))},
-                name='Mouse Setting Control Virtual Keyboard',
-                bustype=ecodes.BUS_USB,
-                vendor=0x1209,
-                product=0x0001,
-            )
-        except Exception as exc:
-            # Do not stop mouse emulation when /dev/uinput is unavailable.  The
-            # caller uses the library fallback, never xte, for this rare case.
-            self._ui = None
-            try:
-                dict_save.write_in_log('UInput keyboard is unavailable: ' + str(exc))
-            except Exception:
-                pass
+  def _find_keyboard(self):
+    # Надёжный выбор физической клавиатуры: пропускаем виртуальные
+    # устройства и мыши, оставляем те, у которых есть буквы/Enter,
+    # и выбираем самую «полную» (больше всего клавиш EV_KEY).
+    try:
+      devices = list_devices()
+    except Exception:
+      return None
+    candidates = []
+    for path in devices:
+      try:
+        dev = InputDevice(path)
+      except Exception:
+        continue
+      name = (dev.name or "").lower()
+      phys = (dev.phys or "").lower()
+      if "virtual" in name or "uinput" in phys or "mouse" in name:
+        continue
+      try:
+        caps = dev.capabilities().get(ecodes.EV_KEY, [])
+      except Exception:
+        continue
+      if ecodes.KEY_A in caps or ecodes.KEY_ENTER in caps or ecodes.KEY_SPACE in caps:
+        candidates.append(dev)
+    if candidates:
+      candidates.sort(key=lambda d: len(d.capabilities().get(ecodes.EV_KEY, [])), reverse=True)
+      return candidates[0]
+    return None
 
-    @staticmethod
-    def _ecodes_value(name):
-        value = getattr(ecodes, name, None)
-        if isinstance(value, int):
-            return value
-        value = ecodes.ecodes.get(name)
-        return value if isinstance(value, int) else None
+  def _create_device(self):
+    try:
+      self._physical_keyboard = self._find_keyboard()
+    except Exception:
+      self._physical_keyboard = None
+    try:
+      self._ui = UInput(
+        {ecodes.EV_KEY: list(range(1, 256)),
+         ecodes.EV_LED: [ecodes.LED_NUML, ecodes.LED_CAPSL]},
+        name='Mouse Setting Control Virtual Keyboard',
+        bustype=ecodes.BUS_USB,
+        vendor=0x1209,
+        product=0x0001,
+      )
+    except Exception as exc:
+      # Не останавливаем эмуляцию мыши, если /dev/uinput недоступен.
+      # Внешние процессы (xdotool) больше НЕ используются — нажатия
+      # просто не эмулируются до появления устройства.
+      self._ui = None
+      try:
+        dict_save.write_in_log('UInput keyboard is unavailable: ' + str(exc))
+      except Exception:
+        pass
+    self._force_numlock_on()
 
-    def _resolve(self, action):
-        if not isinstance(action, str):
-            return None
-        action = action.strip()
-        if not action or action == ' ':
-            return None
-        if action.isdigit():
-            code = int(action)
-            if 0 < code < 256:
-                return code
-            return None
-        normalized = action.upper()
-        if len(action) == 1 and action.isalpha():
-            key_name = 'KEY_' + normalized
-        elif len(action) == 1 and action.isdigit():
-            key_name = 'KEY_' + action
-        elif normalized.startswith('F') and normalized[1:].isdigit():
-            key_name = 'KEY_' + normalized
-        elif normalized.startswith('NUMPAD') and normalized[6:].isdigit():
-            key_name = 'KEY_KP' + normalized[6:]
-        else:
-            key_name = self._ACTION_TO_ECODE.get(normalized)
-        return self._ecodes_value(key_name) if key_name else None
+  def _read_led_mask(self):
+    try:
+      result = subprocess.run(["xset", "-q"], capture_output=True, text=True, timeout=2)
+      m = re.search(r'LED\s+mask:\s{0,}([0-9a-fA-F]+)', result.stdout)
+      if m:
+        return int(m.group(1), 16)
+    except Exception:
+      pass
+    return None
 
-    def key_down(self, action):
-        """Send one UInput key-down event for a mapped mouse action."""
-        code = self._resolve(action)
-        if code is None:
-            return False
-        if self._ui is None:
-            self._create_device()
-        if self._ui is None:
-            try:
-                return subprocess.run(['xdotool', 'keydown', str(action)], check=False,
-                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
-            except OSError:
-                return False
-        try:
-            with self._lock:
-                if code not in self._pressed_codes:
-                    self._ui.write(ecodes.EV_KEY, code, 1)
-                    self._ui.syn()
-                    self._pressed_codes.add(code)
-            return True
-        except Exception as exc:
-            try:
-                dict_save.write_in_log('UInput key-down failed: ' + str(exc))
-            except Exception:
-                pass
-            return False
+  def _is_numlock_on(self):
+    mask = self._read_led_mask()
+    if mask is not None:
+      return bool(mask & 0x00000002)
+    try:
+      if self._physical_keyboard is not None:
+        return bool(self._physical_keyboard.leds() & (1 << ecodes.LED_NUML))
+    except Exception:
+      pass
+    return True
 
-    def key_up(self, action):
-        """Send one UInput key-up event for a mapped mouse action."""
-        code = self._resolve(action)
-        if code is None:
-            return False
-        if self._ui is None:
-            self._create_device()
-        if self._ui is None:
-            try:
-                return subprocess.run(['xdotool', 'keyup', str(action)], check=False,
-                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
-            except OSError:
-                return False
-        try:
-            with self._lock:
-                self._ui.write(ecodes.EV_KEY, code, 0)
-                self._ui.syn()
-                self._pressed_codes.discard(code)
-            return True
-        except Exception as exc:
-            try:
-                dict_save.write_in_log('UInput key-up failed: ' + str(exc))
-            except Exception:
-                pass
-            return False
+  def _force_numlock_on(self):
+    try:
+      if self._ui is not None:
+        if not self._is_numlock_on():
+          self._ui.write(ecodes.EV_KEY, ecodes.KEY_NUMLOCK, 1)
+          self._ui.syn()
+          time.sleep(0.05)
+          self._ui.write(ecodes.EV_KEY, ecodes.KEY_NUMLOCK, 0)
+          self._ui.syn()
+          time.sleep(0.1)
+        self._ui.write(ecodes.EV_LED, ecodes.LED_NUML, 1)
+        self._ui.syn()
+      if self._physical_keyboard is not None:
+        self._physical_keyboard.set_led(ecodes.LED_NUML, 1)
+      try:
+        subprocess.run(["xset", "led", "named", "Num Lock"], capture_output=True, timeout=2)
+      except Exception:
+        pass
+    except Exception:
+      pass
 
-    # Compatibility aliases for code outside this file.
-    press = key_down
-    release = key_up
+  @staticmethod
+  def _ecodes_value(name):
+    value = getattr(ecodes, name, None)
+    if isinstance(value, int):
+      return value
+    value = ecodes.ecodes.get(name)
+    return value if isinstance(value, int) else None
+
+  def _resolve(self, action):
+    if not isinstance(action, str):
+      return None
+    action = action.strip()
+    if not action or action == ' ':
+      return None
+    if action.isdigit():
+      code = int(action)
+      if 0 < code < 256:
+        return code
+      return None
+    normalized = action.upper()
+    if len(action) == 1 and action.isalpha():
+      key_name = 'KEY_' + normalized
+    elif len(action) == 1 and action.isdigit():
+      key_name = 'KEY_' + action
+    elif normalized.startswith('F') and normalized[1:].isdigit():
+      key_name = 'KEY_' + normalized
+    elif normalized.startswith('NUMPAD') and normalized[6:].isdigit():
+      key_name = 'KEY_KP' + normalized[6:]
+    else:
+      key_name = self._ACTION_TO_ECODE.get(normalized)
+    return self._ecodes_value(key_name) if key_name else None
+
+  def key_down(self, action):
+    """Send one UInput key-down event for a mapped mouse action."""
+    code = self._resolve(action)
+    if code is None:
+      return False
+    if self._ui is None:
+      self._create_device()
+    if self._ui is None:
+      # Внешний процесс (xdotool) не используется — просто не эмулируем.
+      return False
+    try:
+      with self._lock:
+        if code not in self._pressed_codes:
+          self._ui.write(ecodes.EV_KEY, code, 1)
+          self._ui.syn()
+          self._pressed_codes.add(code)
+      return True
+    except Exception as exc:
+      try:
+        dict_save.write_in_log('UInput key-down failed: ' + str(exc))
+      except Exception:
+        pass
+      return False
+
+  def key_up(self, action):
+    """Send one UInput key-up event for a mapped mouse action."""
+    code = self._resolve(action)
+    if code is None:
+      return False
+    if self._ui is None:
+      self._create_device()
+    if self._ui is None:
+      # Внешний процесс (xdotool) не используется — просто не эмулируем.
+      return False
+    try:
+      with self._lock:
+        self._ui.write(ecodes.EV_KEY, code, 0)
+        self._ui.syn()
+        self._pressed_codes.discard(code)
+      return True
+    except Exception as exc:
+      try:
+        dict_save.write_in_log('UInput key-up failed: ' + str(exc))
+      except Exception:
+        pass
+      return False
+
+  # Compatibility aliases for code outside this file.
+  press = key_down
+  release = key_up
 
 
 smart_typer = SmartTyper()
@@ -747,234 +820,329 @@ fi
 exit'''
 
 def Get_pid_and_path_window():  # Получаем идентификатор активного окна
- # Имя пользователя (один раз)
- 
- # Имя пользователя (один раз)
- user = (
-   os.environ.get('USER')
-   or os.environ.get('LOGNAME')
-   or (pwd.getpwuid(os.getuid()).pw_name if hasattr(os, 'getuid') else None)
- )
- if not user:
-  try:
-   user = subprocess.run(
-    ['whoami'], capture_output=True, text=True, timeout=1
-   ).stdout.strip() or None
-  except Exception:
-   user = None
- 
- _RE_EXE_SH = re.compile(r'.*\.(exe|sh)$', re.IGNORECASE)
- 
- _BASH_GET_MAIN_ID = '''#!/bin/bash
- active_window_id=$(xdotool getactivewindow 2>/dev/null)
- if [[ -n "$active_window_id" && "$active_window_id" =~ ^[0-9]+$ && "$active_window_id" != "0" ]]; then
-     process_id_active=$(xdotool getwindowpid "$active_window_id" 2>/dev/null)
-     if [[ -n "$process_id_active" && "$process_id_active" != "0" ]]; then
-         parent_pid=$(ps -p "$process_id_active" -o ppid= 2>/dev/null | tr -d '[:space:]')
-         if [[ -n "$parent_pid" && "$parent_pid" != "0" && "$parent_pid" != "1" ]] && ps -p "$parent_pid" >/dev/null 2>&1; then
-             echo "$parent_pid"
-         else
-             echo "$process_id_active"
-         fi
-         exit 0
-     fi
- fi
- echo "0"
- '''
- 
- # Кэш winepath (значительно ускоряет повторяющиеся вызовы)
- _winepath_cache = {}
- 
- def _winepath_u(win_path: str):
-  if win_path in _winepath_cache:
-   return _winepath_cache[win_path]
-  try:
-   r = subprocess.run(
-    ['winepath', '-u', win_path],
-    capture_output=True, text=True, timeout=1.5
-   )
-   result = r.stdout.strip() if r.returncode == 0 else None
-  except (subprocess.SubprocessError, FileNotFoundError, OSError):
-   result = None
-  _winepath_cache[win_path] = result
-  return result
- 
- my_pid = os.getpid()
- data_dict = {}
- 
- # === Один проход по всем процессам ===
- for proc in psutil.process_iter(["pid", "username", "cmdline"]):
-  try:
-   info = proc.info
-   pid = info["pid"]
-   if pid == my_pid:
-    continue
-   
-   # Фильтр по пользователю
-   if user is not None and info.get("username") != user:
-    continue
-   
-   cmdline_parts = info["cmdline"] or []
-   
-   # cwd / exe через /proc
-   try:
-    cwd = os.readlink(f"/proc/{pid}/cwd")
-   except (FileNotFoundError, PermissionError, OSError):
-    cwd = None
-   
-   try:
-    exe_link = os.readlink(f"/proc/{pid}/exe")
-   except (FileNotFoundError, PermissionError, OSError):
-    exe_link = None
-   
-   # --- Определяем, Wine ли это ---
-   is_wine = False
-   if exe_link:
-    low_exe = exe_link.lower()
-    if (
-      'wine-preloader' in low_exe
-      or 'wine64-preloader' in low_exe
-      or '/wine' in low_exe
-    ):
-     is_wine = True
-   if not is_wine:
-    is_wine = any('.exe' in arg.lower() for arg in cmdline_parts)
-   
-   resolved = None
-   
-   # ===== WINE-процесс =====
-   if is_wine:
-    win_exe = None
-    for arg in cmdline_parts:
-     if arg.lower().endswith('.exe'):
-      win_exe = arg
-      break
-    
-    if win_exe:
-     exe_name = os.path.basename(win_exe.replace('\\', '/'))
-     found = False
-     
-     # 1. Абсолютный Windows-путь (C:\...)
-     if len(win_exe) >= 2 and win_exe[1] == ':':
-      linux_path = _winepath_u(win_exe)
-      if linux_path and os.path.isfile(linux_path):
-       resolved = linux_path
-       found = True
-     
-     # 2. cwd + basename
-     if not found and cwd:
-      candidate = os.path.join(cwd, exe_name)
-      if os.path.isfile(candidate):
-       resolved = candidate
-       found = True
-     
-     # 3. Относительный путь (dx11\Game.exe)
-     if not found and cwd:
-      rel = win_exe.replace('\\', '/')
-      candidate = os.path.normpath(os.path.join(cwd, rel))
-      if os.path.isfile(candidate):
-       resolved = candidate
-       found = True
-     
-     # 4. Ещё раз basename (на случай, если предыдущие не сработали)
-     if not found and cwd:
-      candidate = os.path.join(cwd, exe_name)
-      if os.path.isfile(candidate):
-       resolved = candidate
-       found = True
-     
-     # 5. Fallback: find (уменьшен depth и timeout)
-     if not found and cwd and exe_name:
-      try:
-       r = subprocess.run(
-        [
-         'find', cwd,
-         '-maxdepth', '2',
-         '-iname', exe_name,
-         '-type', 'f'
-        ],
-        capture_output=True, text=True, timeout=1.5
-       )
-       if r.returncode == 0 and r.stdout.strip():
-        resolved = r.stdout.strip().split('\n', 1)[0]
-        found = True
-      except (subprocess.SubprocessError, FileNotFoundError, OSError):
-       pass
-   
-   # ===== Обычный Linux-процесс =====
-   else:
-    if not cmdline_parts:
-     resolved = exe_link
-    else:
-     relative_exe = cmdline_parts[0].replace("\\", "/")
-     if relative_exe.startswith('/'):
-      full_path = relative_exe
-     elif cwd and relative_exe:
-      full_path = os.path.normpath(os.path.join(cwd, relative_exe))
-     else:
-      full_path = None
-     
-     if full_path and os.path.isfile(full_path):
-      resolved = full_path
-     else:
-      resolved = exe_link  # fallback
-   
-   # --- Доп. сканирование cmdline на .exe/.sh ---
-   if not resolved:
-    for arg in cmdline_parts:
-     arg_clean = arg.replace('\\', '/').strip('"')
-     if _RE_EXE_SH.search(arg_clean):
-      resolved = arg_clean
-      break
-   
-   if resolved:
-    data_dict[pid] = resolved
-    # ID потоков — только если путь найден
-    try:
-     for thread in proc.threads():
-      data_dict[thread.id] = resolved
-    except (psutil.NoSuchProcess, psutil.AccessDenied):
-     pass
+
+  # Кэш winepath и скомпилированная регулярка через атрибуты функции (ускоряет повторные вызовы)
+  if not hasattr(Get_pid_and_path_window, "_winepath_cache"):
+   Get_pid_and_path_window._winepath_cache = {}
+  if not hasattr(Get_pid_and_path_window, "_RE_EXE_SH"):
+   Get_pid_and_path_window._RE_EXE_SH = re.compile(r'.*\.(exe|sh)$', re.IGNORECASE)
   
-  except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-   continue
-  except Exception:
-   continue
- 
- # === Разворачиваем словарь на родителей/потомков ===
- expanded = dict(data_dict)
- for game_pid, game_path in list(data_dict.items()):
-  try:
-   proc = psutil.Process(game_pid)
-   # Родители
-   parent = proc.parent()
-   while parent is not None:
-    expanded.setdefault(parent.pid, game_path)
-    parent = parent.parent()
-   # Потомки
-   for child in proc.children(recursive=True):
-    expanded.setdefault(child.pid, game_path)
-  except (psutil.NoSuchProcess, psutil.AccessDenied):
-   continue
- 
- # === PID активного окна ===
- id_active = 0
- try:
-  r = subprocess.run(
-   ['bash'],
-   input=_BASH_GET_MAIN_ID,
-   stdout=subprocess.PIPE,
-   stderr=subprocess.DEVNULL,
-   text=True,
-   timeout=3,
+  winepath_cache = Get_pid_and_path_window._winepath_cache
+  _RE_EXE_SH = Get_pid_and_path_window._RE_EXE_SH
+  
+  # 1. Получение пользователя
+  user = (
+    os.environ.get('USER')
+    or os.environ.get('LOGNAME')
+    or (pwd.getpwuid(os.getuid()).pw_name if hasattr(os, 'getuid') else None)
   )
-  out = r.stdout.strip()
-  if out and out.isdigit():
-   id_active = int(out)
- except (subprocess.SubprocessError, ValueError, OSError):
-  pass
- 
- return expanded, id_active
+  if not user:
+   try:
+    user = subprocess.check_output(['whoami'], text=True, timeout=1).strip() or None
+   except Exception:
+    user = None
+  
+  my_pid = os.getpid()
+  data_dict = {}
+  parent_map = {}
+  children_map = {}
+  
+  # === Один быстрый проход по всем процессам ===
+  # Запрашиваем нужные атрибуты сразу (работает на C-уровне psutil, быстрее os.readlink)
+  for proc in psutil.process_iter(["pid", "username", "cmdline", "ppid", "exe", "cwd"]):
+   try:
+    info = proc.info
+    pid = info["pid"]
+    if pid == my_pid:
+     continue
+    
+    # Строим дерево процессов в памяти (O(1) доступ вместо чтения /proc)
+    ppid = info.get("ppid")
+    parent_map[pid] = ppid
+    if ppid:
+     children_map.setdefault(ppid, []).append(pid)
+    
+    if user is not None and info.get("username") != user:
+     continue
+    
+    cmdline_parts = info.get("cmdline") or []
+    cwd = info.get("cwd")
+    exe_link = info.get("exe")
+    
+    # --- Определяем, Wine ли это ---
+    is_wine = False
+    if exe_link:
+     low_exe = exe_link.lower()
+     if 'wine-preloader' in low_exe or 'wine64-preloader' in low_exe or '/wine' in low_exe:
+      is_wine = True
+    if not is_wine and cmdline_parts:
+     is_wine = any('.exe' in arg.lower() for arg in cmdline_parts)
+    
+    resolved = None
+    
+    # ===== WINE-процесс =====
+    if is_wine:
+     win_exe = None
+     for arg in cmdline_parts:
+      if arg.lower().endswith('.exe'):
+       win_exe = arg
+       break
+     
+     if win_exe:
+      exe_name = os.path.basename(win_exe.replace('\\', '/'))
+      found = False
+      
+      # 1. Абсолютный Windows-путь
+      if len(win_exe) >= 2 and win_exe[1] == ':':
+       if win_exe in winepath_cache:
+        linux_path = winepath_cache[win_exe]
+       else:
+        try:
+         r = subprocess.run(
+          ['winepath', '-u', win_exe],
+          capture_output=True, text=True, timeout=1.5
+         )
+         linux_path = r.stdout.strip() if r.returncode == 0 else None
+        except Exception:
+         linux_path = None
+        winepath_cache[win_exe] = linux_path
+       
+       if linux_path and os.path.isfile(linux_path):
+        resolved = linux_path
+        found = True
+      
+      # 2. cwd + basename
+      if not found and cwd and exe_name:
+       candidate = os.path.join(cwd, exe_name)
+       if os.path.isfile(candidate):
+        resolved = candidate
+        found = True
+      
+      # 3. Относительный путь (dx11\Game.exe)
+      if not found and cwd:
+       rel = win_exe.replace('\\', '/')
+       candidate = os.path.normpath(os.path.join(cwd, rel))
+       if os.path.isfile(candidate):
+        resolved = candidate
+        found = True
+      
+      # 4. Fallback: быстрый поиск на чистом Python (аналог find -maxdepth 2)
+      if not found and cwd and exe_name:
+       try:
+        exe_name_lower = exe_name.lower()
+        cwd_clean = cwd if cwd.endswith(os.sep) else cwd + os.sep
+        for root, dirs, files in os.walk(cwd):
+         if root != cwd:
+          if root.startswith(cwd_clean):
+           rel_path = root[len(cwd_clean):]
+           depth = rel_path.count(os.sep) + 1
+          else:
+           depth = 3
+          if depth >= 3:
+           dirs.clear()  # Прерываем спуск (эквивалент -maxdepth 2)
+           continue
+         for f in files:
+          if f.lower() == exe_name_lower:
+           resolved = os.path.join(root, f)
+           break
+         if resolved:
+          break
+       except (PermissionError, FileNotFoundError, OSError):
+        pass
+    
+    # ===== Обычный Linux-процесс =====
+    else:
+     if not cmdline_parts:
+      resolved = exe_link
+     else:
+      relative_exe = cmdline_parts[0].replace("\\", "/")
+      if relative_exe.startswith('/'):
+       full_path = relative_exe
+      elif cwd and relative_exe:
+       full_path = os.path.normpath(os.path.join(cwd, relative_exe))
+      else:
+       full_path = None
+      
+      if full_path and os.path.isfile(full_path):
+       resolved = full_path
+      else:
+       resolved = exe_link
+    
+    # --- Доп. сканирование cmdline ---
+    if not resolved:
+     for arg in cmdline_parts:
+      arg_clean = arg.replace('\\', '/').strip('"')
+      if _RE_EXE_SH.search(arg_clean):
+       resolved = arg_clean
+       break
+    
+    if resolved:
+     data_dict[pid] = resolved
+     try:
+      for thread in proc.threads():
+       data_dict[thread.id] = resolved
+     except Exception:
+      pass
+   
+   except Exception:
+    continue
+  
+  # === Разворачиваем словарь на родителей/потомков ===
+  # BFS по уже построенным словарям (вместо медленных proc.parent() и proc.children())
+  expanded = dict(data_dict)
+  for game_pid, game_path in data_dict.items():
+   # Родители
+   curr = parent_map.get(game_pid)
+   while curr and curr != 0:
+    if curr not in expanded:
+     expanded[curr] = game_path
+    curr = parent_map.get(curr)
+   
+   # Потомки (BFS через список вместо deque, чтобы не требовать лишних импортов)
+   queue = [game_pid]
+   idx = 0
+   while idx < len(queue):
+    curr = queue[idx]
+    idx += 1
+    for child in children_map.get(curr, []):
+     if child not in expanded:
+      expanded[child] = game_path
+      queue.append(child)
+  
+  # === PID активного окна + консистентный путь ===
+  # Множество системных exe Wine — НЕ являются целевыми играми
+  WINE_SYSTEM = frozenset({
+   'services.exe', 'winedevice.exe', 'plugplay.exe', 'explorer.exe',
+   'svchost.exe', 'rpcss.exe', 'wineserver.exe', 'start.exe',
+   'winepath.exe', 'conhost.exe', 'csrss.exe', 'lsass.exe',
+   'dllhost.exe', 'cmd.exe', 'notepad.exe', 'regedit.exe',
+   'taskmgr.exe', 'winemenubuilder.exe', 'wineboot.exe',
+   'wineserver', 'services', 'plugplay', 'rpcss',
+  })
+  
+  def _is_game(path):
+   """Путь ведёт к реальной игре, а не к системному exe Wine."""
+   if not path:
+    return False
+   base = os.path.basename(path).lower()
+   if not base.endswith('.exe'):
+    return False
+   return base not in WINE_SYSTEM
+  
+  def _is_any_exe(path):
+   """Любой .exe (включая системные) — последний fallback."""
+   if not path:
+    return False
+   return os.path.basename(path).lower().endswith('.exe')
+  
+  def _bfs_down(start, visitor):
+   """BFS вниз от start, вызывает visitor(child_pid, child_path) — True = стоп."""
+   queue = [start]
+   idx = 0
+   while idx < len(queue):
+    curr = queue[idx]
+    idx += 1
+    for child in children_map.get(curr, []):
+     if visitor(child, expanded.get(child, '')):
+      return child
+     queue.append(child)
+   return 0
+  
+  def _walk_up(start, visitor):
+   """Идём вверх по parent_map, вызывает visitor(pid, path) — True = стоп."""
+   curr = parent_map.get(start)
+   while curr and curr != 0:
+    if visitor(curr, expanded.get(curr, '')):
+     return curr
+    curr = parent_map.get(curr)
+   return 0
+  
+  id_active = 0
+  game_path = None
+  try:
+   win_id = subprocess.check_output(['xdotool', 'getactivewindow'], stderr=subprocess.DEVNULL, timeout=1).decode().strip()
+   if win_id and win_id.isdigit() and win_id != '0':
+    win_pid = subprocess.check_output(['xdotool', 'getwindowpid', win_id], stderr=subprocess.DEVNULL, timeout=1).decode().strip()
+    if win_pid and win_pid.isdigit() and win_pid != '0':
+     win_pid_int = int(win_pid)
+     
+     # ── Стратегия 1: потомки окна — ищем реальную игру (не system exe) ──
+     found = _bfs_down(win_pid_int, lambda p, pth: _is_game(pth))
+     if found:
+      id_active = found
+      game_path = expanded[found]
+     
+     # ── Стратегия 2: потомки окна — принимаем ЛЮБОЙ .exe (включая system) ──
+     if not id_active:
+      found = _bfs_down(win_pid_int, lambda p, pth: _is_any_exe(pth))
+      if found:
+       id_active = found
+       game_path = expanded[found]
+     
+     # ── Стратегия 3: родители окна — ищем игру среди предков ──
+     if not id_active:
+      found = _walk_up(win_pid_int, lambda p, pth: _is_game(pth))
+      if found:
+       id_active = found
+       game_path = expanded[found]
+     
+     # ── Стратегия 4: родители окна — любой .exe ──
+     if not id_active:
+      found = _walk_up(win_pid_int, lambda p, pth: _is_any_exe(pth))
+      if found:
+       id_active = found
+       game_path = expanded[found]
+     
+     # ── Стратегия 5: само окно ──
+     if not id_active:
+      self_path = expanded.get(win_pid_int, '')
+      if _is_game(self_path) or _is_any_exe(self_path):
+       id_active = win_pid_int
+       game_path = self_path
+     
+     # ── Fallback: ppid (старая логика) ──
+     if not id_active:
+      ppid = parent_map.get(win_pid_int)
+      if ppid and ppid not in (0, 1) and ppid in parent_map:
+       id_active = ppid
+      else:
+       try:
+        ps_out = subprocess.check_output(
+         ['ps', '-p', str(win_pid_int), '-o', 'ppid='],
+         stderr=subprocess.DEVNULL, timeout=1
+        ).decode().strip()
+        ppid_int = int(ps_out) if ps_out.isdigit() else 0
+        if ppid_int and ppid_int not in (0, 1):
+         subprocess.check_call(['ps', '-p', str(ppid_int)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1)
+         id_active = ppid_int
+        else:
+         id_active = win_pid_int
+       except Exception:
+        id_active = win_pid_int
+      game_path = expanded.get(id_active)
+     
+     # === Делаем expanded консистентным: всё дерево активного окна → один путь ===
+     if id_active and game_path:
+      # Обновляем сам id_active
+      expanded[id_active] = game_path
+      # Родители
+      curr = parent_map.get(id_active)
+      while curr and curr != 0:
+       expanded[curr] = game_path
+       curr = parent_map.get(curr)
+      # Потомки
+      queue = [id_active]
+      idx2 = 0
+      while idx2 < len(queue):
+       curr = queue[idx2]
+       idx2 += 1
+       for child in children_map.get(curr, []):
+        expanded[child] = game_path
+        queue.append(child)
+  except Exception:
+   pass
+  
+  return expanded, id_active
 
 def default_profile_path(store, enabled_profiles):
     """Return a valid fallback profile; prefer the explicitly named default."""
@@ -1011,14 +1179,17 @@ def check_current_active_window(dict_save, games_checkmark_paths):
     try:
         data_dict, id_active = Get_pid_and_path_window()
         file_path = data_dict.get(id_active, '')
-        if file_path and is_path_in_list(file_path, games_checkmark_paths):
-            return games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]
+        has_exe = any('.exe' in p for p in data_dict.values())
+        if has_exe and file_path and is_path_in_list(file_path, games_checkmark_paths):
+            result = games_checkmark_paths[get_index_of_path(file_path, games_checkmark_paths)]
+            # print(f"[OK] {os.path.basename(file_path)} -> {result}")
+            return result
 
         has_portproton = any('/PortProton/data' in p and '.exe' in p for p in data_dict.values())
         if has_portproton and id_active in data_dict:
-            for path in data_dict.values():
-                if is_path_in_list(path, games_checkmark_paths):
-                    return games_checkmark_paths[get_index_of_path(path, games_checkmark_paths)]
+           for path in data_dict.values():
+            if is_path_in_list(path, games_checkmark_paths):
+              return games_checkmark_paths[get_index_of_path(path, games_checkmark_paths)]
     except Exception as exc:
         try:
             dict_save.write_in_log(exc)
@@ -1158,13 +1329,12 @@ class MouseProfileRuntime:
         if action == ' ':
             return
         try:
+            # Скрипт не заменяет назначение, а выполняется перед ним.
             script = self._mouse_script(binding.slot)
-            if script:
-                threading.Thread(target=execute_script, args=(script,), daemon=True).start()
-            elif action in self.MOUSE_ACTIONS:
-                self._handle_mouse_action(binding, pressed)
+            if action in self.MOUSE_ACTIONS:
+                self._handle_mouse_action(binding, pressed, script=script)
             else:
-                self._handle_keyboard_action(binding, pressed)
+                self._handle_keyboard_action(binding, pressed, script=script)
         except Exception as exc:
             self.store.write_in_log(exc)
 
@@ -1173,8 +1343,10 @@ class MouseProfileRuntime:
         button_name = defaut_list_mouse_buttons[slot]
         return self.store.return_jnson().get('script_mouse', {}).get(current_game, {}).get(button_name, '')
 
-    def _handle_mouse_action(self, binding, pressed):
+    def _handle_mouse_action(self, binding, pressed, script=None):
         global sticking_right_mouse
+        if pressed and script:
+            self._execute_bound_script(script)
         slot = binding.slot
         action = self.assignments[slot]
         hold = self.hold_flags[slot]
@@ -1237,7 +1409,7 @@ class MouseProfileRuntime:
             worker.pause()
             worker.set_sw(False)
 
-    def _handle_keyboard_action(self, binding, pressed):
+    def _handle_keyboard_action(self, binding, pressed, script=None):
         slot = binding.slot
         key_value = str(KEYS[self.assignments[slot]])
         duration = self.hold_durations[slot]
@@ -1249,7 +1421,11 @@ class MouseProfileRuntime:
             duration = None
         # «Повторять» — одно нажатие запускает цикл на весь выбранный
         # общий срок. Отпускание физической кнопки цикл не прерывает.
-        if self.repeat_flags[slot] and duration is not None:
+        repeat_mode = self.repeat_flags[slot] and duration is not None
+        if script and pressed and not repeat_mode:
+            # Для одиночного действия Bash завершается до key-down.
+            self._execute_bound_script(script)
+        if repeat_mode:
             if not pressed:
                 return
             with self._timed_holds_lock:
@@ -1260,7 +1436,7 @@ class MouseProfileRuntime:
                     self._timed_holds[slot] = True
                     threading.Thread(
                         target=self._repeat_key_for_duration,
-                        args=(slot, key_value, duration),
+                        args=(slot, key_value, duration, script),
                         daemon=True,
                     ).start()
             return
@@ -1299,14 +1475,23 @@ class MouseProfileRuntime:
             mouse_controller.release(mouse.Button.right)
             sticking_right_mouse = False
 
-    def _repeat_key_for_duration(self, slot, key_value, total_duration):
-        """Repeat a mapped key after one click for the selected total duration."""
+    def _execute_bound_script(self, script):
+        # Выполняем Bash синхронно, чтобы следующая клавиша шла после него.
+        try:
+            execute_script(script)
+        except Exception as exc:
+            self.store.write_in_log(exc)
+
+    def _repeat_key_for_duration(self, slot, key_value, total_duration, script=None):
+        """Repeat Bash-then-key pulses for the selected total duration."""
         deadline = time.monotonic() + total_duration
         try:
             while time.monotonic() < deadline and not self.stop_requested.is_set():
                 with self._timed_holds_lock:
                     if not self._timed_holds.get(slot, False):
                         break
+                if script:
+                    self._execute_bound_script(script)
                 key_work.key_press(key_value, slot)
                 time.sleep(0.05)
                 key_work.key_release(key_value, slot)
@@ -1362,7 +1547,8 @@ class work_key:
     def key_press(self, key, number_key):
         # Mouse-to-key assignments always go through SmartTyper/UInput.
         if not smart_typer.key_down(key):
-            dict_save.write_in_log('Mapped key-down was not emitted: ' + str(key))
+           # print(key)
+           dict_save.write_in_log('Mapped key-down was not emitted: ' + str(key))
 
     def key_release(self, key, number_key):
         # The matching physical-button release goes through the same class.
@@ -1968,11 +2154,13 @@ class MouseSettingAppMethods:
             while not runtime.store.thread_exit and not runtime.stop_requested.is_set():
                 active_game = check_current_active_window(runtime.store, runtime.enabled_profiles)
                 if runtime.game != active_game:
+                    # print(f"[SWITCH] {runtime.game!r} -> {active_game!r}")
                     remember_fallback_before_game(
                         runtime.store, runtime.game, active_game, runtime.enabled_profiles
                     )
                     runtime.store.set_cur_app(active_game)
                 if runtime.store.get_current_path_game() != runtime.store.get_cur_app():
+                    # print(f"[RESTART] path_game={runtime.store.get_current_path_game()!r} != cur_app={runtime.store.get_cur_app()!r}")
                     runtime.join_event_workers()
                     break
                 time.sleep(0.03)
@@ -2019,6 +2207,7 @@ class MouseSettingAppMethods:
         store = store or dict_save
         self._stop_active_runtime(store)
         runtime = MouseProfileRuntime(store)
+        print(f"[PREPARE] game={runtime.game!r} enabled={runtime.enabled_profiles!r}")
         runtime.apply_button_map()
         runtime.store.set_cur_app(runtime.game)
         runtime.store.set_current_path_game(runtime.game)
@@ -2106,10 +2295,11 @@ class MouseSettingAppMethods:
             duration_combo.setCurrentText("" if value in (None, "", 0, "0") else str(value))
             duration_combo.blockSignals(False)
 
-        values = res["key_value"][game]  # Получить значение выпадающего списка для этой игры
+        values = res["key_value"][game]
         for button, value in zip(self.combo_box, values):
-            # Предположим, что вы хотите установить значение value в кнопку (комбо-бокс)
-            button.setCurrentText(value)  # для PyQt/PySide
+            button.blockSignals(True)
+            button.setCurrentText(value)
+            button.blockSignals(False)
         dict_save.set_cur_app(game)
         dict_save.save_jnson(res)
         # The blue profile must also become the active emulation context.
