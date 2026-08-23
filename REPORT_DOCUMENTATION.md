@@ -1387,4 +1387,168 @@ side), что верно только для конкретной мыши ав�
 
 ---
 
+## 19. Исправленные баги (сессия доработки)
+
+> Приведены три корневые проблемы, найденные и устранённые в этой сессии, плюс
+> одноразовая коррекция файла настроек. Все правки — статические (без запуска GUI);
+> проверка — `python3 -m py_compile`, оба файла компилируются (`COMPILE OK`).
+
+### 19.1 Баг А — изменения настроек не сохранялись на диск
+
+**Симптом.** Правки в UI (галочки профилей, назначения кнопок, макросы) не
+попадали в `settings control mouse buttons.json` — файл менялся только при
+закрытии окна, да и то через диалог «Сохранить изменения?», который был
+завязан на `deepdiff` в `closeEvent`.
+
+**Корень.** `save_dict.save_jnson(res)` (lib) не писал файл, а только обновлял
+в памяти `self.jnson = res`. Реальная запись `write_to_file` вызывалась лишь из
+`closeEvent`, и только если `deepdiff(self.jnson, self.old_data)` находил
+отличия И пользователь нажимал «Сохранить» в `QMessageBox`. Любая правка,
+сделанная при открытом окне, оставалась только в оперативке.
+
+**Исправление.**
+- **Первая попытка (отменена).** Сначала добавили поле `self._persist_enabled`
+  и `save_jnson` стал сразу писать файл и обновлять `old_data`. Это убрало
+  диалог «Сохранить изменения?» при выходе (diff с `old_data` становился
+  пустым) — то есть сломало «идеальный» механизм сохранения при закрытии из
+  оригинального кода/репозитория. Пользователь указал на это как на баг.
+- **Итоговое исправление — возврат к save-on-close (как в оригинале):**
+  - `save_dict.__init__` (lib): поле `_persist_enabled` убрано.
+  - `save_jnson(res)` (lib): снова ТОЛЬКО `self.jnson = res` (запись в память,
+    без записи в файл и без обновления `old_data`).
+  - `closeEvent` (lib) восстановлен в «идеальном» виде:
+    - `old_data` == начальные настройки (сеются через `save_old_data` при
+      загрузке в `__init__`), `new_data` == текущие (в памяти);
+    - `diff = deepdiff.DeepDiff(old_data, new_data)`; если есть изменения —
+      диалог **«Вы хотите сохранить изменения перед выходом?»** с кнопками
+      **Save / Discard / Cancel**;
+    - **Save** → `write_to_file(new_data)` (предварительно `current_app`
+      нормализуется в `C:/Windows/explorer.exe`, если пуст);
+    - **Discard** → выход без записи;
+    - **Cancel** → `event.ignore()` (окно НЕ закрывается, работа продолжается);
+    - выход (любой, кроме Cancel) завершается через `os._exit(0)` (фоновые
+      потоки уже остановлены флагом `thread_exit`), вместо старого
+      `os.kill(os.getpid(), SIGKILL)`, который убивал процесс даже при Cancel.
+  - Главный файл: строка `dict_save._persist_enabled = True` в `__init__`
+    удалена.
+
+**Эффект.** При любом изменении настроек в UI (галочки профилей, кнопки,
+макросы, порядок) программа при закрытии спрашивает «Сохранить изменения?»
+и пишет файл только по «Save». Диалог сохранения восстановлен (механизм из
+оригинального репозитория), `Cancel` корректно отменяет выход.
+
+### 19.2 Баг Б — список профилей «скакал»/прокручивался при клике по имени
+
+**Симптом.** При клике по имени игры (левый список, `QLabel` внутри
+`QScrollArea`, `self.scroll_area`, `fixedHeight=280`) весь список прыгал по
+вертикали. Само выделение (синий фон, `background-color: #06c`) работало
+верно — это оставили.
+
+**Корень.** Клик по `QLabel` шёл через `label.mousePressEvent` →
+`label_clicked` → `check_label_changed`, и в процессе обработки позиция
+вертикального скроллбара сбрасывалась/перепрыгивала (фокус/перестроение
+виджетов внутри `scroll_area`). Простого «вернуть скролл» в конце было
+недостаточно, т.к. сброс случался внутри обработки события.
+
+**Исправление (два слоя защиты):**
+1. `filling_in_fields` (lib): `setFocusPolicy(Qt.FocusPolicy.NoFocus)` на
+   `game_container`, `var` (QCheckBox) и `label` (QLabel) — виджеты не
+   перехватывают фокус, поэтому scroll-area не «подскролливает» к ним.
+2. `check_label_changed` (lib): в начале захватывается
+   `_scroll_pos = self.scroll_area.verticalScrollBar().value()`, а в конце
+   через `QTimer.singleShot(0, ...)` позиция возвращается.
+ 3. **Главный файл, жёсткая блокировка (финальная версия).** Первая попытка
+    (только `eventFilter` с захватом/возвратом на press/release) не помогла:
+    `QScrollArea` «подскролливает» кликнутый элемент в зону видимости **по
+    фокусу — уже ПОСЛЕ отпускания кнопки**, поэтому список всё равно дёргался.
+    Сделана настоящая блокировка через перехват `valueChanged` скроллбара:
+    - в `setup_ui`: `self._scroll_locked = False`,
+      `self.scroll_area.verticalScrollBar().valueChanged.connect(self._block_scroll_during_click)`
+      и `self.scroll_area.viewport().installEventFilter(self)`;
+    - `eventFilter`: на `MouseButtonPress` ставит `_scroll_locked = True` и
+      запоминает позицию `_scroll_lock_val`; на `MouseButtonRelease`
+      восстанавливает позицию и планирует снятие блока через 180 мс
+      (`QTimer.singleShot(0/80/180, ...)`);
+    - `_block_scroll_during_click(_val)`: пока `_scroll_locked` — правда,
+      принудительно возвращает скроллбар в `_scroll_lock_val`
+      (`blockSignals(True)` → `setValue` → `blockSignals(False)`, чтобы не
+      было рекурсии). Любая попытка QScrollArea сдвинуть список во время
+      клика/сразу после него гасится.
+    Итог: клик по имени игры НЕ сдвигает список ни при какой причине прыжка.
+    Обычная прокрутка мышью/скроллбаром работает вне окна клика (блок
+    снимается через 180 мс после отпускания).
+4. Попутно в `check_label_changed` исправлен латентный баг выбора: вместо
+   `res["key_value"].keys()` используется
+   `game = list(res["paths"].keys())[count]` — ключи совпадают с порядком
+   отрисовки списка профилей.
+
+### 19.3 Баг В — `current_app` перехватывался фоновым монитором окна
+
+**Симптом.** В `settings control mouse buttons.json` поле `current_app`
+оказывалось равно последнему сфокусированному окну (напр.
+`.../total_commander.exe`), а не выбранному/умолчальному профилю
+(`C:/Windows/explorer.exe`). То есть «текущий профиль» постоянно
+перезаписывался живым окном.
+
+**Корень.** `current_app` было перегружено двумя смыслами: (1) профиль,
+выбранный пользователем в UI (для подсветки и как fallback), и (2) живая цель
+эмуляции. Фоновый цикл `emunator_mouse` через
+`check_current_active_window` вызывал `store.set_cur_app(active_game)` ~каждые
+30 мс, затирая выбор пользователя, а `prepare` ещё и делал
+`set_cur_app(runtime.game)`. Сохранение (`save_jnson` из §19.1) закрепляло
+чужое значение в файле.
+
+**Исправление — развязка `_current_app` (выбор) и live-цели эмуляции:**
+- `MouseProfileRuntime.__init__` (lib): сначала вычисляет
+  `self.enabled_profiles`, затем
+  `self.game = check_current_active_window(store, self.enabled_profiles)`
+  (fallback на `store.get_cur_app()`). Поле `store._current_app` больше НЕ
+  трогается этим путём.
+- `emunator_mouse` (lib): убраны `runtime.store.set_cur_app(active_game)` и
+  условие выхода `get_current_path_game() != runtime.store.get_cur_app()`; при
+  смене игры теперь просто `runtime.join_event_workers(); break` (restart
+  через `start_startup_now`).
+- `prepare` (lib): убрана `runtime.store.set_cur_app(runtime.game)` (оставлен
+  только `set_current_path_game(runtime.game)`).
+- Макросы клавиатуры — `handle_keyboard_macro` (главный файл): цель
+  берётся из живого окна — `self._active_runtime.game` либо
+  `check_current_active_window(dict_save, enabled)`, а НЕ из
+  `dict_save.get_cur_app()`. Так макросы совпадают с эмулируемым профилем, а
+  не с выбранным в UI.
+
+**Эффект.** `current_app` в файле теперь — это выбранный/умолчальный профиль
+и не «уезжает» за активным окном. Эмуляция по-прежнему переключается по
+фокусу окна через `MouseProfileRuntime.game`.
+
+### 19.4 Одноразовая коррекция файла настроек
+
+Поскольку `current_app` уже был перезаписан монитором на
+`.../total_commander.exe`, выполнена одноразовая правка файла
+`settings control mouse buttons.json`: `"current_app"` возвращён в
+`"C:/Windows/explorer.exe"` (без изменения формата/скриптов). Код из §19.3
+гарантирует, что значение больше не будет перехвачено.
+
+### 19.5 Статус проверки
+
+- `python3 -m py_compile Pyqt6_libs_mouse.py "Pytq6_mouse_setting_control_for_buttons_for_linux.py"`
+  → `COMPILE OK`.
+- **Запуск проверен.** Старт через venv
+  (`.../Project/myvenv/bin/python Pytq6_mouse_setting_control_for_buttons_for_linux.py`)
+  отрабатывает без traceback: окно создаётся, `setup_ui`/`eventFilter` —
+  методы класса (проверено через `ast`), приложение доходит до цикла событий
+  (запуск под `timeout 15` завершился по таймауту, код 124, только
+  Gtk/a11y WARNING, не ошибки). Предыдущая ошибка
+  `AttributeError: 'MouseSettingApp' object has no attribute 'setup_ui'`
+  устранена (была из-за некорректного отступа — методы оказались вложены в
+  `handle_keyboard_macro`; главный файл пересобран из чистого оригинала
+  `1/Pytq6_mouse_setting_control_for_buttons_for_linux.py` + 4 правки).
+- Требуется ручная проверка пользователем в интерактивном GUI:
+  1. правки сохраняются сразу и после выхода;
+  2. клик по имени игры делает его синим и НЕ сдвигает список;
+  3. `current_app` в JSON остаётся выбранным/умолчальным профилем;
+  4. эмуляция переключается по активному окну, макросы клавиатуры идут в
+     профиль активного окна.
+
+---
+
 *Конец отчёта.*

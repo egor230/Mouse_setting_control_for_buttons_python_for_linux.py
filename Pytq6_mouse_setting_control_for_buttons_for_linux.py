@@ -52,8 +52,6 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   self.mouse_button_labels = []
   self.mouse_button_combos = []
   self.mouse_check_buttons = []
-  self.mouse_repeat_check_buttons = []
-  self.mouse_hold_duration_combos = []
   self.buttons_script = []
   self.board = None
   data = dict_save.data
@@ -62,9 +60,6 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
      # strict=False: разрешаем реальные переносы строк внутри bash-скриптов (script_mouse / keyboard_script)
      res = json.load(json_file, strict=False)
      res = scripts_to_text(res)  # убрать отступы продолжения строк из скриптов (нормализация)
-     # Удаляем старые XBUTTON-скрипты, если в профиле уже выбрана
-     # клавиша K/R/etc.; иначе старый script_mouse перехватит боковую кнопку.
-     res = cleanup_empty_script_entries(res)
      dict_save.save_old_data(res)
     dict_save.save_jnson(res)
   else:
@@ -170,7 +165,17 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   # Та же логика сопоставления, что была в старом on_press: ищем макрос в keyboard_script
   # для текущего приложения и запускаем bash-скрипт. Без остановки/рестарта слушателя
   # (цикл непрерывный, поэтому повторные нажатия не теряются).
-  current_app = dict_save.get_cur_app()
+  # Макросы клавиатуры должны совпадать с целью эмуляции (активное окно),
+  # а не с выбранным в UI профилем — иначе они расходятся после разделения
+  # current_app (выбор) и live-цели эмуляции.
+  current_app = None
+  _rt = getattr(self, "_active_runtime", None)
+  if _rt is not None and getattr(_rt, "game", None):
+   current_app = _rt.game
+  if not current_app:
+   _res = dict_save.return_jnson()
+   _enabled = [p for p, e in _res.get("games_checkmark", {}).items() if e]
+   current_app = check_current_active_window(dict_save, _enabled) or dict_save.get_cur_app()
   res = dict_save.return_jnson()
   if "keyboard_script" not in res or current_app not in res["keyboard_script"]:
    return
@@ -193,10 +198,35 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     t.join()
     break
   
+ def eventFilter(self, watched, event):
+   if watched is self.scroll_area.viewport():
+    if event.type() == QEvent.Type.MouseButtonPress:
+     self._scroll_locked = True
+     self._scroll_lock_val = self.scroll_area.verticalScrollBar().value()
+    elif event.type() == QEvent.Type.MouseButtonRelease:
+     sb = self.scroll_area.verticalScrollBar()
+     sb.setValue(self._scroll_lock_val)
+     QTimer.singleShot(0, lambda: sb.setValue(self._scroll_lock_val))
+     QTimer.singleShot(80, lambda: sb.setValue(self._scroll_lock_val))
+     QTimer.singleShot(180, lambda: self._clear_scroll_lock())
+   return super().eventFilter(watched, event)
+
+ def _block_scroll_during_click(self, _val):
+   # Жёстко подавляем любую прокрутку списка профилей во время/сразу после клика
+   # (QScrollArea сам «подскролливает» кликнутый элемент в зону видимости по фокусу).
+   if getattr(self, "_scroll_locked", False):
+    sb = self.scroll_area.verticalScrollBar()
+    sb.blockSignals(True)
+    sb.setValue(self._scroll_lock_val)
+    sb.blockSignals(False)
+
+ def _clear_scroll_lock(self):
+   self._scroll_locked = False
+
  def setup_ui(self):
   self.setWindowTitle("Mouse setting control for buttons python")
-  self.setGeometry(400, 340, 1045, 386)
-  self.setFixedSize(1085, 346)
+  self.setGeometry(400, 340, 910, 386)
+  self.setFixedSize(940, 346)
   central_widget = QWidget()
   self.setCentralWidget(central_widget)
   
@@ -224,6 +254,10 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   self.games_layout.setContentsMargins(5, 5, 5, 5)
   
   self.scroll_area.setWidget(self.scroll_widget)
+  self._scroll_locked = False
+  self._scroll_lock_val = 0
+  self.scroll_area.verticalScrollBar().valueChanged.connect(self._block_scroll_during_click)
+  self.scroll_area.viewport().installEventFilter(self)
   left_layout.addWidget(self.scroll_area)
   top_layout.addWidget(left_widget, 1)
   
@@ -263,27 +297,12 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
    checkbox = QCheckBox()
    checkbox.setToolTip("Держать нажатой")
    checkbox.stateChanged.connect(lambda state, i=i: self.check_mouse_press_button(i, state))
-
-   repeat_checkbox = QCheckBox()
-   repeat_checkbox.setToolTip("Повторять")
-   repeat_checkbox.stateChanged.connect(lambda state, i=i: self.update_mouse_repeat(i, state))
-   self.mouse_repeat_check_buttons.append(repeat_checkbox)
-
-   duration_combo = QComboBox()
-   duration_combo.addItems(["", "20", "30", "60"])
-   duration_combo.setFixedWidth(52)
-   duration_combo.setToolTip("Время удержания в секундах.\nПусто — до повторного нажатия.")
-   duration_combo.currentIndexChanged.connect(lambda _idx, i=i: self.update_mouse_hold_duration(i))
-   self.mouse_hold_duration_combos.append(duration_combo)
-
    self.mouse_button_labels.append(label)
    self.mouse_button_combos.append(combo)
    self.mouse_check_buttons.append(checkbox)
    row_layout.addWidget(label)
    row_layout.addWidget(combo, 1)
    row_layout.addWidget(checkbox)
-   row_layout.addWidget(repeat_checkbox)
-   row_layout.addWidget(duration_combo)
    
    rows_layout.addLayout(row_layout)
   

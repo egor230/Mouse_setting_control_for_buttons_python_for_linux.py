@@ -3,6 +3,7 @@
     "C:/Windows/explorer.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": true,
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": true,
@@ -18,7 +19,6 @@
     "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": true,
-    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": true,
     "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": true
   },
@@ -26,10 +26,11 @@
     "C:/Windows/explorer.exe": "По умолчанию",
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": "FarCry",
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": "Splinter Cell - Chaos Theory",
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": "Portal Stories Mel",
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": "Alien Isolation",
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": "Assassins Creed IV Black Flag",
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": "Tomb Raider",
-    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia2",
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia 2",
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": "Portal 2 community edition",
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": "Silent Downpour",
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe": "Splinter Cell Blacklist",
@@ -41,7 +42,6 @@
     "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": "GTA V",
     "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe": "Deus Ex Human Revolution",
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": "Medal of Honor Allied Assault",
-    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": "Portal Stories Mel",
     "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": "Dark Messiah of Might and Magic",
     "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": "Need for speed mw"
   },
@@ -49,7 +49,7 @@
     "C:/Windows/explorer.exe": [
       "LBUTTON",
       "RBUTTON",
-      "WHEEL_MOUSE_BUTTON",
+      "SPACE",
       " ",
       " ",
       "SCROLL_UP",
@@ -72,6 +72,15 @@
       "C",
       "SPACE",
       "SCROLL_DOWN"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": [
+      "LBUTTON",
+      "W",
+      "SPACE",
+      "SPACE",
+      "F",
+      "RBUTTON",
+      "E"
     ],
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": [
       "LBUTTON",
@@ -123,7 +132,7 @@
       "UP",
       "WHEEL_MOUSE_BUTTON",
       "C",
-      " ",
+      "SPACE",
       "R",
       "SCROLL_DOWN"
     ],
@@ -208,15 +217,6 @@
       "RBUTTON",
       "Shift_L"
     ],
-    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": [
-      "LBUTTON",
-      "W",
-      "E",
-      "SPACE",
-      "F",
-      "RBUTTON",
-      "E"
-    ],
     "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": [
       "LBUTTON",
       "W",
@@ -256,6 +256,15 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": [
       false,
       false,
       false,
@@ -391,15 +400,6 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": [
       false,
       false,
       false,
@@ -538,6 +538,25 @@
               done
               done
               done\""
+      }
+    },
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": {
+      "keys": {
+        "KEY_KPPLUS": "#!/bin/bash
+                       TIMESCALE=\"1\"
+                       xte \"keydown Esc\"
+                       sleep 0.62
+                       xte \"keyup Esc\"
+                       sleep 1.2
+                       xdotool key grave
+                       sleep 0.8
+                       xdotool type \"sv_cheats 1\"
+                       xdotool key Return
+                       sleep 0.3
+                       xdotool type \"host_timescale $TIMESCALE\"
+                       xdotool key Return
+                       sleep 0.81
+                       xdotool key Escape"
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": {
@@ -2894,6 +2913,17 @@
                         xdotool key Escape"
       }
     },
+    "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": {
+      "keys": {
+        "M": "#!/bin/bash
+              xte \"keydown W\"
+              sleep 2.02
+              xte \"keydown space\"
+              sleep 0.02
+              xte \"keyup space\"
+              xte \"keyup W\""
+      }
+    },
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": {
       "keys": {
         "N": "#!/bin/bash
@@ -2916,25 +2946,6 @@
                     xte \"keydown E\"
                     sleep 0.23
                     xte \"keyup E\""
-      }
-    },
-    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": {
-      "keys": {
-        "KEY_KPPLUS": "#!/bin/bash
-                       TIMESCALE=\"1\"
-                       xte \"keydown Esc\"
-                       sleep 0.62
-                       xte \"keyup Esc\"
-                       sleep 1.2
-                       xdotool key grave
-                       sleep 0.8
-                       xdotool type \"sv_cheats 1\"
-                       xdotool key Return
-                       sleep 0.3
-                       xdotool type \"host_timescale $TIMESCALE\"
-                       xdotool key Return
-                       sleep 0.81
-                       xdotool key Escape"
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": {

@@ -98,7 +98,7 @@ class save_dict:
         self.thread_exit=False  # это флаг выхода из потоков
         self.prev_game = ""  # Добавляем отсутствующий атрибут
 
-    def get_last_key_keyboard_script(self):  #
+    def get_last_key_keyboard_script(self): #
         return self.last_key_keyboard_script
 
     def set_last_key_keyboard_script(self, last_key_keyboard_script1):
@@ -178,7 +178,8 @@ class save_dict:
 
         self.jnson["mouse_press"][self.cur_app] = list(list_mouse_button_press)
 
-    def save_jnson(self, jn):  # сохранить новые настройки
+    def save_jnson(self, jn):  # сохранить новые настройки (только в память;
+        # запись в файл — при закрытии, через closeEvent, если есть изменения)
         self.jnson = jn
 
     def save_old_data(self, jnson):  # сохранить начальные настройки.
@@ -1241,7 +1242,15 @@ class MouseProfileRuntime:
     def __init__(self, store):
         self.store = store
         self.settings = store.return_jnson()
-        self.game = str(self.settings['current_app'])
+        self.enabled_profiles = tuple(
+            path for path, enabled in self.settings['games_checkmark'].items() if enabled
+        )
+        # Цель эмуляции — активное окно (per-game), а не выбранный в UI профиль.
+        # Так current_app остаётся «выбранным/дефолтным» профилем и не перехватывается
+        # фоновым монитором окна (устраняет баг: current_app сохранялся как последнее
+        # сфокусированное окно, напр. total_commander.exe).
+        _active = check_current_active_window(store, self.enabled_profiles)
+        self.game = str(_active) if _active else str(self.settings['current_app'])
         self.device_id = self.settings['id']
         self.assignments = list(self.settings['key_value'][self.game])
         self.hold_flags = list(self.settings['mouse_press'][self.game])
@@ -1255,9 +1264,6 @@ class MouseProfileRuntime:
         self.hold_durations = self.hold_durations[:7]
         self._timed_holds = {}
         self._timed_holds_lock = threading.RLock()
-        self.enabled_profiles = tuple(
-            path for path, enabled in self.settings['games_checkmark'].items() if enabled
-        )
         self.bindings = {}
         self.virtual_by_physical_button = {}
         self.stop_requested = threading.Event()
@@ -2124,23 +2130,23 @@ class MouseSettingAppMethods:
     def close_app(self):   # Закрываем приложение полностью
         self.close()
 
-    def closeEvent(self, event=None):  # Переопределяем закрытие окна - скрываем в трей вместо закрытия   print("ds")
+    def closeEvent(self, event=None):  # Переопределяем закрытие окна - спрашиваем о сохранении изменений
         dict_save.thread_exit=True
         old_data = dict_save.return_old_data()
         new_data = dict_save.return_jnson()
         diff = deepdiff.DeepDiff(old_data, new_data)
         if diff:
-         reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?", QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
-         if new_data["current_app"] =="":
-          new_data["current_app"]="C:/Windows/explorer.exe"
-
-         if reply == QMessageBox.StandardButton.Save:
-            dict_save.write_to_file(new_data)
-        try:
-            os.kill(os.getpid(), signal.SIGKILL)  # Самоубийство через kill -9
-        except:
-            sys.exit(0)   # Завершаем само приложение только после того, как поток завершит работу,
-        # В данном случае, так как вы хотите закрыть, используем accept() и sys.exit().
+            reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?", QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
+            if reply == QMessageBox.StandardButton.Cancel:
+                if event is not None:
+                    event.ignore()
+                return
+            if new_data["current_app"] == "":
+                new_data["current_app"] = "C:/Windows/explorer.exe"
+            if reply == QMessageBox.StandardButton.Save:
+                dict_save.write_to_file(new_data)
+        event.accept()
+        os._exit(0)   # гарантированный выход (фоновые потоки уже остановлены через thread_exit)
 
     def emunator_mouse(self, runtime):
         """Run one listener until its profile is changed, stopped, or the app exits."""
@@ -2158,9 +2164,8 @@ class MouseSettingAppMethods:
                     remember_fallback_before_game(
                         runtime.store, runtime.game, active_game, runtime.enabled_profiles
                     )
-                    runtime.store.set_cur_app(active_game)
-                if runtime.store.get_current_path_game() != runtime.store.get_cur_app():
-                    # print(f"[RESTART] path_game={runtime.store.get_current_path_game()!r} != cur_app={runtime.store.get_cur_app()!r}")
+                    # Не перезаписываем current_app (это выбранный/дефолтный профиль UI);
+                    # цель эмуляции берётся из active_game при перезапуске рантайма.
                     runtime.join_event_workers()
                     break
                 time.sleep(0.03)
@@ -2209,7 +2214,6 @@ class MouseSettingAppMethods:
         runtime = MouseProfileRuntime(store)
         print(f"[PREPARE] game={runtime.game!r} enabled={runtime.enabled_profiles!r}")
         runtime.apply_button_map()
-        runtime.store.set_cur_app(runtime.game)
         runtime.store.set_current_path_game(runtime.game)
         self._active_runtime = runtime
 
@@ -2243,6 +2247,8 @@ class MouseSettingAppMethods:
         message.exec()
 
     def check_label_changed(self, count):  # установить текущую активную игру
+        _sb = self.scroll_area.verticalScrollBar()
+        _scroll_pos = _sb.value()
         res = dict_save.return_jnson()
         labels = dict_save.return_labels()
         # Сброс ВСЕХ label в белый (как в Tkinter-версии, см. set_colol_white_label_changed).
@@ -2251,7 +2257,7 @@ class MouseSettingAppMethods:
         # label оставался и синих накапливалось несколько.
         for label in labels:
             label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
-        game = list(res["key_value"].keys())[count]
+        game = list(res["paths"].keys())[count]
         # Selecting a row updates the UI, but must not overwrite the saved
         # non-game fallback used after a game process exits.
         res["current_app"] = game
@@ -2304,6 +2310,8 @@ class MouseSettingAppMethods:
         dict_save.save_jnson(res)
         # The blue profile must also become the active emulation context.
         self.start_startup_now(dict_save)
+        # Сохраняем позицию прокрутки: клик не должен «скакать» список профилей.
+        QTimer.singleShot(0, lambda: self.scroll_area.verticalScrollBar().setValue(_scroll_pos))
 
     def filling_in_fields(self, dict_save):
         while self.games_layout.count():
@@ -2321,13 +2329,16 @@ class MouseSettingAppMethods:
         paths = res["paths"]
         for count, (path, game_name) in enumerate(paths.items()):
             game_container = QWidget()
+            game_container.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             game_layout = QHBoxLayout(game_container)
             game_layout.setContentsMargins(0, 0, 0, 0)
             var = QCheckBox()
+            var.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             var.setChecked(check_mark[path])
             var_list.append(var)
             var.stateChanged.connect(lambda state, c=count: self.checkbutton_changed(c))
             label = QLabel(game_name)
+            label.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             label.setFixedWidth(200)
             label.setStyleSheet("background-color: white; border: 1px solid gray; padding: 5px;")
             label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
