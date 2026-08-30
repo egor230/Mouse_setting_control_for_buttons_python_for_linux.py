@@ -1,4 +1,4 @@
-import sys, os, json, threading, subprocess, psutil, signal, time, copy, re, pyautogui, deepdiff
+import sys, os, json, threading, subprocess, psutil, signal, time, copy, re, pyautogui, deepdiff, pwd
 from dataclasses import dataclass
 import keyboard as keybord_from
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox,
@@ -450,8 +450,10 @@ class SmartTyper:
     self._lock = threading.RLock()
     self._pressed_codes = set()
     self._ui = None
+    self._ui_scroll = None
     self._physical_keyboard = None
     self._create_device()
+    self._create_scroll_device()
 
   def _find_keyboard(self):
     # Надёжный выбор физической клавиатуры: пропускаем виртуальные
@@ -506,6 +508,34 @@ class SmartTyper:
       except Exception:
         pass
     self._force_numlock_on()
+
+  def _create_scroll_device(self):
+    # Отдельное ВИРТУАЛЬНОЕ УСТРОЙСТВО-УКАЗАТЕЛЬ для колеса. Клавиатурное
+    # устройство (self._ui) в X11 регистрируется как клавиатура, и записанные
+    # в него EV_REL/REL_WHEEL сервер игнорирует (событий колеса не возникает).
+    # Устройство с capabilities EV_KEY+EV_REL (вкл. REL_WHEEL) Xorg объявляет
+    # указателем и превращает REL_WHEEL в настоящий скролл (кнопки 4/5 +
+    # XI2 scroll valuator). Имя содержит 'virtual'/'mouse', чтобы фильтр
+    # _find_keyboard() не принимал его за физическую клавиатуру.
+    try:
+      self._ui_scroll = UInput(
+        {ecodes.EV_KEY: [ecodes.BTN_LEFT, ecodes.BTN_RIGHT, ecodes.BTN_MIDDLE,
+                         ecodes.BTN_SIDE, ecodes.BTN_EXTRA],
+         ecodes.EV_REL: [ecodes.REL_X, ecodes.REL_Y, ecodes.REL_WHEEL, ecodes.REL_HWHEEL]},
+        name='Mouse Setting Control Virtual Wheel',
+        bustype=ecodes.BUS_USB,
+        vendor=0x1209,
+        product=0x0002,
+      )
+    except Exception as exc:
+      # Не останавливаем эмуляцию мыши, если /dev/uinput недоступен.
+      # Внешние процессы (xdotool) больше НЕ используются — скролл просто
+      # не эмулируется до появления устройства.
+      self._ui_scroll = None
+      try:
+        dict_save.write_in_log('UInput wheel device is unavailable: ' + str(exc))
+      except Exception:
+        pass
 
   def _read_led_mask(self):
     try:
@@ -628,6 +658,36 @@ class SmartTyper:
         pass
       return False
 
+  def scroll(self, direction, amount=1):
+    """Emit one or more wheel notches directly through the kernel (UInput).
+
+    `direction`: +1 = scroll up (REL_WHEEL +1), -1 = scroll down (REL_WHEEL -1).
+    `amount`: how many notches to send at once (all sent in a single SYN packet —
+    effectively an instantaneous step of N lines, faster than N separate ticks).
+
+    The scroll events are written to a dedicated virtual POINTER device
+    (EV_KEY + EV_REL with REL_WHEEL), otherwise X11 treats them as a keyboard's
+    dead events and no scrolling happens. Faster and lower-latency than
+    `xdotool click 4/5` (no process fork per tick), works on Wayland and in
+    games. Returns True on success, False if the virtual device is unavailable —
+    the caller can then fall back to xdotool.
+    """
+    if self._ui_scroll is None:
+      self._create_scroll_device()
+    if self._ui_scroll is None:
+      return False
+    try:
+      with self._lock:
+        self._ui_scroll.write(ecodes.EV_REL, ecodes.REL_WHEEL, direction * int(amount))
+        self._ui_scroll.syn()
+      return True
+    except Exception as exc:
+      try:
+        dict_save.write_in_log('UInput scroll failed: ' + str(exc))
+      except Exception:
+        pass
+      return False
+
   # Compatibility aliases for code outside this file.
   press = key_down
   release = key_up
@@ -648,20 +708,96 @@ class Job(threading.Thread):
         self.__running.set()  # Set running to True
 
     def run(self):
+        # Событийная эмуляция колеса (В3 evdev/uinput + В4 событийная модель):
+        #  - первый клик уходит МГНОВЕННО при resume() (нет задержки старта ~80мс);
+        #  - автоповтор идёт по настраиваемому интервалу с компенсацией дрейфа времени;
+        #  - при pause()/stop() новых тиков не появляется (нет overscroll после отпускания);
+        #  - не создаются потоки на каждый тик и не форкается xdotool/bash (W1/W2/W4/W5/W6/W7/W8/W9).
+        # Клавиатурные слоты (key != SCROLL_*) тут не крутят цикл: их обработка
+        # выполняется в _handle_keyboard_action напрямую, этот поток лишь ждёт.
         time.sleep(0.00001)
         while self.__running.is_set():
-            self.__flag.wait()  # return immediately when it is True, block until the internal flag is True when it is False
-            time.sleep(0.08)
-            t = 0.0115  # задержка в прокрутке.
-            if self.key == "SCROLL_UP":
-                thread = threading.Thread(target=key_work.mouse_wheel_up)
-                thread.start()  # key_work.mouse_wheel_donw()   # keybord_from.press(self.key)
-                time.sleep(t)
-            if self.key == "SCROLL_DOWN":
-                thread1 = threading.Thread(target=key_work.mouse_wheel_donw)
-                thread1.start()  # key_work.mouse_wheel_donw()   # keybord_from.press(self.key)
-                time.sleep(t)  # thread1.join()
-            # keybord_from.release(self.key)   # print(self.key)   # directinput.keyDown(str( self.key).lower())
+            if not self.__flag.is_set():
+                self.__flag.wait(0.05)  # paused: ждём resume()/stop() без нагрузки на CPU
+                continue
+            params = self._scroll_params()
+            if params is None:
+                self.__flag.wait(0.05)  # не-скролл слот — просто не мешаем
+                continue
+            direction, interval, amount, accel = params
+            self._emit(direction, amount)      # первый клик сразу
+            self._repeat(direction, interval, amount, accel)
+
+    def _scroll_params(self):
+        # Параметры прокрутки берём из профиля (ключ "mouse_scroll"), с
+        # безопасными дефолтами — отсутствие ключа в JSON не ломает поведение.
+        if self.key == "SCROLL_UP":
+            direction = 1
+        elif self.key == "SCROLL_DOWN":
+            direction = -1
+        else:
+            return None
+        cfg = {}
+        try:
+            cfg = dict_save.return_jnson().get("mouse_scroll", {}).get(dict_save.get_cur_app(), {}) or {}
+        except Exception:
+            cfg = {}
+
+        def _bounded(key_name, default, cast, lo, hi):
+            try:
+                val = cast(cfg.get(key_name, default))
+            except (TypeError, ValueError):
+                val = default
+            if val < lo:
+                val = lo
+            if val > hi:
+                val = hi
+            return val
+
+        interval = _bounded("interval", 0.04, float, 0.005, 2.0)
+        amount = int(_bounded("amount", 1, float, 1, 20))
+        invert = bool(cfg.get("invert", False))
+        accel = bool(cfg.get("accel", False))
+        if invert:
+            direction = -direction
+        return direction, interval, amount, accel
+
+    def _emit(self, direction, steps):
+        # Отправка события колеса. Основной путь — evdev/uinput (SmartTyper.scroll),
+        # без процессов. Если /dev/uinput недоступен — fallback на xdotool (как раньше).
+        if not self.__flag.is_set() or not self.__running.is_set():
+            return
+        try:
+            steps = max(1, int(steps))
+        except (TypeError, ValueError):
+            steps = 1
+        try:
+            if not smart_typer.scroll(direction, steps):
+                btn = '4' if direction > 0 else '5'
+                for _ in range(steps):
+                    subprocess.call(['xdotool', 'click', btn])
+        except Exception as exc:
+            try:
+                dict_save.write_in_log('scroll emit error: ' + str(exc))
+            except Exception:
+                pass
+
+    def _repeat(self, direction, interval, amount, accel):
+        # Автоповтор: ждём до дедлайна (компенсация дрейфа), реагируя на
+        # pause()/stop() почти мгновенно — «лишнего» клика после отпускания нет.
+        step = 0
+        while self.__running.is_set() and self.__flag.is_set():
+            deadline = time.monotonic() + interval
+            while time.monotonic() < deadline:
+                if not self.__running.is_set() or not self.__flag.is_set():
+                    return
+                time.sleep(0.002)
+            if accel:
+                step += 1
+                steps = amount + (step // 10)  # ускорение при длительном удержании
+            else:
+                steps = amount
+            self._emit(direction, steps)
 
     def pause(self):
         self.__flag.clear()  # Set to False to block the thread
@@ -1191,10 +1327,9 @@ def check_current_active_window(dict_save, games_checkmark_paths):
            for path in data_dict.values():
             if is_path_in_list(path, games_checkmark_paths):
               return games_checkmark_paths[get_index_of_path(path, games_checkmark_paths)]
+        return fallback
+
     except Exception as exc:
-        try:
-            dict_save.write_in_log(exc)
-        except Exception:
             pass
     return fallback
 
@@ -1239,18 +1374,31 @@ class MouseProfileRuntime:
         'SCROLL_UP', 'SCROLL_DOWN',
     }
 
-    def __init__(self, store):
+    def __init__(self, store, start_game=None):
         self.store = store
         self.settings = store.return_jnson()
         self.enabled_profiles = tuple(
             path for path, enabled in self.settings['games_checkmark'].items() if enabled
         )
-        # Цель эмуляции — активное окно (per-game), а не выбранный в UI профиль.
-        # Так current_app остаётся «выбранным/дефолтным» профилем и не перехватывается
-        # фоновым монитором окна (устраняет баг: current_app сохранялся как последнее
+        # Цель эмуляции выбирается в порядке приоритета:
+        #  1) start_game — явная цель (авто-переключение по активному окну из
+        #     emunator_mouse либо только что выбранный вручную профиль);
+        #  2) иначе — профиль, выбранный в UI (current_app). Ручной выбор в списке
+        #     профилей применяется СРАЗУ, не дожидаясь фокуса окна игры
+        #     (это чинит баг: после клика по профилю правая кнопка не нажимала 'W');
+        #  3) иначе — фолбэк по активному окну.
+        # current_app при этом НИКОГДА не перезаписывается монитором окна
+        # (устранённый ранее баг: current_app сохранялся как последнее
         # сфокусированное окно, напр. total_commander.exe).
-        _active = check_current_active_window(store, self.enabled_profiles)
-        self.game = str(_active) if _active else str(self.settings['current_app'])
+        if start_game and start_game in self.enabled_profiles:
+            self.game = str(start_game)
+        else:
+            selected = str(self.settings['current_app'])
+            if selected in self.enabled_profiles:
+                self.game = selected
+            else:
+                _active = check_current_active_window(store, self.enabled_profiles)
+                self.game = str(_active) if _active else selected
         self.device_id = self.settings['id']
         self.assignments = list(self.settings['key_value'][self.game])
         self.hold_flags = list(self.settings['mouse_press'][self.game])
@@ -1630,12 +1778,11 @@ def check_star():
         for process in process_list:  # print(process['name'])
          if 'Mouse_setting_control_for_buttons_python_for_linux' in process['name']:
           a.append(process)
-          if len(process_list) > 1:
-           return False
-          else:
-           return True
     except psutil.NoSuchProcess:
         pass
+    # Сравниваем именно число найденных копий этой программы (a),
+    # а не длину списка ВСЕХ процессов системы (process_list).
+    return len(a) > 1
 
 def return_file_path(dict_save):
     res = dict_save.return_jnson()  # получаем настройки
@@ -2154,19 +2301,35 @@ class MouseSettingAppMethods:
             runtime.handle_listener_event(button, pressed)
             return True
 
+        restart_game = None
         listener = mouse.Listener(on_click=on_click)
         listener.start()
         try:
             while not runtime.store.thread_exit and not runtime.stop_requested.is_set():
+                fallback = fallback_profile_path(runtime.store, runtime.enabled_profiles)
                 active_game = check_current_active_window(runtime.store, runtime.enabled_profiles)
-                if runtime.game != active_game:
-                    # print(f"[SWITCH] {runtime.game!r} -> {active_game!r}")
+                if active_game != fallback:
+                    # В фокусе реальное игровое окно: применяем его профиль
+                    # (оно всегда главнее выбранного в UI профиля).
+                    target = active_game if active_game != runtime.game else runtime.game
+                else:
+                    # Игрового окна в фокусе нет: применяем профиль, выбранный
+                    # в UI (current_app). Ручной выбор сохраняется до тех пор,
+                    # пока не появится настоящее игровое окно.
+                    selected = str(runtime.store.get_cur_app() or '')
+                    if runtime.game != selected and selected in runtime.enabled_profiles:
+                        target = selected
+                    else:
+                        target = runtime.game
+                if target != runtime.game:
+                    # print(f"[SWITCH] {runtime.game!r} -> {target!r}")
                     remember_fallback_before_game(
-                        runtime.store, runtime.game, active_game, runtime.enabled_profiles
+                        runtime.store, runtime.game, target, runtime.enabled_profiles
                     )
                     # Не перезаписываем current_app (это выбранный/дефолтный профиль UI);
-                    # цель эмуляции берётся из active_game при перезапуске рантайма.
+                    # цель берётся из target при перезапуске рантайма.
                     runtime.join_event_workers()
+                    restart_game = target
                     break
                 time.sleep(0.03)
         finally:
@@ -2193,8 +2356,12 @@ class MouseSettingAppMethods:
                 self._active_runtime = None
                 runtime.store.set_thread(0)
 
-        if not runtime.store.thread_exit and not was_stopped_externally:
-            threading.Thread(target=self.start_startup_now, daemon=True).start()
+        if not runtime.store.thread_exit and not was_stopped_externally and restart_game:
+            # Перезапуск с явной целью (окно игры или выбранный профиль),
+            # не трогая current_app.
+            threading.Thread(
+                target=self.prepare, args=(runtime.store, restart_game), daemon=True
+            ).start()
 
     def _stop_active_runtime(self, store):
         """Request old runtime shutdown without waiting for window detection."""
@@ -2207,11 +2374,11 @@ class MouseSettingAppMethods:
             self._active_runtime = None
         store.set_thread(0)
 
-    def prepare(self, store=None):
+    def prepare(self, store=None, start_game=None):
         """Replace the old profile runtime, apply its map, and start its listener."""
         store = store or dict_save
         self._stop_active_runtime(store)
-        runtime = MouseProfileRuntime(store)
+        runtime = MouseProfileRuntime(store, start_game)
         print(f"[PREPARE] game={runtime.game!r} enabled={runtime.enabled_profiles!r}")
         runtime.apply_button_map()
         runtime.store.set_current_path_game(runtime.game)
