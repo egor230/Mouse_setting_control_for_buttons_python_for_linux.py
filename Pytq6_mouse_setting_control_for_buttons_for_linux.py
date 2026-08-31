@@ -1,46 +1,5 @@
+from Pyqt6_libs_data import *
 from Pyqt6_libs_mouse import *
-
-
-def evdev_key_to_label(code):
-    # Преобразует evdev-имя клавиши (напр. 'KEY_EQUAL') в нормализованную метку,
-    # под которой макросы лежат в keyboard_script.
-    # Нумпад +/- НАМЕРЕННО оставляем с префиксом 'KEY_', чтобы они НЕ совпадали
-    # с основными +/- (требование пользователя: различать нумпад и основную клавиатуру).
-    if not isinstance(code, str) or not code.startswith("KEY_"):
-        return None
-    name = code[4:]
-    # Нумпад: цифры/навигация -> метки как в simple_key_map (совместимо со старым поведением),
-    # но +/- выделяем отдельно.
-    if name.startswith("KP"):
-        if name in ("KPPLUS", "KPMINUS"):
-            return code  # 'KEY_KPPLUS' / 'KEY_KPMINUS' — не совпадают с '+' / '-'
-        return simple_key_map.get(code, name)  # напр. 'KEY_KP7' -> ' 7\nHome'
-    special = {
-        "SPACE": "space", "ENTER": "enter", "KPENTER": "enter", "TAB": "tab",
-        "ESC": "esc", "GRAVE": "`", "MINUS": "-", "EQUAL": "+",
-        "LEFTBRACE": "[", "RIGHTBRACE": "]", "BACKSLASH": "\\",
-        "SEMICOLON": ";", "APOSTROPHE": "'", "COMMA": ",", "DOT": ".",
-        "SLASH": "/", "KPASTERISK": "*", "BACKSPACE": "backspace",
-        "DELETE": "delete", "HOME": "home", "END": "end",
-        "PAGEUP": "page_up", "PAGEDOWN": "page_down", "INSERT": "insert",
-        "LEFT": "left", "RIGHT": "right", "UP": "up", "DOWN": "down",
-        "LEFTSHIFT": "shift_l", "RIGHTSHIFT": "shift_r",
-        "LEFTCTRL": "control_l", "RIGHTCTRL": "control_r",
-        "LEFTALT": "alt_l", "RIGHTALT": "alt_r",
-        "LEFTMETA": "meta_l", "RIGHTMETA": "meta_r",
-        "CAPSLOCK": "caps_lock", "NUMLOCK": "num_lock",
-        "SCROLLLOCK": "scroll_lock", "PRINT": "print", "PAUSE": "pause",
-    }
-    if name in special:
-        return special[name]
-    if len(name) == 1 and name.isalpha():
-        return name.lower()
-    if len(name) == 1 and name.isdigit():
-        return name
-    if name.startswith("F") and name[1:].isdigit():
-        return name.lower()
-    return name.lower()
-
 
 class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  def __init__(self):
@@ -56,20 +15,20 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   self.board = None
   data = dict_save.data
   if os.path.exists(data):
-    with open(data) as json_file:
-     # strict=False: разрешаем реальные переносы строк внутри bash-скриптов (script_mouse / keyboard_script)
-     res = json.load(json_file, strict=False)
-     res = scripts_to_text(res)  # убрать отступы продолжения строк из скриптов (нормализация)
-     dict_save.save_old_data(res)
-    dict_save.save_jnson(res)
+   with open(data) as json_file:
+   # strict=False: разрешаем реальные переносы строк внутри bash-скриптов (script_mouse / keyboard_script)
+    res = json.load(json_file, strict=False)
+    res = scripts_to_text(res)  # убрать отступы продолжения строк из скриптов (нормализация)
+    dict_save.save_old_data(res)
+   dict_save.save_jnson(res)
   else:
    res = {'games_checkmark': {'C:/Windows/explorer.exe': True},
-          'paths': {'C:/Windows/explorer.exe': 'По умолчанию'},
-          'key_value': {'C:/Windows/explorer.exe': ['LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'SCROLL_UP',
-                                                    'SCROLL_DOWN', 'SCROLL_UP', 'SCROLL_DOWN']},
-          "mouse_press": {"C:/Windows/explorer.exe": [False, False, False, False, False, False, False]},
-          "id": 0,
-          "current_app": 'C:/Windows/explorer.exe'}
+    'paths': {'C:/Windows/explorer.exe': 'По умолчанию'},
+    'key_value': {'C:/Windows/explorer.exe': ['LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'SCROLL_UP',
+    'SCROLL_DOWN', 'SCROLL_UP', 'SCROLL_DOWN']},
+    "mouse_press": {"C:/Windows/explorer.exe": [False, False, False, False, False, False, False]},
+    "id": 0,
+    "current_app": 'C:/Windows/explorer.exe'}
    know_id = '''#!/bin/bash
                input_list=$(xinput list)
                mouse_line=$(echo "$input_list" | head -n 1)
@@ -77,8 +36,8 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
                    mouse_id=$(echo "$mouse_line" | grep -o "id=[0-9]*" | cut -d "=" -f 2)
                    echo "$mouse_id"
                fi       '''
-          # result = subprocess.run(['bash', '-c', know_id], capture_output=True, text=True)
-          # res["id"] = int(result.stdout.strip())
+   # result = subprocess.run(['bash', '-c', know_id], capture_output=True, text=True)
+   # res["id"] = int(result.stdout.strip())
   dict_save.save_jnson(res)
   dict_save.set_cur_app(res["current_app"])
   dict_save.set_prev_game(res["current_app"])
@@ -110,14 +69,14 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     print("Клавиатура не найдена!")
   except Exception as e:
    print("Ошибка поиска клавиатуры:", e)
-  # Вариант B: evdev — единственный источник событий клавиатуры. Корректно
-  # различает нумпад (+/-) и основную клавиатуру, не падает при отсутствии устройства.
+   # Вариант B: evdev — единственный источник событий клавиатуры. Корректно
+   # различает нумпад (+/-) и основную клавиатуру, не падает при отсутствии устройства.
   self.start_keyboard_listener()  # Запускаем evdev-слушатель
   self.setup_ui()
 
  def start_keyboard_listener(self):
-  # Запуск evdev-слушателя клавиатуры в отдельном потоке (Вариант B:
-  # evdev — единственный источник событий, корректно различает нумпад и основную клавиатуру).
+ # Запуск evdev-слушателя клавиатуры в отдельном потоке (Вариант B:
+ # evdev — единственный источник событий, корректно различает нумпад и основную клавиатуру).
   self.keyboard_thread_exit = True
   old = getattr(self, "keyboard_thread", None)
   if old is not None and old.is_alive():
@@ -161,13 +120,12 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     time.sleep(0.05)
     continue
 
- def handle_keyboard_macro(self, key_label):
-  # Та же логика сопоставления, что была в старом on_press: ищем макрос в keyboard_script
-  # для текущего приложения и запускаем bash-скрипт. Без остановки/рестарта слушателя
-  # (цикл непрерывный, поэтому повторные нажатия не теряются).
-  # Макросы клавиатуры должны совпадать с целью эмуляции (активное окно),
-  # а не с выбранным в UI профилем — иначе они расходятся после разделения
-  # current_app (выбор) и live-цели эмуляции.
+ def handle_keyboard_macro(self, key_label): # Та же логика сопоставления, что была в старом on_press: ищем макрос в keyboard_script
+ # для текущего приложения и запускаем bash-скрипт. Без остановки/рестарта слушателя
+ # (цикл непрерывный, поэтому повторные нажатия не теряются).
+ # Макросы клавиатуры должны совпадать с целью эмуляции (активное окно),
+ # а не с выбранным в UI профилем — иначе они расходятся после разделения
+ # current_app (выбор) и live-цели эмуляции.
   current_app = None
   _rt = getattr(self, "_active_runtime", None)
   if _rt is not None and getattr(_rt, "game", None):
@@ -199,29 +157,28 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     break
   
  def eventFilter(self, watched, event):
-   if watched is self.scroll_area.viewport():
-    if event.type() == QEvent.Type.MouseButtonPress:
-     self._scroll_locked = True
-     self._scroll_lock_val = self.scroll_area.verticalScrollBar().value()
-    elif event.type() == QEvent.Type.MouseButtonRelease:
-     sb = self.scroll_area.verticalScrollBar()
-     sb.setValue(self._scroll_lock_val)
-     QTimer.singleShot(0, lambda: sb.setValue(self._scroll_lock_val))
-     QTimer.singleShot(80, lambda: sb.setValue(self._scroll_lock_val))
-     QTimer.singleShot(180, lambda: self._clear_scroll_lock())
-   return super().eventFilter(watched, event)
-
- def _block_scroll_during_click(self, _val):
-   # Жёстко подавляем любую прокрутку списка профилей во время/сразу после клика
-   # (QScrollArea сам «подскролливает» кликнутый элемент в зону видимости по фокусу).
-   if getattr(self, "_scroll_locked", False):
+  if watched is self.scroll_area.viewport():
+   if event.type() == QEvent.Type.MouseButtonPress:
+    self._scroll_locked = True
+    self._scroll_lock_val = self.scroll_area.verticalScrollBar().value()
+   elif event.type() == QEvent.Type.MouseButtonRelease:
     sb = self.scroll_area.verticalScrollBar()
-    sb.blockSignals(True)
     sb.setValue(self._scroll_lock_val)
-    sb.blockSignals(False)
+    QTimer.singleShot(0, lambda: sb.setValue(self._scroll_lock_val))
+    QTimer.singleShot(80, lambda: sb.setValue(self._scroll_lock_val))
+    QTimer.singleShot(180, lambda: self._clear_scroll_lock())
+  return super().eventFilter(watched, event)
+
+ def _block_scroll_during_click(self, _val): # Жёстко подавляем любую прокрутку списка профилей во время/сразу после клика
+ # (QScrollArea сам «подскролливает» кликнутый элемент в зону видимости по фокусу).
+  if getattr(self, "_scroll_locked", False):
+   sb = self.scroll_area.verticalScrollBar()
+   sb.blockSignals(True)
+   sb.setValue(self._scroll_lock_val)
+   sb.blockSignals(False)
 
  def _clear_scroll_lock(self):
-   self._scroll_locked = False
+  self._scroll_locked = False
 
  def setup_ui(self):
   self.setWindowTitle("Mouse setting control for buttons python")
@@ -386,23 +343,23 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   self.start_startup_now(dict_save)# Запуск эмуляции.
   
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    app.setStyle("Fusion")
-    palette = app.palette()
-    palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
-    palette.setColor(QPalette.ColorRole.WindowText, QColor(0, 0, 0))
-    palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
-    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 240, 240))
-    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
-    palette.setColor(QPalette.ColorRole.ToolTipText, QColor(0, 0, 0))
-    palette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
-    palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
-    palette.setColor(QPalette.ColorRole.ButtonText, QColor(0, 0, 0))
-    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
-    palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
-    palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
-    app.setPalette(palette)
-    window = MouseSettingApp()
-    window.show()
-    sys.exit(app.exec())
+ app = QApplication(sys.argv)
+ app.setStyle("Fusion")
+ palette = app.palette()
+ palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
+ palette.setColor(QPalette.ColorRole.WindowText, QColor(0, 0, 0))
+ palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
+ palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 240, 240))
+ palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+ palette.setColor(QPalette.ColorRole.ToolTipText, QColor(0, 0, 0))
+ palette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
+ palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
+ palette.setColor(QPalette.ColorRole.ButtonText, QColor(0, 0, 0))
+ palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+ palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+ palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+ palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+ app.setPalette(palette)
+ window = MouseSettingApp()
+ window.show()
+ sys.exit(app.exec())

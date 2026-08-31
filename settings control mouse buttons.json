@@ -49,7 +49,7 @@
     "C:/Windows/explorer.exe": [
       "LBUTTON",
       "RBUTTON",
-      "SPACE",
+      "WHEEL_MOUSE_BUTTON",
       " ",
       " ",
       "SCROLL_UP",
@@ -549,10 +549,10 @@
                        xte \"keyup Esc\"
                        sleep 1.2
                        xdotool key grave
-                       sleep 0.8
+                       sleep 1.8
                        xdotool type \"sv_cheats 1\"
                        xdotool key Return
-                       sleep 0.3
+                       sleep 1.3
                        xdotool type \"host_timescale $TIMESCALE\"
                        xdotool key Return
                        sleep 0.81
