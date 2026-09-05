@@ -84,24 +84,14 @@ def get_index_of_path(path, path_list):
 # Очистка и нормализация настроек (JSON читается через json.load(strict=False)).
 def cleanup_empty_script_entries(data):
  """Удалить пустые записи и конфликтующие скрипты из настроек."""
- # Уже сохранённый профиль может содержать старый XBUTTON-скрипт,
- # хотя в key_value пользователь выбрал клавишу R/W/etc. В таком случае
- # dispatch запускал старый скрипт вместо выбранной клавиши.
- script_profiles = data.get("script_mouse", {})
- key_profiles = data.get("key_value", {})
- if isinstance(script_profiles, dict) and isinstance(key_profiles, dict):
-  for profile, assignments in key_profiles.items():
-   profile_scripts = script_profiles.get(profile)
-   if not isinstance(profile_scripts, dict) or not isinstance(assignments, list):
-    continue
-   for index in (5, 6):
-    if index < len(assignments) and str(assignments[index]).strip() != "":
-     profile_scripts.pop("XBUTTON1", None)
-     profile_scripts.pop("XBUTTON2", None)
-   if not profile_scripts:
-    script_profiles.pop(profile, None)
-  if not script_profiles:
-   data.pop("script_mouse", None)
+ # ЗАМЕТКА (исправление): раньше здесь безусловно удалялись скрипты боковых
+ # кнопок XBUTTON1/XBUTTON2, если в key_value[профиль][5]/[6] было непустое
+ # значение. Но слоты 5 и 6 по умолчанию заполнены SCROLL_UP/SCROLL_DOWN, то
+ # есть «непустые» почти всегда — из-за этого сохранённый через редактор
+ # скрипт боковой кнопки стирался сразу же при сохранении и никогда не
+ # работал. Очистка конфликта ключ/скрипт выполняется точечно в update_button
+ # (когда пользователь выбирает клавишу для боковой кнопки), поэтому здесь
+ # блок не нужен и удалён.
 
  for section in ("script_mouse", "keyboard_script"):
   container = data.get(section)

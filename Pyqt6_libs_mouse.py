@@ -25,6 +25,38 @@ user = subprocess.run(['bash'], input=get_user_name, stdout=subprocess.PIPE, tex
 list_threads = []
 mouse_controller = mouse.Controller()
 
+# ==== Защита от запуска второго экземпляра (single-instance) ====
+SINGLE_INSTANCE_LOCK = "/tmp/mouse_setting_control.lock"
+
+def acquire_single_instance_lock():
+ """Пытаемся занять lock-файл. Если другой живой процесс уже держит его —
+ вернуть False (второй экземпляр запускать нельзя)."""
+ try:
+  with open(SINGLE_INSTANCE_LOCK) as f:
+   pid = int(f.read().strip() or "0")
+ except Exception:
+  pid = 0
+ if pid and os.path.exists("/proc/%d" % pid):
+  return False  # первый экземпляр ещё работает
+ # устаревший lock (процесс умер) или нет вообще — занимаем его
+ try:
+  with open(SINGLE_INSTANCE_LOCK, "w") as f:
+   f.write(str(os.getpid()))
+  return True
+ except Exception:
+  # без прав писать в /tmp не бывает; на всякий случай разрешаем запуск
+  return True
+
+def release_single_instance_lock():
+ """Снимаем lock-файл при нормальном выходе."""
+ try:
+  with open(SINGLE_INSTANCE_LOCK) as f:
+   pid = int(f.read().strip() or "0")
+  if pid == os.getpid():
+   os.remove(SINGLE_INSTANCE_LOCK)
+ except Exception:
+  pass
+
 class save_dict:
  def __init__(self):
   self.jnson = {}  # новые настройки.
@@ -1207,31 +1239,31 @@ class MouseProfileRuntime:
   'SCROLL_UP', 'SCROLL_DOWN',
   }
 
- def __init__(self, store, start_game=None):
+ def __init__(self, store, start_game=None, force_ui_selection=False):
   self.store = store
   self.settings = store.return_jnson()
   self.enabled_profiles = tuple(
    path for path, enabled in self.settings['games_checkmark'].items() if enabled
    )
   # Цель эмуляции выбирается в порядке приоритета:
+  #  0) force_ui_selection=True — явно использовать current_app (ручной клик в
+  #     UI). Ручной выбор применяется СРАЗУ и имеет абсолютный приоритет.
   #  1) start_game — явная цель (авто-переключение по активному окну из
   #     emunator_mouse либо только что выбранный вручную профиль);
   #  2) иначе — профиль, выбранный в UI (current_app). Ручной выбор в списке
-  #     профилей применяется СРАЗУ, не дожидаясь фокуса окна игры
-  #     (это чинит баг: после клика по профилю правая кнопка не нажимала 'W');
+  #     профилей применяется СРАЗУ, не дожидаясь фокуса окна игры.
   #  3) иначе — фолбэк по активному окну.
-  # current_app при этом НИКОГДА не перезаписывается монитором окна
-  # (устранённый ранее баг: current_app сохранялся как последнее
-  # сфокусированное окно, напр. total_commander.exe).
-  if start_game and start_game in self.enabled_profiles:
+  # current_app при этом НИКОГДА не перезаписывается монитором окна.
+  selected = str(self.settings.get('current_app', ''))
+  if force_ui_selection and selected in self.enabled_profiles:
+   self.game = selected
+  elif start_game and start_game in self.enabled_profiles:
    self.game = str(start_game)
+  elif selected in self.enabled_profiles:
+   self.game = selected
   else:
-   selected = str(self.settings['current_app'])
-   if selected in self.enabled_profiles:
-    self.game = selected
-   else:
-    _active = check_current_active_window(store, self.enabled_profiles)
-    self.game = str(_active) if _active else selected
+   _active = check_current_active_window(store, self.enabled_profiles)
+   self.game = str(_active) if _active else (selected if selected else fallback_profile_path(store, self.enabled_profiles))
   self.device_id = self.settings['id']
   self.assignments = list(self.settings['key_value'][self.game])
   self.hold_flags = list(self.settings['mouse_press'][self.game])
@@ -1326,7 +1358,7 @@ class MouseProfileRuntime:
    self.store.write_in_log(exc)
 
  def _mouse_script(self, slot):
-  current_game = self.store.get_cur_app()
+  current_game = self.game  # Активный профиль рантайма, а не current_app из UI.
   button_name = defaut_list_mouse_buttons[slot]
   return self.store.return_jnson().get('script_mouse', {}).get(current_game, {}).get(button_name, '')
 
@@ -1796,6 +1828,11 @@ class MouseSettingAppMethods:
   self.keyboard_editor = None
   self.current_keyboard_window = None
   self.tray_icon = None
+  # Атомарная защита жизненного цикла runtime (prepare / _stop_active_runtime /
+  # emunator_mouse). RLock (реентерабельность) нужен, т.к. prepare() держит
+  # lock и вызывает _stop_active_runtime(), который тоже берёт lock.
+  self._runtime_lock = threading.RLock()
+  self._runtime_generation = 0
   self.create_tray_icon()  # Создаем трей-иконку при запуске
   QTimer.singleShot(0, self.hide)  # Это гарантирует, что команда скрытия.
 
@@ -1855,6 +1892,12 @@ class MouseSettingAppMethods:
   context = window.text_widget.toPlainText().strip()
   # определяем ключ
 
+  # Закрытие редактора всегда сохраняет скрипт без запроса (запрос о
+  # сохранении появляется только в closeEvent при закрытии всей программы).
+  # Сохранение идёт в память (save_jnson), а runtime/клавиатурный слушатель
+  # читают скрипты живьём из return_jnson(), поэтому изменения вступают в силу
+  # немедленно после закрытия редактора — без перезапуска программы.
+
   # обработка клавиатурных скриптов
   if section == "keyboard_script":
    key = dict_save.get_last_key_keyboard_script()
@@ -1879,6 +1922,8 @@ class MouseSettingAppMethods:
 
   res = cleanup_empty_script_entries(res)
   dict_save.save_jnson(res)  # сохранить json
+  # Обновляем подсветку кнопок скриптов: серым — назначенные скрипты.
+  self.update_script_button_colors()
   # показываем основную клавиатуру, если нужно
   if section == "keyboard_script" and self.current_keyboard_window:
    self.current_keyboard_window.show()
@@ -2050,13 +2095,17 @@ class MouseSettingAppMethods:
     new_data["current_app"] = "C:/Windows/explorer.exe"
    if reply == QMessageBox.StandardButton.Save:
     dict_save.write_to_file(new_data)
+  release_single_instance_lock()
   event.accept()
   os._exit(0)   # гарантированный выход (фоновые потоки уже остановлены через thread_exit)
 
- def emunator_mouse(self, runtime):
+ def emunator_mouse(self, runtime, generation):
   """Run one listener until its profile is changed, stopped, or the app exits."""
   def on_click(_x, _y, button, pressed):
-   runtime.handle_listener_event(button, pressed)
+   with self._runtime_lock:
+    current = getattr(self, '_active_runtime', None)
+   if current is runtime and not runtime.stop_requested.is_set():
+    runtime.handle_listener_event(button, pressed)
    return True
 
   restart_game = None
@@ -2064,6 +2113,11 @@ class MouseSettingAppMethods:
   listener.start()
   try:
    while not runtime.store.thread_exit and not runtime.stop_requested.is_set():
+    with self._runtime_lock:
+     # Этот runtime уже устарел (UI или авто-переключение создали новый) —
+     # тихо выходим, чтобы не перетирать актуальный профиль.
+     if getattr(self, '_active_runtime', None) is not runtime or self._runtime_generation != generation:
+      return
     fallback = fallback_profile_path(runtime.store, runtime.enabled_profiles)
     active_game = check_current_active_window(runtime.store, runtime.enabled_profiles)
     if active_game != fallback:
@@ -2091,8 +2145,10 @@ class MouseSettingAppMethods:
      break
     time.sleep(0.03)
   finally:
-  # Save this before cleanup: a profile switch should restart the
-  # listener, whereas an explicit UI replacement must not restart it.
+  # Determine whether we were externally replaced BEFORE any cleanup below.
+   with self._runtime_lock:
+    is_current = getattr(self, '_active_runtime', None) is runtime
+    is_same_generation = self._runtime_generation == generation
    was_stopped_externally = runtime.stop_requested.is_set()
    # pynput/Xlib может закрыть Display раньше, чем старый listener
    # успеет выполнить stop(). В этом случае record_disable_context()
@@ -2110,43 +2166,51 @@ class MouseSettingAppMethods:
    except (AttributeError, RuntimeError, OSError):
     pass
    runtime.stop_workers()
-   if getattr(self, '_active_runtime', None) is runtime:
+   if is_current and is_same_generation:
     self._active_runtime = None
     runtime.store.set_thread(0)
 
-  if not runtime.store.thread_exit and not was_stopped_externally and restart_game:
-  # Перезапуск с явной целью (окно игры или выбранный профиль),
-  # не трогая current_app.
-   threading.Thread(
-    target=self.prepare, args=(runtime.store, restart_game), daemon=True
-    ).start()
+  # Перезапуск с явной целью (окно игры или выбранный профиль) только если
+  # мы всё ещё актуальны и не были остановлены извне.
+  # ВАЖНО: НЕ использовать здесь QTimer.singleShot. Этот код выполняется в
+  # фоновом потоке emunator_mouse, у которого НЕТ Qt event loop — таймер с
+  # timeout=0 создаётся в этом потоке и никогда не сработает, поэтому
+  # авто-переключение профиля по активному окну игры не происходило.
+  # self.prepare() атомарен под _runtime_lock, thread-safe (GUI-вызовов нет) и
+  # сам запускает новый listener-поток, поэтому вызываем его напрямую.
+  if not runtime.store.thread_exit and not was_stopped_externally and restart_game and is_same_generation:
+   self.prepare(runtime.store, restart_game)
 
  def _stop_active_runtime(self, store):
   """Request old runtime shutdown without waiting for window detection."""
-  runtime = getattr(self, '_active_runtime', None)
-  if runtime is not None:
-   runtime.stop()
-   # The old listener exits on its next loop iteration.  Do not join it:
-   # a slow process/window scan must never delay the new profile map.
-  if getattr(self, '_active_runtime', None) is runtime:
-   self._active_runtime = None
+  with self._runtime_lock:
+   runtime = getattr(self, '_active_runtime', None)
+   if runtime is not None:
+    runtime.stop()
+    # The old listener exits on its next loop iteration.  Do not join it:
+    # a slow process/window scan must never delay the new profile map.
+   if getattr(self, '_active_runtime', None) is runtime:
+    self._active_runtime = None
   store.set_thread(0)
 
- def prepare(self, store=None, start_game=None):
-  """Replace the old profile runtime, apply its map, and start its listener."""
+ def prepare(self, store=None, start_game=None, force_ui_selection=False):
+  """Replace the old profile runtime atomically, apply its map, start listener."""
   store = store or dict_save
-  self._stop_active_runtime(store)
-  runtime = MouseProfileRuntime(store, start_game)
-  print(f"[PREPARE] game={runtime.game!r} enabled={runtime.enabled_profiles!r}")
-  runtime.apply_button_map()
-  runtime.store.set_current_path_game(runtime.game)
-  self._active_runtime = runtime
+  with self._runtime_lock:
+   self._stop_active_runtime(store)
+   self._runtime_generation += 1
+   my_generation = self._runtime_generation
+   runtime = MouseProfileRuntime(store, start_game, force_ui_selection)
+   print(f"[PREPARE] gen={my_generation} game={runtime.game!r} enabled={runtime.enabled_profiles!r}")
+   runtime.apply_button_map()
+   runtime.store.set_current_path_game(runtime.game)
+   self._active_runtime = runtime
 
-  listener_thread = threading.Thread(target=self.emunator_mouse, args=(runtime,))
+  listener_thread = threading.Thread(target=self.emunator_mouse, args=(runtime, my_generation))
   runtime.store.set_thread(listener_thread)
   listener_thread.start()
 
- def start_startup_now(self, store=None):
+ def start_startup_now(self, store=None, force_ui_selection=False):
   store = store or dict_save
   settings = store.return_jnson()
   current_game = str(settings['current_app'])
@@ -2158,7 +2222,9 @@ class MouseSettingAppMethods:
 
   enabled_profiles = [path for path, enabled in settings['games_checkmark'].items() if enabled]
   if current_game in enabled_profiles:
-   self.prepare(store)
+   # force_ui_selection=True при ручном клике: применение выбранного профиля
+   # сейчас (приоритет №0 в MouseProfileRuntime).
+   self.prepare(store, force_ui_selection=force_ui_selection)
   else:
    self._stop_active_runtime(store)
    QMessageBox.information(self, 'Ошибка', 'Нужно выбрать приложение')
@@ -2170,6 +2236,26 @@ class MouseSettingAppMethods:
   show_button = message.addButton('Ок', QMessageBox.ButtonRole.AcceptRole)
   message.buttonClicked.connect(lambda button: show_list_id_callback() if button == show_button else None)
   message.exec()
+
+ def update_script_button_colors(self):
+  """Подсветить кнопки скриптов для текущего профиля:
+   серым — если на кнопку мыши назначен скрипт, обычным цветом — если нет.
+   Позволяет сразу видеть, на какие кнопки уже есть назначение скрипта."""
+  res = dict_save.return_jnson()
+  game = res.get("current_app", "")
+  buttons = getattr(self, "buttons_script", None)
+  if not buttons:
+   return
+  for button in buttons:
+   button.setStyleSheet("")
+  script = res.get("script_mouse", {}).get(game, {})
+  if script:
+   for key, value in script.items():
+    if value and key in defaut_list_mouse_buttons:  # Проверяем, что значение не пустое
+     i = defaut_list_mouse_buttons.index(key)
+     self.buttons_script[i].setStyleSheet(""" QPushButton { border: 1px solid gray; padding: 5px;
+                                    color: black;  background-color: gray; } """)
+     self.buttons_script[i].update()
 
  def check_label_changed(self, count):  # установить текущую активную игру
   _sb = self.scroll_area.verticalScrollBar()
@@ -2196,16 +2282,7 @@ class MouseSettingAppMethods:
    else:
     check.setChecked(False)
   script = res.get("script_mouse", {}).get(game, {})
-  for button in self.buttons_script:
-   button.setStyleSheet("")
-  if script:
-   for key, value in script.items():
-    if value and key in defaut_list_mouse_buttons:  # Проверяем, что значение не пустое
-     i = defaut_list_mouse_buttons.index(key)  #  print(i)   # print(value)
-     self.buttons_script[i].setStyleSheet(""" QPushButton { border: 1px solid gray; padding: 5px;
-                                    color: black;  background-color: gray; } """)
-     self.buttons_script[i].update()
-     # self.Keyboard_button
+  self.update_script_button_colors()
   script = res.get("keyboard_script", {}).get(game, {}).get("keys", {})
   self.Keyboard_button.setStyleSheet("")
   if script:
@@ -2234,7 +2311,9 @@ class MouseSettingAppMethods:
   dict_save.set_cur_app(game)
   dict_save.save_jnson(res)
   # The blue profile must also become the active emulation context.
-  self.start_startup_now(dict_save)
+  # КЛЮЧЕВОЕ: force_ui_selection=True гарантирует, что ручной выбор применится
+  # немедленно (приоритет №0), даже если current_app ещё указывает на игру.
+  self.start_startup_now(dict_save, force_ui_selection=True)
   # Сохраняем позицию прокрутки: клик не должен «скакать» список профилей.
   QTimer.singleShot(0, lambda: self.scroll_area.verticalScrollBar().setValue(_scroll_pos))
 
@@ -2398,6 +2477,8 @@ class MouseSettingAppMethods:
    if not script_profiles:
     res.pop("script_mouse", None)
   dict_save.save_jnson(res)  # Сохранить новое значение для выпадающего списка
+  # Назначение клавиши снимает скрипт — сбрасываем подсветку кнопки.
+  self.update_script_button_colors()
   self.apply_settings_now()
 
  def update_profile(self):  # обновить профиль

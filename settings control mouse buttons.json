@@ -5,6 +5,7 @@
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": true,
     "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
@@ -28,6 +29,7 @@
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": "Splinter Cell - Chaos Theory",
     "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": "Portal Stories Mel",
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": "Alien Isolation",
+    "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": " Entropy Zero 2",
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": "Assassins Creed IV Black Flag",
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": "Tomb Raider",
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia 2",
@@ -90,6 +92,15 @@
       " ",
       "SCROLL_UP",
       "SCROLL_DOWN"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": [
+      "LBUTTON",
+      "W",
+      "E",
+      "F",
+      "SPACE",
+      "RBUTTON",
+      "E"
     ],
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": [
       "LBUTTON",
@@ -274,6 +285,15 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": [
       false,
       false,
       false,
@@ -525,6 +545,18 @@
                     xte \"keydown E\"
                     sleep 10.02
                     xte \"keyup E\""
+    },
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": {
+      "XBUTTON2": "#!/bin/bash
+                   xte \"keydown E\"
+                   sleep 0.5
+                   xte \"keyup E\"
+                   xte \"keydown R\"
+                   sleep 0.5
+                   xte \"keyup R\"
+                   xte \"keydown F\"
+                   sleep 0.5
+                   xte \"keyup F\""
     }
   },
   "keyboard_script": {
@@ -2954,6 +2986,13 @@
                xte \"keydown W\"",
         "Down": "#!/bin/bash
                  xte \"keyup W\""
+      }
+    },
+    "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": {
+      "keys": {
+        "?
+                  /": "#!/bin/bash
+                          xte \"keydown C\""
       }
     }
   }

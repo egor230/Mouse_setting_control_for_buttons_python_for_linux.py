@@ -340,9 +340,16 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     if curr_name in key_values and i < len(key_values[curr_name]):
      self.mouse_button_combos[i].setCurrentText(key_values[curr_name][i])
   self.filling_in_fields(dict_save) # Заполнения полей.
+  self.update_script_button_colors() # Проверить кнопки скриптов — серые при назначении
   self.start_startup_now(dict_save)# Запуск эмуляции.
   
 if __name__ == "__main__":
+ # Запрещаем запуск двух экземпляров программы одновременно. Если первый
+ # экземпляр уже работает — показываем сообщение и выходим.
+ if not acquire_single_instance_lock():
+  app = QApplication(sys.argv)
+  QMessageBox.information(None, "Mouse Setting Control", "Программа уже запущена.")
+  sys.exit(0)
  app = QApplication(sys.argv)
  app.setStyle("Fusion")
  palette = app.palette()
