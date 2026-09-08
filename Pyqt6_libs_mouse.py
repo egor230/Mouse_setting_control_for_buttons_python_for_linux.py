@@ -1,6 +1,5 @@
-import sys, os, json, threading, subprocess, psutil, signal, time, copy, re, pyautogui, deepdiff, pwd
+import sys, os, json, threading, subprocess, psutil, signal, time, copy, re, deepdiff, pwd
 from dataclasses import dataclass
-import keyboard as keybord_from
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox,
  QTextEdit, QTabWidget, QScrollArea, QFrame, QCheckBox, QLineEdit, QMessageBox, QStyleFactory,
  QToolTip, QGridLayout, QDialog, QPlainTextEdit, QSystemTrayIcon, QMenu)
@@ -283,8 +282,8 @@ class save_dict:
   for id in self.dict_id_values:
    st = str(self.dict_id_values[id])
    set_button_map = '''#!/bin/bash
-            sudo xinput set-button-map {0} {1}
-            '''.format(id, st)
+             xinput set-button-map {0} {1}
+             '''.format(id, st)
    subprocess.call(['bash', '-c', set_button_map])
 
  def reset_id_value(self):  # Сброс настроек текущего id устройства.
@@ -292,8 +291,8 @@ class save_dict:
   devices_mouse = list(self.dict_id_values.keys())
   for i in devices_mouse:
    set_button_map = '''#!/bin/bash
-            sudo xinput set-button-map {0} {1}
-            '''.format(self.id, d)
+             xinput set-button-map {0} {1}
+             '''.format(self.id, d)
    process = subprocess.Popen(['bash', '-c', set_button_map], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
    stdout, stderr = process.communicate()
    if process.returncode != 0:
@@ -305,18 +304,25 @@ class save_dict:
   try:
    d = self.dict_id_values[id]
    d_copy = copy.deepcopy(d)
-   d = '1 2 3 4 5 6 7 8 9'
    return d
   except Exception as ex1:
-   print(ex1)
+   # Раньше здесь возвращался None при промахе (id нет в кэше карт), и
+   # apply_button_map падал с AttributeError. Возвращаем заводскую карту.
+   try:
+    self.write_in_log('get_default_id_value: id %s not in cache, using 1..9 (%s)' % (id, ex1))
+   except Exception:
+    pass
+   return '1 2 3 4 5 6 7 8 9'
 
  def write_in_log(self, text=" error"):  # Запись ошибок.
-  with open("log.txt", "a") as f:
-   f.write(str(text) + "\n")
-
-  file_relus = '''#!/bin/bash
-                       chmod a+rw {}   '''.format("log.txt")
-  subprocess.call(['bash', '-c', file_relus])  # Дать доступ на чтение и запись любому
+  # Лог пишется в папку самой программы (не в текущий каталог запуска):
+  # раньше при старте через .sh без cd файл терялся/уезжал в другое место.
+  try:
+   log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "log.txt")
+   with open(log_path, "a") as f:
+    f.write(time.strftime("[%Y-%m-%d %H:%M:%S] ") + str(text) + "\n")
+  except Exception:
+   pass
 
 
 class SmartTyper:
@@ -588,6 +594,36 @@ class SmartTyper:
     pass
    return False
 
+ def click(self, x11_button):
+  """Эмуляция одиночного клика кнопки мыши через виртуальный указатель.
+
+    x11_button: 1=левая, 2=средняя, 3=правая, 4=колесо вверх, 5=колесо вниз
+    (нумерация X11). Один вызов = press+release без процессов. Если UInput
+    недоступен — возвращаем False, вызывающий код откатывается на xdotool.
+    """
+  button_map = {1: ecodes.BTN_LEFT, 2: ecodes.BTN_MIDDLE, 3: ecodes.BTN_RIGHT}
+  code = button_map.get(int(x11_button))
+  if code is None:
+   return False
+  if self._ui_scroll is None:
+   self._create_scroll_device()
+  if self._ui_scroll is None:
+   return False
+  try:
+   with self._lock:
+    self._ui_scroll.write(ecodes.EV_KEY, code, 1)
+    self._ui_scroll.syn()
+    time.sleep(0.01)
+    self._ui_scroll.write(ecodes.EV_KEY, code, 0)
+    self._ui_scroll.syn()
+   return True
+  except Exception as exc:
+   try:
+    dict_save.write_in_log('UInput click failed: ' + str(exc))
+   except Exception:
+    pass
+   return False
+
    # Compatibility aliases for code outside this file.
  press = key_down
  release = key_up
@@ -597,7 +633,10 @@ smart_typer = SmartTyper()
 class Job(threading.Thread):
  def __init__(self, key, *args, **kwargs):
   self.key = key
-  self.sw = True
+  # sw=False: воркер стартует в состоянии pause(). Раньше sw=True в паузе
+  # давал инвертированный toggle в режиме «держать» (первое нажатие
+  # «молчало», прокрутка сдвигалась на одно нажатие).
+  self.sw = False
   self.hook_flag_mouse = True  # захват кнопки мыши.
   super(Job, self).__init__(*args, **kwargs)
   self.__flag = threading.Event()  # The flag used to pause the thread
@@ -1220,17 +1259,18 @@ class MouseProfileRuntime:
     the former parallel parameters (`key`, `list_buttons`, `press_button`,
     `string_keys`, and `games_checkmark_paths`) with one explicit context.
     """
-
- # slot, physical X11 button, virtual X11 button, pynput listener button,
- # assignments that retain their normal physical behavior and are not hooked.
+  # slot, physical X11 button, virtual X11 button, pynput listener button,
+  # assignments that retain their normal physical behavior and are not hooked.
  INTERCEPTION_RULES = (
   (1, 3, '11', 'Button.button11', {'RBUTTON'}),
   (2, 2, '12', 'Button.button12', {' ', 'WHEEL_MOUSE_BUTTON'}),
-  (3, 4, '13', 'Button.button13', {'SCROLL_UP'}),
+  # Слот 3: ' ' тоже pass-through — раньше пустое назначение всё равно
+  # перехватывало физическую кнопку 4 и глухо съедало прокрутку вверх.
+  (3, 4, '13', 'Button.button13', {' ', 'SCROLL_UP'}),
   (4, 5, '14', 'Button.button14', {' ', 'SCROLL_DOWN'}),
- # В конфигурации пользователя верхняя боковая кнопка приходит
- # как физическая 9 / Button.button16. Поэтому она соответствует
- # строке «1 боковая», а физическая 8 — строке «2 боковая».
+  # В конфигурации пользователя верхняя боковая кнопка приходит
+  # как физическая 9 / Button.button16. Поэтому она соответствует
+  # строке «1 боковая», а физическая 8 — строке «2 боковая».
   (5, 9, '16', 'Button.button16', {'XBUTTON1', 'XBUTTON2'}),
   (6, 8, '15', 'Button.button15', {'XBUTTON2', 'XBUTTON1'}),
   )
@@ -1277,6 +1317,10 @@ class MouseProfileRuntime:
   self.hold_durations = self.hold_durations[:7]
   self._timed_holds = {}
   self._timed_holds_lock = threading.RLock()
+  # Залипания кнопок — per-runtime: глобальный флаг не сбрасывался при
+  # смене профиля и «перетаскивался» между играми (analysis §4).
+  self._right_sticking = False
+  self._middle_sticking = False
   self.bindings = {}
   self.virtual_by_physical_button = {}
   self.stop_requested = threading.Event()
@@ -1312,11 +1356,44 @@ class MouseProfileRuntime:
     remapped_map[index] = virtual_button
 
   self.store.reset_id_value()
-  command = ['sudo', 'xinput', 'set-button-map', str(self.device_id), *remapped_map]
-  try:
-   subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-  except OSError as exc:
-   self.store.write_in_log(exc)
+  # ГЛАВНЫЙ ФИКС: раньше команда шла через `sudo xinput set-button-map` с
+  # заглушённым выводом (DEVNULL + check=False). После смены X-сессии
+  # (lightdm) у root нет доступа к X-серверу (Invalid MIT-MAGIC-COOKIE-1),
+  # sudo-вариант молча падал, перехват кнопок не применялся — правая кнопка
+  # продолжала работать нативно, назначенная клавиша не нажималась. Теперь:
+  # 1) пробуем БЕЗ sudo (обычному пользователю set-button-map разрешён);
+  # 2) проверяем ФАКТИЧЕСКУЮ карту через xinput get-button-map;
+  # 3) если не получилось — одна попытка через sudo (старые системы);
+  # 4) если всё равно не получилось — пишем в log.txt и показываем
+  #    сообщение, чтобы ошибка никогда не была «молчаливой».
+  target_map = ' '.join(remapped_map)
+  error_text = ''
+  applied = False
+  for use_sudo in (False, True):
+   command = (['sudo'] if use_sudo else []) + ['xinput', 'set-button-map', str(self.device_id), *remapped_map]
+   try:
+    result = subprocess.run(command, capture_output=True, text=True, timeout=5)
+   except Exception as exc:
+    error_text = str(exc)
+    continue
+   if result.returncode != 0:
+    error_text = (result.stderr or result.stdout or '').strip()
+    continue
+   # Проверяем фактическое состояние карты: X может вернуть успех, но не применить
+   try:
+    check = subprocess.run(['xinput', 'get-button-map', str(self.device_id)], capture_output=True, text=True, timeout=5)
+    if check.returncode == 0 and check.stdout.split() == [str(b) for b in remapped_map]:
+     applied = True
+   except Exception as exc:
+    error_text = str(exc)
+   if applied:
+    break
+  if not applied:
+   message = 'xinput set-button-map failed for id=%s map=%s: %s' % (self.device_id, target_map, error_text)
+   try:
+    self.store.write_in_log(message)
+   except Exception:
+    pass
 
  def handle_listener_event(self, button, pressed):
   """Dispatch one pynput event in listener order without a competing worker."""
@@ -1363,7 +1440,6 @@ class MouseProfileRuntime:
   return self.store.return_jnson().get('script_mouse', {}).get(current_game, {}).get(button_name, '')
 
  def _handle_mouse_action(self, binding, pressed, script=None):
-  global sticking_right_mouse
   if pressed and script:
    self._execute_bound_script(script)
   slot = binding.slot
@@ -1405,28 +1481,56 @@ class MouseProfileRuntime:
     key_work.mouse_middle_donw()
    return
 
-  if hold and pressed and action == 'RBUTTON':
-   if duration is not None:
-    if sticking_right_mouse:
-     mouse_controller.release(mouse.Button.right)
-     sticking_right_mouse = False
-    else:
-     mouse_controller.press(mouse.Button.right)
-     sticking_right_mouse = True
-     threading.Thread(target=self._release_right_mouse_after, args=(duration,), daemon=True).start()
-    return
-   if sticking_right_mouse:
-    mouse_controller.release(mouse.Button.right)
-    sticking_right_mouse = False
+  # Режим «держать» для кнопок мыши. Раньше работал только RBUTTON, средняя
+  # кнопка (WHEEL_MOUSE_BUTTON) с галочкой «держать» была полностью мёртвой.
+  if hold and pressed and action in ('RBUTTON', 'WHEEL_MOUSE_BUTTON'):
+   target_button = mouse.Button.right if action == 'RBUTTON' else mouse.Button.middle
+   if action == 'RBUTTON':
+    sticky = self._right_sticking
    else:
-    mouse_controller.press(mouse.Button.right)
-    sticking_right_mouse = True
+    sticky = self._middle_sticking
+   if duration is not None:
+    if sticky:
+     mouse_controller.release(target_button)
+     self._set_sticky(action, False)
+    else:
+     mouse_controller.press(target_button)
+     self._set_sticky(action, True)
+     threading.Thread(target=self._release_sticky_after, args=(action, duration), daemon=True).start()
+    return
+   if sticky:
+    mouse_controller.release(target_button)
+    self._set_sticky(action, False)
+   else:
+    mouse_controller.press(target_button)
+    self._set_sticky(action, True)
 
  def _pause_worker_after(self, worker, duration):
   time.sleep(duration)
   if not self.stop_requested.is_set():
    worker.pause()
    worker.set_sw(False)
+
+ def _set_sticky(self, action, value):
+  # Залипание правой/средней кнопки — состояние рантайма (не глобальное).
+  if action == 'RBUTTON':
+   self._right_sticking = value
+  elif action == 'WHEEL_MOUSE_BUTTON':
+   self._middle_sticking = value
+
+ def _release_sticky_after(self, action, duration):
+  # Автоснятие залипания по таймеру (режим «держать» + длительность).
+  time.sleep(duration)
+  if self.stop_requested.is_set():
+   return
+  if action == 'RBUTTON':
+   if self._right_sticking:
+    mouse_controller.release(mouse.Button.right)
+    self._right_sticking = False
+  elif action == 'WHEEL_MOUSE_BUTTON':
+   if self._middle_sticking:
+    mouse_controller.release(mouse.Button.middle)
+    self._middle_sticking = False
 
  def _handle_keyboard_action(self, binding, pressed, script=None):
   slot = binding.slot
@@ -1487,13 +1591,6 @@ class MouseProfileRuntime:
    binding.worker.set_sw(True)
    key_work.key_release(key_value, slot)
 
- def _release_right_mouse_after(self, duration):
-  global sticking_right_mouse
-  time.sleep(duration)
-  if sticking_right_mouse and not self.stop_requested.is_set():
-   mouse_controller.release(mouse.Button.right)
-   sticking_right_mouse = False
-
  def _execute_bound_script(self, script):
  # Выполняем Bash синхронно, чтобы следующая клавиша шла после него.
   try:
@@ -1539,29 +1636,22 @@ class work_key:
    'Shift_L', 'Shift_R', 'Alt_L', 'Alt_R', 'Super_L', 'Super_R', 'Caps_Lock', 'Num_Lock', 'Scroll_Lock',
    'space', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12']
 
- def mouse_wheel_up(self):  #
-  mouse_wheel = '''#!/bin/bash
-        xdotool click  {0}    '''.format(4)
-  subprocess.call(['bash', '-c', mouse_wheel])
+ def mouse_wheel_up(self):
+  if not smart_typer.click(4):  # колесо вверх через UInput-указатель
+   subprocess.call(['xdotool', 'click', '4'])  # fallback, если uinput недоступен
 
- def mouse_wheel_donw(self):  #
-  mouse_wheel = '''#!/bin/bash
-        xdotool click  {0}
-         '''.format(5)
-  subprocess.call(['bash', '-c', mouse_wheel])
+ def mouse_wheel_donw(self):
+  if not smart_typer.click(5):
+   subprocess.call(['xdotool', 'click', '5'])
 
- def mouse_right_donw(self):  # Правая кнопки мыши
- # mouse_controller.click(mouse.Button.right)
- # pyautogui.click(button='right')
-  mouse_right_donw1 = '''#!/bin/bash
-        xdotool click  {0}    '''.format(3)
-  subprocess.call(['bash', '-c', mouse_right_donw1])
+ def mouse_right_donw(self):  # Правая кнопка мыши: UInput, fallback xdotool.
+  # pyautogui и bash-обёртка больше не используются.
+  if not smart_typer.click(3):
+   subprocess.call(['xdotool', 'click', '3'])
 
- def mouse_middle_donw(self):  # Средняя.
-  pyautogui.click(button='middle')  # Нажимаем среднюю кнопку мыши
-  mouse_wheel = '''#!/bin/bash
-          xdotool click  {0}    '''.format(2)
-  # subprocess.call(['bash', '-c', mouse_wheel])
+ def mouse_middle_donw(self):  # Средняя кнопка мыши: UInput, fallback xdotool.
+  if not smart_typer.click(2):
+   subprocess.call(['xdotool', 'click', '2'])
 
  def key_press(self, key, number_key):
  # Mouse-to-key assignments always go through SmartTyper/UInput.
@@ -1585,8 +1675,6 @@ class work_key:
   # else:
   #
   #   keybord_from.press(KEYS[key[number_key]])
-
-sticking_right_mouse = False
 
 key_work = work_key()
 
@@ -2082,6 +2170,19 @@ class MouseSettingAppMethods:
 
  def closeEvent(self, event=None):  # Переопределяем закрытие окна - спрашиваем о сохранении изменений
   dict_save.thread_exit=True
+  # Возврат ЗАВОДСКОЙ карты кнопок мыши при выходе: раньше после закрытия
+  # программы в X оставался жить наш remap (1 2 3 13 5 6 7 15 16) и мышь
+  # вела себя «странно» до перезагрузки X.
+  try:
+   runtime = getattr(self, '_active_runtime', None)
+   if runtime is not None:
+    runtime.stop_requested.set()
+   dict_save.set_default_id_value()
+  except Exception as exc:
+   try:
+    dict_save.write_in_log('restore button map failed: ' + str(exc))
+   except Exception:
+    pass
   old_data = dict_save.return_old_data()
   new_data = dict_save.return_jnson()
   diff = deepdiff.DeepDiff(old_data, new_data)
@@ -2360,19 +2461,20 @@ class MouseSettingAppMethods:
    if index < len(labels):
     labels[index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
 
- def change_app(self, game=""):
-  if game == dict_save.get_cur_app() or game == "":
-   dict_save.set_cur_app("")
-   while True:
-    if "" == dict_save.get_cur_app():
-     break
+ def change_app(self, game=None):
+  # Установить текущий профиль. game=None (смена ID мыши в update_profile)
+  # означает «перезапустить эмуляцию на уже выбранном профиле» — раньше
+  # вызов без аргументов ЗАТИРАЛ current_app пустой строкой (game=""
+  # записывался в JSON), из-за чего выбранный профиль слетал.
+  if game is None:
+   game = dict_save.get_cur_app() or str(dict_save.return_jnson().get('current_app', ''))
+  if not game:
+   return
+  if game != dict_save.get_cur_app():
    dict_save.set_cur_app(game)
-   while game != dict_save.get_cur_app():
-    time.sleep(1)
-
-  res = dict_save.return_jnson()
-  res['current_app'] = game
-  dict_save.save_jnson(res)
+   res = dict_save.return_jnson()
+   res['current_app'] = game
+   dict_save.save_jnson(res)
 
  def checkbutton_changed(self, count):  # снять и убрать галочку.
   res = dict_save.return_jnson()
@@ -2481,13 +2583,16 @@ class MouseSettingAppMethods:
   self.update_script_button_colors()
   self.apply_settings_now()
 
- def update_profile(self):  # обновить профиль
+ def update_profile(self):  # обновить профиль (смена ID устройства мыши)
   res = dict_save.return_jnson()
   current_value = int(self.id_combo.currentText())
   if res["id"] != current_value:
    res["id"] = current_value
    dict_save.save_jnson(res)  # Сохранить новое значение для выпадающего списка
+   # Раньше: change_app() без аргументов затирал current_app пустой строкой.
+   # Теперь перезапускаем эмуляцию на выбранном профиле с новым устройством.
    self.change_app()
+   self.apply_settings_now()
 
  def change(self, window, new_name, old_name, res, count, labels):  # Окно изменение названия игры
   new_name_text = new_name.text()  # print(new_name_text, old_name, end=" , ")
