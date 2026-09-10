@@ -13,7 +13,7 @@ from pynput.keyboard import Key, Listener
 from Pyqt6_libs_data import ( en_to_ru, ru_to_en, KEYS, simple_key_map, LIST_MOUSE_BUTTONS, LIST_KEYS,
  defaut_list_mouse_buttons, keypad_map, mouse_map, cleanup_empty_script_entries, _format_scripts_in_json,
  scripts_to_text, is_path_in_list, get_index_of_path, replace_path_in_dict,
- remove_profile_keys, reorder_keys_in_dict, evdev_key_to_label,)
+ remove_profile_keys, reorder_keys_in_dict, profile_order_changed, insert_profile_after, evdev_key_to_label,)
 from evdev import InputDevice, categorize, ecodes, list_devices, UInput
 get_user_name = f'''#!/bin/bash
 current_user=$(whoami);
@@ -1226,11 +1226,17 @@ def check_current_active_window(dict_save, games_checkmark_paths):
    # print(f"[OK] {os.path.basename(file_path)} -> {result}")
    return result
 
-  has_portproton = any('/PortProton/data' in p and '.exe' in p for p in data_dict.values())
-  if has_portproton and id_active in data_dict:
-   for path in data_dict.values():
-    if is_path_in_list(path, games_checkmark_paths):
-     return games_checkmark_paths[get_index_of_path(path, games_checkmark_paths)]
+   has_portproton = any('/PortProton/data' in p and '.exe' in p for p in data_dict.values())
+   if has_portproton and id_active in data_dict:
+    # Проверяем: активное окно — часть дерева PortProton-игры?
+    # Если да, то _walk_up быстро найдёт launcher.exe (аналог Play Portal 2.exe).
+    # Если нет (desktop/файловый менеджер/etc) — пропускаем перебор,
+    # иначе фоновые services.exe затянут посторонний профиль (§26).
+    if _is_game(game_path) or _is_game(expanded.get(win_pid_int, '')) or \
+       _walk_up(id_active, lambda pid, pth: _is_game(pth)):
+     for path in data_dict.values():
+      if is_path_in_list(path, games_checkmark_paths):
+       return games_checkmark_paths[get_index_of_path(path, games_checkmark_paths)]
   return fallback
 
  except Exception as exc:
@@ -1729,10 +1735,14 @@ def return_file_path(dict_save):
  li = list(res["paths"].keys())
  if path_to_file in li:
   return None
+ active_before_add = dict_save.get_cur_app()  # активный профиль ДО добавления
  res["paths"][str(path_to_file)] = str(name)
  res["games_checkmark"][str(path_to_file)] = True
  res["key_value"][str(path_to_file)] = keys_values  # сохранить пред значения
  res["mouse_press"][str(path_to_file)] = list(mouse_press_old)
+ # Новый профиль должен стоять в списке СРАЗУ ПОД активным (не в конце).
+ # Переставляем его во всех секциях (paths, games_checkmark, key_value, ...).
+ res = insert_profile_after(res, str(path_to_file), active_before_add)
  res1 = res["key_value"]
 
  dict_save.save_jnson(res)
@@ -2185,7 +2195,9 @@ class MouseSettingAppMethods:
     pass
   old_data = dict_save.return_old_data()
   new_data = dict_save.return_jnson()
-  diff = deepdiff.DeepDiff(old_data, new_data)
+  # DeepDiff не видит перестановку ключей словаря (порядок профилей),
+  # поэтому порядок списка игр сравниваем отдельно.
+  diff = deepdiff.DeepDiff(old_data, new_data) or profile_order_changed(old_data, new_data)
   if diff:
    reply = QMessageBox.question(self, "Выход", "Вы хотите сохранить изменения перед выходом?", QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
    if reply == QMessageBox.StandardButton.Cancel:
@@ -2718,10 +2730,15 @@ class MouseSettingAppMethods:
   for i in range(len(keys_values)):
    old_keys_values.append(keys_values[i].currentText())
 
-   # Выделяем последний label синим (аналог config(background="#06c"))
-  labels = dict_save.return_labels()  # Обновляем список после filling_in_fields
-  if labels and len(labels) > 0:
-   labels[-1].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
+   # Выделяем НОВЫЙ профиль синим (он теперь стоит под активным, а не в конце —
+   # ищем его индекс по current_app, а не labels[-1]).
+   labels = dict_save.return_labels()  # Обновляем список после filling_in_fields
+   res_now = dict_save.return_jnson()
+   new_keys = list(res_now["paths"].keys())
+   if res_now.get('current_app') in new_keys:
+    new_index = new_keys.index(res_now['current_app'])
+    if 0 <= new_index < len(labels):
+     labels[new_index].setStyleSheet("background-color: #06c; color: white; border: 1px solid gray; padding: 5px;")
 
    # Обновление привязок (аналог update_buttons и bindings)
   self.update_labels_bindings()

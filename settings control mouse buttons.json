@@ -3,9 +3,10 @@
     "C:/Windows/explorer.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": true,
-    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
@@ -27,9 +28,10 @@
     "C:/Windows/explorer.exe": "По умолчанию",
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": "FarCry",
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": "Splinter Cell - Chaos Theory",
-    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": "Portal Stories Mel",
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": "Alien Isolation",
+    "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": "Portal Reloaded",
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": " Entropy Zero 2",
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": "Portal Stories Mel",
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": "Assassins Creed IV Black Flag",
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": "Tomb Raider",
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia 2",
@@ -75,15 +77,6 @@
       "SPACE",
       "SCROLL_DOWN"
     ],
-    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": [
-      "LBUTTON",
-      "W",
-      "SPACE",
-      "SPACE",
-      "F",
-      "RBUTTON",
-      "E"
-    ],
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": [
       "LBUTTON",
       "W",
@@ -93,12 +86,30 @@
       "SCROLL_UP",
       "SCROLL_DOWN"
     ],
+    "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": [
+      "LBUTTON",
+      "W",
+      "SPACE",
+      "SPACE",
+      "F",
+      "RBUTTON",
+      "E"
+    ],
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": [
       "LBUTTON",
       "W",
       "E",
       "F",
       "SPACE",
+      "RBUTTON",
+      "E"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": [
+      "LBUTTON",
+      "W",
+      "SPACE",
+      "SPACE",
+      "F",
       "RBUTTON",
       "E"
     ],
@@ -275,15 +286,6 @@
       false,
       false
     ],
-    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ],
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": [
       false,
       false,
@@ -293,7 +295,25 @@
       false,
       false
     ],
+    "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": [
       false,
       false,
       false,
@@ -572,25 +592,6 @@
               done\""
       }
     },
-    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": {
-      "keys": {
-        "KEY_KPPLUS": "#!/bin/bash
-                       TIMESCALE=\"1\"
-                       xte \"keydown Esc\"
-                       sleep 0.62
-                       xte \"keyup Esc\"
-                       sleep 1.2
-                       xdotool key grave
-                       sleep 1.8
-                       xdotool type \"sv_cheats 1\"
-                       xdotool key Return
-                       sleep 1.3
-                       xdotool type \"host_timescale $TIMESCALE\"
-                       xdotool key Return
-                       sleep 0.81
-                       xdotool key Escape"
-      }
-    },
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": {
       "keys": {
         "N": "xte \"keydown E\"
@@ -719,6 +720,32 @@
               xte \"keydown E\"
               sleep 0.02
               xte \"keyup E\""
+      }
+    },
+    "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": {
+      "keys": {
+        "?
+                           /": "#!/bin/bash
+                                   xte \"keydown C\""
+      }
+    },
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": {
+      "keys": {
+        "KEY_KPPLUS": "#!/bin/bash
+                       TIMESCALE=\"1\"
+                       xte \"keydown Esc\"
+                       sleep 0.62
+                       xte \"keyup Esc\"
+                       sleep 1.2
+                       xdotool key grave
+                       sleep 1.8
+                       xdotool type \"sv_cheats 1\"
+                       xdotool key Return
+                       sleep 1.3
+                       xdotool type \"host_timescale $TIMESCALE\"
+                       xdotool key Return
+                       sleep 0.81
+                       xdotool key Escape"
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": {
@@ -2986,13 +3013,6 @@
                xte \"keydown W\"",
         "Down": "#!/bin/bash
                  xte \"keyup W\""
-      }
-    },
-    "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": {
-      "keys": {
-        "?
-                  /": "#!/bin/bash
-                          xte \"keydown C\""
       }
     }
   }

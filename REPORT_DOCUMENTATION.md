@@ -422,18 +422,28 @@ JSON-строки формально недопустим (строгий `json.
 ### `check_star()` (999)
 Проверяет, не запущен ли уже второй экземпляр программы (по имени процесса).
 
-### `return_file_path(dict_save)` (1013)
-Открывает `zenite` выбор `.exe`, добавляет новый профиль во все словари
-(`paths`, `games_checkmark`, `key_value`, `mouse_press`) со значениями
-текущего профиля. Возвращает путь или `None`.
+ ### `return_file_path(dict_save)` (1013)
+ Открывает `zenite` выбор `.exe`, добавляет новый профиль во все словари
+ (`paths`, `games_checkmark`, `key_value`, `mouse_press`) со значениями
+ текущего профиля. **С 2026-09-10 (§25.1)** сразу переставляет новый профиль
+ на позицию «сразу ПОД активным» через `insert_profile_after` (новый профиль
+ больше не падает в конец списка). Возвращает путь или `None`.
 
-### `set_list_box(dict_save, index=0)` (1042)
-Устанавливает `count` и обновляет значения combobox (`set_box_values`/
-`set_values_box`).
+ ### `set_list_box(dict_save, index=0)` (1042)
+ Устанавливает `count` и обновляет значения combobox (`set_box_values`/
+ `set_values_box`).
 
-### `reorder_keys_in_dict(res, idx1, idx2)` (1048)
-Рекурсивно меняет порядок ключей в `res["paths"]` (и вложенных словарей) при
-перемещении профиля вверх/вниз.
+ ### `reorder_keys_in_dict(res, idx1, idx2)` (1048)
+ Рекурсивно меняет порядок ключей в `res["paths"]` (и вложенных словарей) при
+ перемещении профиля вверх/вниз.
+ **Важно (§24.2, 2026-09-10):** до фикса финальный блок `return new_res` из-за
+ лишнего отступа был мёртвым кодом внутри вложенной `reorder_recursive` —
+ функция возвращала `None` при успешном swap и «молча» стирала настройки
+ (`save_jnson(None)`). Исправлено; + зеркальная функция
+ `profile_order_changed(old, new)` — детектирует изменение ПОРЯДОКА ключей
+ `paths` для closeEvent (DeepDiff порядок ключей не видит), +
+ `insert_profile_after(res, new_key, anchor_key)` — вставка нового профиля
+ под активный (§25.1).
 
 ---
 
@@ -603,8 +613,11 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
 - `create_tray_icon` (1491) — иконка `tmpovhwj8so.png`, меню «Выход».
 - `tray_icon_clicked` (1507) / `show_normal` (1514) — показ/скрытие окна.
 - `close_app` (1518) / `closeEvent` (1521) — при выходе сравнивает
-  `old_data`/`jnson` через `deepdiff`; если есть изменения — предлагает
-  сохранить (`write_to_file`), затем `os.kill(getpid(), SIGKILL)`.
+  `old_data`/`jnson` через `deepdiff` **ИЛИ `profile_order_changed`** (§24.3 —
+  DeepDiff не видит перестановку ключей `paths`, без этого порядок профилей
+  не попадал в диалог сохранения); если есть изменения — предлагает
+  сохранить (`write_to_file`), затем `os._exit(0)`; перед выходом
+  `release_single_instance_lock()` и восстановление заводской карты кнопок.
 
 ### Движок эмуляции
 - `emunator_mouse(dict_save, key, list_buttons, press_button, string_keys, games_checkmark_paths)` (1539):
@@ -643,15 +656,20 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
   синхронизации).
 - `checkbutton_changed(count)` (1733) — переключить галочку профиля.
 - `update_labels_bindings()` (1741) — перепривязать обработчики label/чекбоксов.
-- `move_element(dict_save, direction)` (1753) — вверх/вниз: визуальный
-  `QHBoxLayout` swap + `reorder_keys_in_dict` в JSON.
-- `update_button(index)` (1808) — сохранить выбранное значение combobox в
-  `key_value[game][index]`.
-- `update_profile()` (1815) — смена ID мыши в выпадающем списке →
-  `change_app()`.
-- `change_name_label(count)` / `change(...)` — переименование профиля.
-- `label_clicked(event, count)` (1863) — ЛКМ выбирает профиль, двойной клик →
-  переименование.
+ - `move_element(dict_save, direction)` (1753) — вверх/вниз: визуальный
+   `QHBoxLayout` swap + `reorder_keys_in_dict` в JSON. **(§24.2)** До 2026-09-10
+   reorder возвращал `None` (мёртвый код из-за отступа) — перемещение ломало
+   настройки и не сохранялось; исправлено + `closeEvent` теперь видит
+   перестановку (DeepDiff OR `profile_order_changed`).
+ - `update_button(index)` (1808) — сохранить выбранное значение combobox в
+   `key_value[game][index]`.
+ - `update_profile()` (1815) — смена ID мыши в выпадающем списке →
+   `change_app()`.
+ - `change_name_label(count)` / `change(...)` — переименование профиля.
+ - `label_clicked(event, count)` (1863) — ЛКМ выбирает профиль, двойной клик →
+   переименование. **(§25.2)** Скачок списка при двойном клике устранён
+   (eventFilter запоминает позицию на каждом press/release/dblclick и не
+   возвращает устаревшее значение на release).
 - `check_mouse_press_button(count, state)` (1869) — сохранить флаг удержания в
   `mouse_press[cur_app][count]`.
 - `add_file()` (1878) — добавить профиль (вызов `return_file_path` + перестрой
@@ -774,6 +792,8 @@ def func_mouse_press_button(dict_save, key, button, pres, list_buttons, press_bu
 | `games_checkmark_paths` | prepare/startup | список путей профилей с галочкой |
 | `defaut_list_mouse_buttons` | глобал | эталон 7 имён слотов |
 | `LIST_KEYS` | глобал | имена для combobox (ключи `KEYS`) |
+| `profile_order_changed` | Pyqt6_libs_data | детект изменения ПОРЯДКА ключей `paths` для closeEvent (§24.3) |
+| `insert_profile_after` | Pyqt6_libs_data | вставка нового профиля сразу под активный во всех секциях (§25.1) |
 
 ---
 
@@ -1457,26 +1477,32 @@ side), что верно только для конкретной мыши ав�
 2. `check_label_changed` (lib): в начале захватывается
    `_scroll_pos = self.scroll_area.verticalScrollBar().value()`, а в конце
    через `QTimer.singleShot(0, ...)` позиция возвращается.
- 3. **Главный файл, жёсткая блокировка (финальная версия).** Первая попытка
-    (только `eventFilter` с захватом/возвратом на press/release) не помогла:
-    `QScrollArea` «подскролливает» кликнутый элемент в зону видимости **по
-    фокусу — уже ПОСЛЕ отпускания кнопки**, поэтому список всё равно дёргался.
-    Сделана настоящая блокировка через перехват `valueChanged` скроллбара:
-    - в `setup_ui`: `self._scroll_locked = False`,
-      `self.scroll_area.verticalScrollBar().valueChanged.connect(self._block_scroll_during_click)`
-      и `self.scroll_area.viewport().installEventFilter(self)`;
-    - `eventFilter`: на `MouseButtonPress` ставит `_scroll_locked = True` и
-      запоминает позицию `_scroll_lock_val`; на `MouseButtonRelease`
-      восстанавливает позицию и планирует снятие блока через 180 мс
-      (`QTimer.singleShot(0/80/180, ...)`);
-    - `_block_scroll_during_click(_val)`: пока `_scroll_locked` — правда,
-      принудительно возвращает скроллбар в `_scroll_lock_val`
-      (`blockSignals(True)` → `setValue` → `blockSignals(False)`, чтобы не
-      было рекурсии). Любая попытка QScrollArea сдвинуть список во время
-      клика/сразу после него гасится.
-    Итог: клик по имени игры НЕ сдвигает список ни при какой причине прыжка.
-    Обычная прокрутка мышью/скроллбаром работает вне окна клика (блок
-    снимается через 180 мс после отпускания).
+ 3. **Главный файл, жёсткая блокировка (финальная версия; ПЕРЕПИСАНА в §25.2,
+    2026-09-10).** Первая попытка (только `eventFilter` с захватом/возвратом
+    на press/release) не помогла: `QScrollArea` «подскролливает» кликнутый
+    элемент в зону видимости **по фокусу — уже ПОСЛЕ отпускания кнопки**,
+    поэтому список всё равно дёргался. Сделана настоящая блокировка через
+    перехват `valueChanged` скроллбара:
+     - в `setup_ui`: `self._scroll_locked = False`,
+       `self.scroll_area.verticalScrollBar().valueChanged.connect(self._block_scroll_during_click)`
+       и `self.scroll_area.viewport().installEventFilter(self)`;
+     - `eventFilter` (**актуальная версия, §25.2**): позиция запоминается на
+       КАЖДОМ событии мыши (press/release/dblclick) — это актуальное значение
+       скроллбара в момент события. Press по QLabel до фильтра НЕ доходит
+       (label потребляет нажатие), release — доходит; старая ветка release
+       возвращала устаревший `_scroll_lock_val` и планировала его же на
+       0/80/180 мс — из-за конфликта с восстановлением в
+       `check_label_changed` список «убегал» вниз-вверх при двойном клике
+       (переименовании). Теперь release/dblclick ТОЛЬКО продлевают блок на
+       180 мс и сами ничего не возвращают;
+     - `_block_scroll_during_click(_val)`: пока `_scroll_locked` — правда,
+       принудительно возвращает скроллбар в `_scroll_lock_val`
+       (`blockSignals(True)` → `setValue` → `blockSignals(False)`, чтобы не
+       было рекурсии). Любая попытка QScrollArea сдвинуть список во время
+       клика/сразу после него гасится.
+     Итог: клик и двойной клик по имени игры НЕ сдвигают список.
+     Обычная прокрутка мышью/скроллбаром работает вне окна клика (блок
+     снимается через 180 мс после отпускания).
 4. Попутно в `check_label_changed` исправлен латентный баг выбора: вместо
    `res["key_value"].keys()` используется
    `game = list(res["paths"].keys())[count]` — ключи совпадают с порядком
@@ -2002,6 +2028,264 @@ XBUTTON-скрипты по `key_value`. Проверено: после фикс
   удалили скрипт → кнопка снова обычная → OK.
 - Регрессия §22.4 (авто-переключение профиля при запуске игры) → PASS.
 - Импорт GUI-модуля → OK.
+
+---
+
+## 24. Сессия 2026-09-10: порядок профилей не сохранялся — диалог «Сохранить изменения?» не появлялся
+
+### 24.1 Симптом
+
+Пользователь двигает профиль кнопками «Вверх/Вниз» (`move_element`) — визуально
+список меняется. При закрытии программы диалог «Вы хотите сохранить изменения
+перед выходом?» **не появляется**, после перезапуска порядок списка профилей
+старый.
+
+### 24.2 Корень — ДВЕ независимые причины (обе устранены)
+
+**Причина 1 (блокирующая): `reorder_keys_in_dict` возвращала `None` при успешном
+swap.** В `Pyqt6_libs_data.py` финальный блок функции
+(`new_res = {} … return new_res`) имел отступ 2 пробела — и потому входил в
+состав **вложенной** функции `reorder_recursive` ПОСЛЕ её `return new_d`
+(мёртвый код). Внешняя функция после удачной перестановки доходила до конца
+тела **без своего `return`** → возвращала `None`. Следствия в
+`move_element` (Pyqt6_libs_mouse.py): `save_jnson(None)` затирала `jnson`
+значением `None`, `filling_in_fields` падала с `TypeError` (её ловил общий
+`except` в `move_element`, печатая «Ошибка при перемещении элемента»), а
+`closeEvent` сравнивал `old_data` с `None` — DeepDiff давал `type_changes`, но
+после сбоя список уже не был «двинут», и сохранять было нечего/нечем.
+> Важный нюанс диагностики: на NTFS/exFAT-маунте `/mnt/...` mtime имеет грубую
+> гранулярность, и `__pycache__` содержал .pyc от РАНЕЕ работавшей версии —
+> в старых запусках reorder мог работать «визуально». При правках этих файлов
+> `__pycache__` стоит удалять (или запускать с `PYTHONDONTWRITEBYTECODE=1`).
+
+**Причина 2 (маскирующая): DeepDiff не считает порядок ключей словаря
+изменением.** Даже при корректном reorder правка порядка профилей меняет
+только порядок ключей `paths` (и вложенных секций) — значения остаются при
+своих ключах. `DeepDiff(old, new)` на такую правку возвращает `{}` (пустой
+diff) — эмпирически подтверждено. Поэтому диалог не появлялся и в тех
+запусках, где reorder отрабатывал.
+
+### 24.3 Исправление
+
+1. `Pyqt6_libs_data.py` → `reorder_keys_in_dict`: финальный блок
+   (`new_res = {} … return new_res`) возвращён на уровень функции (отступ 1
+   пробел, по конвенции). Теперь при успешном swap возвращается новый dict.
+2. `Pyqt6_libs_data.py` → новая чистая функция `profile_order_changed(old_data,
+   new_data)`: сравнивает ПОРЯДОК ключей `paths` (list(keys) != list(keys)),
+   учитывая отсутствие секции. Зеркальная пара `reorder_keys_in_dict` (та
+   меняет порядок — эта его детектирует).
+3. `Pyqt6_libs_mouse.py` → импорт `profile_order_changed` из `Pyqt6_libs_data`;
+   в `closeEvent` условие заменено на
+   `diff = deepdiff.DeepDiff(old_data, new_data) or profile_order_changed(old_data, new_data)`
+   — теперь перестановка профилей тоже считается изменением и попадает в
+   диалог «Сохранить изменения?» с Save/Discard/Cancel.
+
+Ничего больше не менялось: механизм save-on-close, формат файла, GUI, порядок
+обработчиков — как были.
+
+### 24.4 Проверка
+
+- `python3 -m py_compile` трёх `.py` → OK.
+- Юнит-тесты (venv, реальный `settings control mouse buttons.json`):
+  1. `reorder_keys_in_dict(res, 1, 0)` возвращает dict (не None), swap
+     ключей `paths` верный, значения (имена, `key_value`) остались при своих
+     профилях → OK;
+  2. воспроизведение бага: `DeepDiff(old, reordered)` пустой → OK (bug
+     воспроизводится на старой логике);
+  3. после фикса `DeepDiff(...) or profile_order_changed(...)` непустой →
+     диалог появится → OK;
+  4. false-positive: без изменений (в т.ч. `idx1==idx2`) диалог НЕ
+     появляется → OK;
+  5. несколько ходов подряд («Вверх», «Вниз», перенос через полсписка):
+     все секции (`games_checkmark`, `key_value`, `mouse_press`,
+     `script_mouse`, `keyboard_script`) упорядочены по новому порядку
+     `paths`, данные не уехали → OK;
+  6. полный round-trip «Save»: `json.dumps` → `_format_scripts_in_json` →
+     `json.load(strict=False)` → `scripts_to_text` — порядок профилей
+     сохраняется в файле и после перезагрузки → OK.
+- `__pycache__` проекта удалён (устаревшие .pyc с mtime-гранулярностью
+  внешнего диска — источник «призрачных» версий кода).
+- Осталось ручное подтверждение пользователем в GUI: передвинуть профиль
+  «Вверх/Вниз» → закрыть программу → появился диалог «Сохранить изменения?» →
+  «Save» → после перезапуска порядок списка новый.
+
+---
+
+## 25. Сессия 2026-09-10 (2-я): два бага UI — положение нового профиля и «скачок» списка при двойном клике
+
+### 25.1 Баг А — новый профиль добавлялся в КОНЕЦ списка, а не под активным
+
+**Симптом.** Пользователь выбирает какой-то профиль (3-й, 4-й, любой) и
+добавляет новый путь к игре. Новый профиль падает в конец списка — а должен
+вставать **сразу ниже активного**.
+
+**До фикса.** `return_file_path` (Pyqt6_libs_mouse.py) добавляла ключи нового
+профиля в `paths`/`games_checkmark`/`key_value`/`mouse_press` — обычное
+добавление в dict = конец списка. `add_file` подсвечивала `labels[-1]`
+(последнюю строку) как выбранный новый профиль.
+
+**Исправление.**
+- Новая чистая функция `insert_profile_after(res, new_key, anchor_key)`
+  (Pyqt6_libs_data.py, рядом с `reorder_keys_in_dict`): переставляет `new_key`
+  на позицию «сразу после `anchor_key`» во **всех** секциях (та же схема
+  рекурсивной перестановки, что у `reorder_keys_in_dict`). Границы: якорь
+  отсутствует / `new_key == anchor_key` / новый уже выше якоря → порядок не
+  меняется; активен последний профиль → новый остаётся в конце.
+- `return_file_path` (Pyqt6_libs_mouse.py): запоминает активный профиль ДО
+  добавления (`active_before_add = dict_save.get_cur_app()`), добавляет ключи
+  и тут же делает `res = insert_profile_after(res, path, active_before_add)`.
+- `add_file`: подсветка нового профиля теперь по индексу
+  `current_app` в `paths` (новый уже не последний), а не `labels[-1]`.
+
+### 25.2 Баг Б — при двойном клике (переименование) список «убегал» вниз-вверх
+
+**Симптом.** Двойной клик по профилю (открытие окна переименования) — список
+профилей прыгает скроллом вниз и вверх.
+
+**Диагностика (воспроизведено на автономной Qt-копии, offscreen).** Механика
+скачка:
+1. **Press по QLabel (строке профиля) НЕ доходит до `eventFilter`** — label
+   потребляет нажатие (`mousePressEvent` переопределён). До фильтра на
+   viewport доходит только **release** (QLabel его игнорирует, событие
+   всплывает).
+2. Старая ветка `MouseButtonRelease` в `eventFilter` делала
+   `setValue(self._scroll_lock_val)` — с **устаревшим** значением (взятм от
+   последнего press, которого фильтр не видел; после скролла вручную это
+   любое старое число) — плюс планировала тот же возврат на 0/80/180 мс.
+3. `check_label_changed` параллельно восстанавливает актуальную позицию
+   через `QTimer.singleShot(0, ...)`. Конфликт двух «возвратов» с разными
+   значениями = список машет вниз-вверх (замер: 300 → 0 → «samples» гуляют).
+
+**Исправление** (`eventFilter` в Pytq6_mouse_setting_control_for_buttons_for_linux.py):
+- позиция запоминается на **каждом** press/release/dblclick (актуальное
+  значение скроллбара в момент события), а не только на press;
+- ветка release **больше не «возвращает» позицию сама** (убраны
+  `setValue(_scroll_lock_val)` на release и шедулинг на 0/80/180 мс) —
+  возврат позиции остаётся только у `check_label_changed` (владелец клика);
+- блокировка (`_block_scroll_during_click`) на release/dblclick держится ещё
+  180 мс — гасит «подскролливание» QScrollArea к сфокусированному элементу
+  после закрытия модального диалога переименования.
+
+Результат теста: spread=0, позиция 300 сохраняется на всём интервале
+(до фикса: 300 → 0).
+
+### 25.3 Проверка
+
+- `py_compile` трёх `.py` → OK.
+- Юнит-тесты `insert_profile_after` (реальный JSON, 22 профиля):
+  1. активен 3-й → новый встал ровно под ним; все секции согласованы → OK;
+  2. активен последний → новый в конце → OK;
+  3. якорь отсутствует / new==anchor / повторный insert → порядок не
+     меняется → OK;
+  4. добавление+вставка видны closeEvent-логикой (DeepDiff OR
+     `profile_order_changed`) → диалог появится → OK;
+  5. «Вверх/Вниз» после вставки работают → OK.
+- Qt-тест двойного клика (offscreen, 30 строк, скролл=300): до фикса список
+  падал в 0; после фикса spread=0 — прыжка нет → OK.
+- Осталось ручное подтверждение в GUI: (а) выбрать профиль → «Добавить» →
+  новый профиль стоит сразу под выбранным и подсвечен синим; (б) двойной клик
+  по любому профилю в середине прокрученного списка — список не дёргается.
+
+---
+
+## 26. Проверка ветки PortProton в `check_current_active_window`
+
+**Дата фикса:** 2026-09-10
+
+**Симптом.** Выбираем профиль **Portal Reloaded** вручную → спустя ~30 мс
+программа сама сбрасывает его на **Silent Downpour** (path:
+`total_commander.exe`). При этом Silent Downpour получает неправильный
+mapping (RBUTTON → UP вместо W).
+
+### Диагностика (корень — два слоя)
+
+**Слой 1: подстрочное сравнение (is_path_in_list).**
+`is_path_in_list(path, games_checkmark_paths)` ищет совпадение `path in
+profile_path` — подстроку в списке всех активных профилей. Из-за этого
+процесс с cwd/аргументом, содержащим `/mnt/.../linux must have/`, матчится
+с профилем `total_commander.exe` (Silent Downpour), потому что строка
+`.../linux must have/` является подстрокой полного пути к这个游戏. Это
+фундаментальная проблема `is_path_in_list` — подстрока из любого процесса
+(включая bash-диагностику, файловый менеджер) случайно ложится на чужой
+профиль.
+
+**Слой 2: ветка PortProton хватает ВСЕ процессы.**
+`has_portproton = any('/PortProton/data' in p and '.exe' in p for p in
+data_dict.values())` — True ВСЕГДА, пока запущены фоновыеwine-сервисы
+PortProton (`services.exe`, `plugplay.exe`, `rpcss.exe` в
+`/home/egor/PortProton/data/prefixes/DEFAULT/...`). Ветка:
+
+```python
+if has_portproton and id_active in data_dict:
+ for path in data_dict.values():
+  if is_path_in_list(path, games_checkmark_paths):
+   return games_checkmark_paths[...]
+```
+
+перебирает **ВСЕ** 128 процессов в `data_dict` и возвращает **первый**
+попавшийся матч — это может быть **любой** процесс, не обязательно
+дерево активного окна. В результате:
+1. Активное окно — desktop/GUI (не игра).
+2. PortProton background services → `has_portproton=True`.
+3. Первый матч — `total_commander.exe` (Silent Downpour).
+4. `check_current_active_window` возвращает Silent Downpour.
+5. `emunator_mouse` через 30 мс переключает рантайм → ручной выбор
+   отбрасывается.
+
+**Почему Portal Reloaded не нашёлся основным путём (стратегии 1-5).**
+Лаунчер `Play Portal 2.exe` и игра `portal2.exe` — разные процессы с
+разными PID. Прямой путь `portal2.exe` в expanded не совпадает ни с одним
+профилем (профиль хранит `Play Portal 2.exe`). Стратегии 1-4 (BFS/Walk)
+ищут в дереве процесса launcher, но для Portal Reloaded:
+- окно = `portal2.exe` (ppid=1, прямой потомок systemd)
+- launcher `Play Portal 2.exe` не является прямым предком
+- BFS/Walk не находят launcher → все 5 стратегий возвращают 0
+- fallback (ppid) → launcher нет в parent_map → возврат окна (portal2.exe)
+- portal2.exe не совпадает ни с одним профильным путём → fallback
+
+Ветка PortProton была задумана как safety-net для этого сценария, но
+работала слишком агрессивно — захватывала ВСЕ процессы без привязки
+к дереву активного окна.
+
+### Исправление
+
+Ветка PortProton теперь **ограничена проверкой активного окна**:
+
+```python
+if has_portproton and id_active in data_dict:
+ if _is_game(game_path) or _is_game(expanded.get(win_pid_int, '')) or \
+    _walk_up(id_active, lambda pid, pth: _is_game(pth)):
+  for path in data_dict.values():
+   if is_path_in_list(path, games_checkmark_paths):
+    return games_checkmark_paths[get_index_of_path(path, games_checkmark_paths)]
+```
+
+**Логика:** перебор всех процессов запускается ТОЛЬКО если:
+1. `game_path` (активный процесс из стратегий 1-5) уже является игрой, ИЛИ
+2. `win_pid_int` (PID окна) является игрой, ИЛИ
+3. `_walk_up` от `id_active` вверх по дереву находит игру-предка.
+
+Если активное окно — desktop/GUI (`_is_game`=False, предков-игр нет)
+→ ветка **пропускается**, возвращается fallback → ручной выбор не сбрасывается.
+
+**Эффект:** ручной выбор профиля Portal Reloaded сохраняется при фокусе
+на desktop/файловый менеджер/браузер. При фокусе на окне игры — ветка
+PortProton работает как раньше (finder-ready на случай, если основные
+стратегии 1-5 не нашли launcher в дереве).
+
+### Проверка
+
+- `py_compile` → OK.
+- Диагностика на реальных процессах:
+  - desktop фокус (pid=2486, cinnamon) → `_walk_up` не находит .exe
+    предков → ветка PortProton пропускается → fallback → ручной выбор
+    сохраняется → OK.
+  - игра portal2.exe фокус → `_walk_up` от pid=2421238 (ppid=1) →
+    предков нет → _is_game(game_path)=False → ветка PortProton
+    НЕ запускается (ожидаемо: игра без launcher-предка). Решение
+    зависит от того, как именно launcher привязан к дереву portal2.exe
+    в PortProton (может быть ppid=1 с запущенным launcher через exec,
+    или отдельный PID не в parent_map).
 
 ---
 
