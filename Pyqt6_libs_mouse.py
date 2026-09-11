@@ -1214,11 +1214,72 @@ def remember_fallback_before_game(store, current_profile, next_profile, enabled_
   store.set_prev_game(current_profile)
 
 
+# ==== Канонизация путей pid по директориям профилей (§27) ====
+# Правило: одна директория из настроек = одна игра. Любой exe из папки профиля
+# приравнивается к пути профиля (GTAVLauncher.exe <-> GTA5.exe, portal2.exe <->
+# Play Portal 2.exe и т.п.). Кэш пересобирается при смене списка профилей,
+# раз в час или при появлении нового exe в папке профиля.
+
+def build_profile_dir_map(games_checkmark_paths, force=False):
+ """Собрать {exe (lower) -> путь профиля} и {директории профилей}. Кэшируется."""
+ cache = getattr(build_profile_dir_map, "_cache", None)
+ key = tuple(games_checkmark_paths)
+ now = time.time()
+ if not force and cache and cache["key"] == key and (now - cache["ts"]) < 3600:
+  return cache["exe_map"], cache["dirs"]
+ exe_map = {} # exe из папки профиля (lower) -> путь профиля из настроек
+ dirs = set() # директории всех профилей с галочкой
+ for profile_path in games_checkmark_paths:
+  d = os.path.dirname(profile_path or '')
+  if not d:
+   continue
+  dirs.add(os.path.normpath(d).lower())
+  try:
+   # Собираем exe в самой папке профиля (без под папок)
+   exes = [f for f in os.listdir(d)
+    if f.lower().endswith('.exe') and os.path.isfile(os.path.join(d, f))]
+  except OSError:
+   continue # папка недоступна (в т.ч. Windows-пути вида C:/...)
+  if len(exes) > 25:
+   # «Общая» папка с кучей чужих exe (напр. linux must have) — точечно:
+   # маппим только сам exe профиля, иначе любой сосед захватит профиль
+   exe_map[os.path.normpath(profile_path).lower()] = profile_path
+   continue
+  for f in exes:
+   full = os.path.normpath(os.path.join(d, f)).lower()
+   if full not in exe_map: # два профиля в одной папке: выигрывает первый в списке
+    exe_map[full] = profile_path
+ build_profile_dir_map._cache = {"key": key, "ts": now, "exe_map": exe_map, "dirs": dirs}
+ return exe_map, dirs
+
+
+def canonicalize_pid_paths(data_dict, games_checkmark_paths):
+ """Заменить пути pid на пути профилей: exe в директории профиля = та же игра."""
+ exe_map, dirs = build_profile_dir_map(games_checkmark_paths)
+ if not exe_map:
+  return data_dict # нет доступных папок профилей -> без изменений
+ canon = dict(data_dict)
+ for pid, p in data_dict.items():
+  if not p or not p.lower().endswith('.exe'):
+   continue
+  norm = os.path.normpath(p).lower()
+  if norm in exe_map:
+   canon[pid] = exe_map[norm] # exe лежит в папке профиля -> путь профиля
+  elif os.path.dirname(norm) in dirs:
+   # exe появился в папке профиля ПОЗЖЕ построения карты -> пересобрать
+   exe_map, dirs = build_profile_dir_map(games_checkmark_paths, force=True)
+   if norm in exe_map:
+    canon[pid] = exe_map[norm]
+ return canon
+
+
 def check_current_active_window(dict_save, games_checkmark_paths):
  """Return the game profile for the active window, otherwise a safe fallback."""
  fallback = fallback_profile_path(dict_save, games_checkmark_paths)
  try:
   data_dict, id_active = Get_pid_and_path_window()
+  # Канонизация: exe из папки профиля приравнивается к пути профиля (§27)
+  data_dict = canonicalize_pid_paths(data_dict, games_checkmark_paths)
   file_path = data_dict.get(id_active, '')
   has_exe = any('.exe' in p for p in data_dict.values())
   if has_exe and file_path and is_path_in_list(file_path, games_checkmark_paths):
