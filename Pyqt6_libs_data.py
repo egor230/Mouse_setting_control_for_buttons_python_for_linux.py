@@ -6,7 +6,7 @@
 # Правило отступа: 1 пробел за уровень. Комментарии только через #.
 # ==== ДАННЫЕ: списки и словари ====
 
-import copy, re
+import copy, re, os
 
 # Словари транслитерации (en<->ru) для поиска макроса по введённой клавише.
 en_to_ru = {'a': 'ф', 'A': 'Ф', 'b': 'и', 'B': 'И', 'c': 'с', 'C': 'С', 'd': 'в', 'D': 'В', 'e': 'у', 'E': 'У', 'f': 'а', 'F': 'А', 'g': 'п', 'G': 'П',
@@ -256,7 +256,7 @@ def reorder_keys_in_dict(res, idx1, idx2):  # ИЗМЕНЕНО: Новая/до�
     new_d[k] = processed[k]
   return new_d
 
-  # ИЗМЕНЕНО: Собираем новый res (рекурсивно по всем top-level dicts)
+ # ИЗМЕНЕНО: Собираем новый res (рекурсивно по всем top-level dicts)
  new_res = {}
  for top_k, top_v in res.items():
   if isinstance(top_v, dict):
@@ -264,6 +264,95 @@ def reorder_keys_in_dict(res, idx1, idx2):  # ИЗМЕНЕНО: Новая/до�
   else:
    new_res[top_k] = top_v
  return new_res
+
+def profile_order_changed(old_data, new_data):
+ # Проверка: изменился ли ПОРЯДОК ключей профилей (списка игр).
+ # DeepDiff порядок ключей словаря изменением НЕ считает (dict сравнивается
+ # как множество пар ключ-значение), поэтому перестановка профилей
+ # кнопками «Вверх/Вниз» без этой проверки не попадала в диалог сохранения.
+ if not isinstance(old_data, dict) or not isinstance(new_data, dict):
+  return False
+ old_paths = old_data.get('paths')
+ new_paths = new_data.get('paths')
+ if not isinstance(old_paths, dict) or not isinstance(new_paths, dict):
+  return False
+ return list(old_paths.keys()) != list(new_paths.keys())
+
+def insert_profile_after(res, new_key, anchor_key):
+ # Вставить новый профиль new_key в списке СРАЗУ ПОД активным anchor_key
+ # (по требованию пользователя: новый добавленный путь к игре должен стоять
+ # ниже того профиля, который был активным в момент добавления).
+ # Переставляет ключи во ВСЕХ секциях (paths, games_checkmark, key_value,
+ # mouse_press, script_mouse, keyboard_script) — как reorder_keys_in_dict.
+ # Если anchor_key отсутствует в paths — новый профиль остаётся в конце.
+ if not isinstance(res, dict) or not isinstance(res.get('paths'), dict):
+  return res
+ paths = res['paths']
+ if new_key not in paths or anchor_key not in paths or new_key == anchor_key:
+  return res
+ orig_keys = list(paths.keys())
+ anchor_idx = orig_keys.index(anchor_key)
+ new_idx = orig_keys.index(new_key)
+ if new_idx < anchor_idx:  # новый уже выше якоря — двигать нечего
+  return res
+ # порядок: все до якоря + якорь + новый + остальные (в прежнем порядке)
+ new_order = [k for k in orig_keys[:anchor_idx + 1] if k != new_key]
+ new_order.append(new_key)
+ new_order.extend([k for k in orig_keys[anchor_idx + 1:] if k != new_key])
+
+ def reorder_recursive(d):
+  if not isinstance(d, dict):
+   return d
+  processed = {k: reorder_recursive(v) for k, v in d.items()}
+  if not any(k in processed for k in orig_keys):
+   return processed
+  new_d = {}
+  for k in new_order:
+   if k in processed:
+    new_d[k] = processed[k]
+  for k in processed:
+   if k not in new_d:
+    new_d[k] = processed[k]
+  return new_d
+
+ new_res = {}
+ for top_k, top_v in res.items():
+  if isinstance(top_v, dict):
+   new_res[top_k] = reorder_recursive(top_v)
+  else:
+   new_res[top_k] = top_v
+ return new_res
+
+# ==== Дополнительные exe профилей (ключа additional_exe) ====
+def scan_profile_dir_exes(profile_path):
+ # Полные пути всех .exe в верхней папке пути профиля (без подпапок).
+ # Профиль сам себя содержит тоже (это .exe своей директории). Для недоступных
+ # папок (напр. дефолтный C:/Windows/... который на Linux не смонтирован)
+ # возвращаем просто сам путь профиля — «просто тот же путь».
+ if not isinstance(profile_path, str) or not profile_path:
+  return [profile_path]
+ d = os.path.dirname(profile_path)
+ if not d:
+  return [profile_path]
+ try:
+  exes = sorted(f for f in os.listdir(d)
+   if f.lower().endswith('.exe') and os.path.isfile(os.path.join(d, f)))
+ except OSError:
+  return [profile_path]
+ full = [os.path.join(d, f) for f in exes]
+ return full if full else [profile_path]
+
+def ensure_additional_exe(res):
+ # Гарантировать, что ключ additional_exe отражает ВСЕ пути из paths: для
+ # каждого профиля — список полных путей .exe его директории (заполняется
+ # только для отсутствующих ключей; сканирование при добавлении новой игры).
+ if not isinstance(res, dict) or not isinstance(res.get('paths'), dict):
+  return res
+ additional = res.setdefault('additional_exe', {})
+ for profile in res['paths']:
+  if profile not in additional:
+   additional[profile] = scan_profile_dir_exes(profile)
+ return res
 
 # evdev-имя клавиши -> нормализованная метка макроса (защищены нумпад +/-).
 def evdev_key_to_label(code):

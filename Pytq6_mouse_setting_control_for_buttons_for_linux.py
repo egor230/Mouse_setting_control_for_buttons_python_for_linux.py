@@ -11,6 +11,8 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   self.mouse_button_labels = []
   self.mouse_button_combos = []
   self.mouse_check_buttons = []
+  self.mouse_repeat_check_buttons = []
+  self.mouse_hold_duration_combos = []
   self.buttons_script = []
   self.board = None
   data = dict_save.data
@@ -19,6 +21,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
    # strict=False: разрешаем реальные переносы строк внутри bash-скриптов (script_mouse / keyboard_script)
     res = json.load(json_file, strict=False)
     res = scripts_to_text(res)  # убрать отступы продолжения строк из скриптов (нормализация)
+    res = ensure_additional_exe(res)  # дозаполнить ключ additional_exe (все .exe директорий путей)
     dict_save.save_old_data(res)
    dict_save.save_jnson(res)
   else:
@@ -29,6 +32,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     "mouse_press": {"C:/Windows/explorer.exe": [False, False, False, False, False, False, False]},
     "id": 0,
     "current_app": 'C:/Windows/explorer.exe'}
+   res = ensure_additional_exe(res)
    know_id = '''#!/bin/bash
                input_list=$(xinput list)
                mouse_line=$(echo "$input_list" | head -n 1)
@@ -156,18 +160,26 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     t.join()
     break
   
- def eventFilter(self, watched, event):
-  if watched is self.scroll_area.viewport():
-   if event.type() == QEvent.Type.MouseButtonPress:
-    self._scroll_locked = True
-    self._scroll_lock_val = self.scroll_area.verticalScrollBar().value()
-   elif event.type() == QEvent.Type.MouseButtonRelease:
-    sb = self.scroll_area.verticalScrollBar()
-    sb.setValue(self._scroll_lock_val)
-    QTimer.singleShot(0, lambda: sb.setValue(self._scroll_lock_val))
-    QTimer.singleShot(80, lambda: sb.setValue(self._scroll_lock_val))
-    QTimer.singleShot(180, lambda: self._clear_scroll_lock())
-  return super().eventFilter(watched, event)
+  def eventFilter(self, watched, event):
+   if watched is self.scroll_area.viewport():
+    # Блокировка прокрутки списка при клике. ВАЖНО: press по QLabel (строке
+    # профиля) НЕ доходит до этого фильтра (label потребляет нажатие), а
+    # release — доходит. Поэтому позицию запоминаем на КАЖДОМ press и release
+    # (актуальное значение скроллбара), а «возврат» на release не делаем —
+    # раньше filter возвращал УСТАРЕВШЕЕ _scroll_lock_val (от прошлого press),
+    # из-за чего список «убегал» вниз и вверх при двойном клике (переименование).
+    if event.type() == QEvent.Type.MouseButtonPress:
+     self._scroll_locked = True
+     self._scroll_lock_val = self.scroll_area.verticalScrollBar().value()
+    elif event.type() == QEvent.Type.MouseButtonRelease:
+     self._scroll_locked = True
+     self._scroll_lock_val = self.scroll_area.verticalScrollBar().value()
+     QTimer.singleShot(180, lambda: self._clear_scroll_lock())
+    elif event.type() == QEvent.Type.MouseButtonDblClick:
+     self._scroll_locked = True
+     self._scroll_lock_val = self.scroll_area.verticalScrollBar().value()
+     QTimer.singleShot(180, lambda: self._clear_scroll_lock())
+   return super().eventFilter(watched, event)
 
  def _block_scroll_during_click(self, _val): # Жёстко подавляем любую прокрутку списка профилей во время/сразу после клика
  # (QScrollArea сам «подскролливает» кликнутый элемент в зону видимости по фокусу).
@@ -182,8 +194,8 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
 
  def setup_ui(self):
   self.setWindowTitle("Mouse setting control for buttons python")
-  self.setGeometry(400, 340, 910, 386)
-  self.setFixedSize(940, 346)
+  self.setGeometry(400, 340, 1037, 386)
+  self.setFixedSize(1042, 346)
   central_widget = QWidget()
   self.setCentralWidget(central_widget)
   
@@ -260,6 +272,18 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
    row_layout.addWidget(label)
    row_layout.addWidget(combo, 1)
    row_layout.addWidget(checkbox)
+   
+   repeat_checkbox = QCheckBox()
+   repeat_checkbox.setToolTip("Повторить")
+   repeat_checkbox.stateChanged.connect(lambda state, i=i: self.update_mouse_repeat(i, state))
+   self.mouse_repeat_check_buttons.append(repeat_checkbox)
+   duration_combo = QComboBox()
+   duration_combo.addItems(["", "5", "10", "20", "30"])
+   duration_combo.setToolTip("Секунды повтора")
+   duration_combo.currentIndexChanged.connect(lambda _=0, i=i: self.update_mouse_hold_duration(i))
+   self.mouse_hold_duration_combos.append(duration_combo)
+   row_layout.addWidget(repeat_checkbox)
+   row_layout.addWidget(duration_combo)
    
    rows_layout.addLayout(row_layout)
   

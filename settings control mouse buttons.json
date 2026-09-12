@@ -10,11 +10,11 @@
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": true,
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": true,
-    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": true,
@@ -35,11 +35,11 @@
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": "Tomb Raider",
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia 2",
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": "Portal 2 community edition",
+    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": "GTA V",
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": "Silent Downpour",
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe": "Splinter Cell Blacklist",
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": "Oblivion",
     "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": "Portal Stories Mel",
-    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": "GTA V",
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": "Quantum Break",
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": "Serious Sam",
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": "Serious Sam Revolution",
@@ -140,6 +140,15 @@
       "RBUTTON",
       "E"
     ],
+    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": [
+      "LBUTTON",
+      "W",
+      "RBUTTON",
+      "Q",
+      "C",
+      "RBUTTON",
+      "Shift_L"
+    ],
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": [
       "LBUTTON",
       "UP",
@@ -175,15 +184,6 @@
       "F",
       "RBUTTON",
       "E"
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": [
-      "LBUTTON",
-      "W",
-      "RBUTTON",
-      "Q",
-      "C",
-      "RBUTTON",
-      "Shift_L"
     ],
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": [
       "LBUTTON",
@@ -349,6 +349,15 @@
       false,
       false
     ],
+    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ],
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": [
       false,
       false,
@@ -377,15 +386,6 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": [
       false,
       false,
       false,
@@ -566,18 +566,6 @@
                     sleep 10.02
                     xte \"keyup E\""
     },
-    "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown E\"
-                   sleep 0.5
-                   xte \"keyup E\"
-                   xte \"keydown R\"
-                   sleep 0.5
-                   xte \"keyup R\"
-                   xte \"keydown F\"
-                   sleep 0.5
-                   xte \"keyup F\""
-    },
     "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": {
       "XBUTTON2": "#!/bin/bash
                    xte \"keydown R\"
@@ -586,6 +574,18 @@
                    xte \"keydown E\"
                    sleep 0.5
                    xte \"keyup E\"
+                   xte \"keydown F\"
+                   sleep 0.5
+                   xte \"keyup F\""
+    },
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": {
+      "XBUTTON2": "#!/bin/bash
+                   xte \"keydown E\"
+                   sleep 0.5
+                   xte \"keyup E\"
+                   xte \"keydown R\"
+                   sleep 0.5
+                   xte \"keyup R\"
                    xte \"keydown F\"
                    sleep 0.5
                    xte \"keyup F\""
@@ -737,8 +737,8 @@
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": {
       "keys": {
         "?
-                                             /": "#!/bin/bash
-                                                     xte \"keydown C\""
+                                                               /": "#!/bin/bash
+                                                                       xte \"keydown C\""
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": {
@@ -3027,5 +3027,149 @@
                  xte \"keyup W\""
       }
     }
+  },
+  "additional_exe": {
+    "C:/Windows/explorer.exe": [
+      "C:/Windows/explorer.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/CgfDump.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/Editor.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCryConfigurator.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry_WinSV.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/LuaCompiler.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/cgc.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/fxc.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/rc.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": [
+      "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SC3UpdateLauncher.exe",
+      "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE",
+      "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/Tom Clancy's Splinter Cell Chaos Theory 1.05 + 5 Trainer.exe",
+      "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/Tom Clancy's Splinter Cell Chaos Theory Trainer.EXE"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe",
+      "/mnt/807EB5FA7EB5E954/games/Alien Isolation/Alien Isolation V13.01.2019 Trainer +5  MrAntiFun.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe",
+      "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/portal2.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe",
+      "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/unins000.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe",
+      "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/unins000.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/Tomb Raider v1.1.838.0 Plus 12 Trainer.exe",
+      "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe",
+      "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/unins000.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/RemoveSaves.exe",
+      "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTA5.exe",
+      "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": [
+      "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/screen-reader.exe",
+      "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist.exe",
+      "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_DX11_game.exe",
+      "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/Blacklist_game.exe",
+      "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/FirewallInstall.exe",
+      "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/GDFInstall.exe",
+      "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Blacklist/src/SYSTEM/gu.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/4gb_patch.exe",
+      "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/OBSEcomplete.exe",
+      "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe",
+      "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/OblivionLauncher.exe",
+      "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Wrye Bash 309.1 - Installer-22368-309-1-1623232793.exe",
+      "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/obse_loader.exe",
+      "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/unins000.exe",
+      "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/unins001.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/portal2.exe",
+      "/mnt/807EB5FA7EB5E954/games/Portal Stories Mel/unins000.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/AskFiles.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/DecodeReport.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/DedicatedServer.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/DedicatedServerGamespy.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/DedicatedServer_Custom.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/Depend.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/Ecc.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/MakeFONT.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/RCon.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/RConGamespy.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousEditor.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousEditor32.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousEditor_Custom.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousModeler.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousModeler32.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSamGamespy.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_old.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSkaStudio.exe",
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSkaStudio32.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Cold Fear/ColdFear_retail.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHRDC.exe",
+      "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/DXHumanRevolutionDC_v2.02.exe",
+      "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/MakeAppXml.exe",
+      "/mnt/807EB5FA7EB5E954/games/Deus Ex HRDC/unins000.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE": [
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/Breakthrough_Server_Setup.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/Configure.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/Install_MOHAACL_1008.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAA.EXE",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/MOHAACL.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/Uninstal.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/configure_Breakthrough.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/dgVoodooCpl.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/fpupdate.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/moh_Breakthrough.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/moh_Breakthrough_server.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/moh_spearhead.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/moh_spearhead_server.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/mohaa_Server.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/oggdec.exe",
+      "/mnt/807EB5FA7EB5E954/games/Medal of Honor Allied Assault Breakthrough/unins000.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE": [
+      "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/MM.EXE",
+      "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/dark.exe",
+      "/mnt/807EB5FA7EB5E954/games/Dark Messiah of Might and Magic/unins000.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe"
+    ]
   }
 }

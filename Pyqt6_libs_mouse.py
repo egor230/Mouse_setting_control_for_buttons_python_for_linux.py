@@ -13,7 +13,8 @@ from pynput.keyboard import Key, Listener
 from Pyqt6_libs_data import ( en_to_ru, ru_to_en, KEYS, simple_key_map, LIST_MOUSE_BUTTONS, LIST_KEYS,
  defaut_list_mouse_buttons, keypad_map, mouse_map, cleanup_empty_script_entries, _format_scripts_in_json,
  scripts_to_text, is_path_in_list, get_index_of_path, replace_path_in_dict,
- remove_profile_keys, reorder_keys_in_dict, profile_order_changed, insert_profile_after, evdev_key_to_label,)
+ remove_profile_keys, reorder_keys_in_dict, profile_order_changed, insert_profile_after, ensure_additional_exe,
+ evdev_key_to_label,)
 from evdev import InputDevice, categorize, ecodes, list_devices, UInput
 get_user_name = f'''#!/bin/bash
 current_user=$(whoami);
@@ -23,6 +24,8 @@ exit;# Завершаем выполнение скрипта
 user = subprocess.run(['bash'], input=get_user_name, stdout=subprocess.PIPE, text=True).stdout.strip()  # имя пользователя.
 list_threads = []
 mouse_controller = mouse.Controller()
+# Допустимые длительности повтора (секунды) для галочки «Повторить».
+allowed_repeat_durations = (5, 10, 20, 30)
 
 # ==== Защита от запуска второго экземпляра (single-instance) ====
 SINGLE_INSTANCE_LOCK = "/tmp/mouse_setting_control.lock"
@@ -1506,19 +1509,61 @@ class MouseProfileRuntime:
   button_name = defaut_list_mouse_buttons[slot]
   return self.store.return_jnson().get('script_mouse', {}).get(current_game, {}).get(button_name, '')
 
- def _handle_mouse_action(self, binding, pressed, script=None):
-  if pressed and script:
-   self._execute_bound_script(script)
-  slot = binding.slot
-  action = self.assignments[slot]
-  hold = self.hold_flags[slot]
-  duration = self.hold_durations[slot]
+ def _slot_duration(self, slot):
+  # Числовая длительность повтора/удержания для слота (None, если не выбрана
+  # или вышла за допустимый диапазон allowed_repeat_durations).
+  duration = self.hold_durations[slot] if slot < len(self.hold_durations) else None
   try:
    duration = int(duration) if duration not in (None, '', 0, '0') else None
   except (TypeError, ValueError):
    duration = None
-  if duration not in (20, 30, 60):
-   duration = None
+  return duration if duration in allowed_repeat_durations else None
+
+ def _handle_mouse_action(self, binding, pressed, script=None):
+  slot = binding.slot
+  action = self.assignments[slot]
+  hold = self.hold_flags[slot]
+  duration = self._slot_duration(slot)
+  repeat = bool(self.repeat_flags[slot])
+  # «Повторить» для действий мыши: одно нажатие запускает цикл. Длительность
+  # не выбрана — цикл идёт до повторного нажатия (toggle). Если на слот
+  # привязан скрипт — повторяется ТОЛЬКО скрипт, а не кнопка/прокрутка.
+  if repeat:
+   # Прокрутка: непрерывно весь срок (или до повторного нажатия без срока).
+   if action in {'SCROLL_UP', 'SCROLL_DOWN'}:
+    if duration is None:
+     if pressed:
+      if binding.worker.get_sw():
+       binding.worker.set_sw(False)
+       binding.worker.pause()
+      else:
+       binding.worker.set_sw(True)
+       binding.worker.resume()
+    else:
+     if pressed:
+      binding.worker.set_sw(True)
+      binding.worker.resume()
+      threading.Thread(target=self._pause_worker_after, args=(binding.worker, duration), daemon=True).start()
+    return
+   if action in ('RBUTTON', 'WHEEL_MOUSE_BUTTON'):
+    if not pressed:
+     return
+    target_button = mouse.Button.right if action == 'RBUTTON' else mouse.Button.middle
+    with self._timed_holds_lock:
+     active = self._timed_holds.get(slot, False)
+     self._timed_holds[slot] = not active
+    if active:
+     mouse_controller.release(target_button)
+    else:
+     threading.Thread(
+      target=self._repeat_mouse_loop,
+      args=(slot, target_button, script, duration),
+      daemon=True,
+      ).start()
+    return
+
+  if pressed and script:
+   self._execute_bound_script(script)
 
   if hold and action in {'SCROLL_UP', 'SCROLL_DOWN'} and pressed:
    if duration is None:
@@ -1602,16 +1647,11 @@ class MouseProfileRuntime:
  def _handle_keyboard_action(self, binding, pressed, script=None):
   slot = binding.slot
   key_value = str(KEYS[self.assignments[slot]])
-  duration = self.hold_durations[slot]
-  try:
-   duration = int(duration) if duration not in (None, '', 0, '0') else None
-  except (TypeError, ValueError):
-   duration = None
-  if duration not in (20, 30, 60):
-   duration = None
-   # «Повторять» — одно нажатие запускает цикл на весь выбранный
-   # общий срок. Отпускание физической кнопки цикл не прерывает.
-  repeat_mode = self.repeat_flags[slot] and duration is not None
+  duration = self._slot_duration(slot)
+  # «Повторять» — одно нажатие запускает цикл: на выбранный срок, а без срока —
+  # до повторного нажатия (toggle). Если на слот привязан скрипт — повторяется
+  # ТОЛЬКО скрипт, а не клавиша. Отпускание физической кнопки цикл не прерывает.
+  repeat_mode = bool(self.repeat_flags[slot])
   if script and pressed and not repeat_mode:
   # Для одиночного действия Bash завершается до key-down.
    self._execute_bound_script(script)
@@ -1625,8 +1665,8 @@ class MouseProfileRuntime:
     else:
      self._timed_holds[slot] = True
      threading.Thread(
-      target=self._repeat_key_for_duration,
-      args=(slot, key_value, duration, script),
+      target=self._repeat_key_loop,
+      args=(slot, key_value, script, duration),
       daemon=True,
       ).start()
    return
@@ -1665,24 +1705,51 @@ class MouseProfileRuntime:
   except Exception as exc:
    self.store.write_in_log(exc)
 
- def _repeat_key_for_duration(self, slot, key_value, total_duration, script=None):
-  """Repeat Bash-then-key pulses for the selected total duration."""
-  deadline = time.monotonic() + total_duration
+ def _repeat_key_loop(self, slot, key_value, script=None, total_duration=None):
+  """Repeat pulses for the selected duration, or until toggled off. If a script
+     is bound to the slot — repeat ONLY the script, not the key."""
+  deadline = time.monotonic() + total_duration if total_duration is not None else None
   try:
-   while time.monotonic() < deadline and not self.stop_requested.is_set():
+   while not self.stop_requested.is_set() and (deadline is None or time.monotonic() < deadline):
     with self._timed_holds_lock:
      if not self._timed_holds.get(slot, False):
       break
     if script:
      self._execute_bound_script(script)
-    key_work.key_press(key_value, slot)
-    time.sleep(0.05)
-    key_work.key_release(key_value, slot)
-    time.sleep(0.05)
+     time.sleep(0.05)
+    else:
+     key_work.key_press(key_value, slot)
+     time.sleep(0.05)
+     key_work.key_release(key_value, slot)
+     time.sleep(0.05)
   finally:
    with self._timed_holds_lock:
     self._timed_holds[slot] = False
-   key_work.key_release(key_value, slot)
+   if not script:
+    key_work.key_release(key_value, slot)
+
+ def _repeat_mouse_loop(self, slot, target_button, script=None, total_duration=None):
+  """Repeat mouse pulses for the selected duration, or until toggled off. If a
+     script is bound to the slot — repeat ONLY the script, not the mouse button."""
+  deadline = time.monotonic() + total_duration if total_duration is not None else None
+  try:
+   while not self.stop_requested.is_set() and (deadline is None or time.monotonic() < deadline):
+    with self._timed_holds_lock:
+     if not self._timed_holds.get(slot, False):
+      break
+    if script:
+     self._execute_bound_script(script)
+     time.sleep(0.05)
+    else:
+     mouse_controller.press(target_button)
+     time.sleep(0.05)
+     mouse_controller.release(target_button)
+     time.sleep(0.05)
+  finally:
+   with self._timed_holds_lock:
+    self._timed_holds[slot] = False
+   if not script:
+    mouse_controller.release(target_button)
 
  def _release_timed_key(self, slot, key_value, duration):
   """Release a non-repeat hold after its selected duration."""
@@ -1804,6 +1871,8 @@ def return_file_path(dict_save):
  # Новый профиль должен стоять в списке СРАЗУ ПОД активным (не в конце).
  # Переставляем его во всех секциях (paths, games_checkmark, key_value, ...).
  res = insert_profile_after(res, str(path_to_file), active_before_add)
+ # Новую игру сопровождаем списком всех .exe её директории (ключ additional_exe).
+ res = ensure_additional_exe(res)
  res1 = res["key_value"]
 
  dict_save.save_jnson(res)
@@ -2720,6 +2789,20 @@ class MouseSettingAppMethods:
   if curr_name not in res.get("mouse_press", {}):
    res["mouse_press"][curr_name] = [False] * 7
   res["mouse_press"][curr_name][count] = bool(state)
+  # «Удерживать» и «Повторить» взаимоисключающие: включая hold, снимаем repeat.
+  if bool(state):
+   repeat_widgets = getattr(self, "mouse_repeat_check_buttons", [])
+   if count < len(repeat_widgets):
+    repeat_widgets[count].blockSignals(True)
+    repeat_widgets[count].setChecked(False)
+    repeat_widgets[count].blockSignals(False)
+   repeats = res.setdefault("mouse_repeat", {}).setdefault(curr_name, [False] * 7)
+   repeats += [False] * (7 - len(repeats))
+   repeats[count] = False
+   if not any(repeats):
+    res["mouse_repeat"].pop(curr_name, None)
+    if not res["mouse_repeat"]:
+     res.pop("mouse_repeat", None)
   dict_save.save_jnson(res)
   self.apply_settings_now()
 
@@ -2729,6 +2812,16 @@ class MouseSettingAppMethods:
   repeats = res.setdefault("mouse_repeat", {}).setdefault(curr_name, [False] * 7)
   repeats += [False] * (7 - len(repeats))
   repeats[count] = bool(state)
+  # «Повторить» и «Удерживать» взаимоисключающие: включая repeat, снимаем hold.
+  if bool(state):
+   hold_widgets = getattr(self, "mouse_check_buttons", [])
+   if count < len(hold_widgets):
+    hold_widgets[count].blockSignals(True)
+    hold_widgets[count].setChecked(False)
+    hold_widgets[count].blockSignals(False)
+   if curr_name not in res.get("mouse_press", {}):
+    res["mouse_press"][curr_name] = [False] * 7
+   res["mouse_press"][curr_name][count] = False
   if not any(repeats):
    res["mouse_repeat"].pop(curr_name, None)
    if not res["mouse_repeat"]:
@@ -2742,7 +2835,7 @@ class MouseSettingAppMethods:
   durations = res.setdefault("mouse_hold_repeat_seconds", {}).setdefault(curr_name, [None] * 7)
   durations += [None] * (7 - len(durations))
   selected = self.mouse_hold_duration_combos[count].currentText().strip()
-  durations[count] = int(selected) if selected in {"20", "30", "60"} else None
+  durations[count] = int(selected) if selected in {str(v) for v in allowed_repeat_durations} else None
   if all(value is None for value in durations):
    res["mouse_hold_repeat_seconds"].pop(curr_name, None)
    if not res["mouse_hold_repeat_seconds"]:
