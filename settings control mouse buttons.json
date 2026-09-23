@@ -4,6 +4,7 @@
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": true,
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": true,
@@ -29,6 +30,7 @@
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": "FarCry",
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": "Splinter Cell - Chaos Theory",
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": "Alien Isolation",
+    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": "Outlast Whistleblower",
     "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": "Portal Reloaded",
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": " Entropy Zero 2",
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": "Assassins Creed IV Black Flag",
@@ -53,7 +55,7 @@
     "C:/Windows/explorer.exe": [
       "LBUTTON",
       "RBUTTON",
-      "WHEEL_MOUSE_BUTTON",
+      "MBUTTON",
       " ",
       " ",
       "SCROLL_UP",
@@ -86,10 +88,19 @@
       "SCROLL_UP",
       "SCROLL_DOWN"
     ],
-    "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": [
+    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": [
       "LBUTTON",
       "W",
-      "MBUTTON",
+      "WHEEL_MOUSE_BUTTON",
+      "F",
+      "F",
+      "RBUTTON",
+      "E"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": [
+      "F",
+      "W",
+      "WHEEL_MOUSE_BUTTON",
       "SPACE",
       "F",
       "RBUTTON",
@@ -287,6 +298,15 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": [
       false,
       false,
       false,
@@ -589,6 +609,15 @@
                    xte \"keydown F\"
                    sleep 0.5
                    xte \"keyup F\""
+    },
+    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": {
+      "SCROLL_DOWN": "#!/bin/bash
+                      xte \"keydown space\"
+                      sleep 0.1
+                      xte \"keyup space\"
+                      xte \"keydown space\"
+                      sleep 0.1
+                      xte \"keyup space\""
     }
   },
   "keyboard_script": {
@@ -737,8 +766,8 @@
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": {
       "keys": {
         "?
-                                                               /": "#!/bin/bash
-                                                                       xte \"keydown C\""
+                                                                                                                     /": "#!/bin/bash
+                                                                                                                             xte \"keydown C\""
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": {
@@ -3026,6 +3055,19 @@
         "Down": "#!/bin/bash
                  xte \"keyup W\""
       }
+    },
+    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": {
+      "keys": {
+        "up": "#!/bin/bash
+               xte \"keydown Shift_L\"
+               xte \"keydown W\"
+               sleep 1.0
+               xte \"keydown space\"
+               sleep 0.1
+               xte \"keyup space\"
+               xte \"keyup W\"
+               xte \"keyup Shift_L\""
+      }
     }
   },
   "additional_exe": {
@@ -3052,6 +3094,11 @@
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": [
       "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe",
       "/mnt/807EB5FA7EB5E954/games/Alien Isolation/Alien Isolation V13.01.2019 Trainer +5  MrAntiFun.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe",
+      "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame_R.exe",
+      "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/UE3ShaderCompileWorker.exe"
     ],
     "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": [
       "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe",
