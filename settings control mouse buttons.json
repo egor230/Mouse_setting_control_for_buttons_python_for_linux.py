@@ -1,7 +1,6 @@
 {
   "games_checkmark": {
     "C:/Windows/explorer.exe": true,
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": true,
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": true,
@@ -9,6 +8,7 @@
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": true,
@@ -27,7 +27,6 @@
   },
   "paths": {
     "C:/Windows/explorer.exe": "По умолчанию",
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": "FarCry",
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": "Splinter Cell - Chaos Theory",
     "/mnt/807EB5FA7EB5E954/games/Alien Isolation/AI.exe": "Alien Isolation",
     "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": "Outlast Whistleblower",
@@ -35,6 +34,7 @@
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": " Entropy Zero 2",
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": "Assassins Creed IV Black Flag",
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": "Tomb Raider",
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": "FarCry",
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia 2",
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": "Portal 2 community edition",
     "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": "GTA V",
@@ -59,15 +59,6 @@
       " ",
       " ",
       "SCROLL_UP",
-      "SCROLL_DOWN"
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
-      "LBUTTON",
-      "W",
-      " ",
-      "F",
-      "Q",
-      "RBUTTON",
       "SCROLL_DOWN"
     ],
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": [
@@ -133,6 +124,15 @@
       "RBUTTON",
       "SPACE"
     ],
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
+      "LBUTTON",
+      "W",
+      " ",
+      "R",
+      "Q",
+      "RBUTTON",
+      "SCROLL_DOWN"
+    ],
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
       "LBUTTON",
       "W",
@@ -181,7 +181,7 @@
     "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": [
       "LBUTTON",
       "W",
-      "E",
+      "F",
       "F",
       "RBUTTON",
       "RBUTTON",
@@ -217,9 +217,9 @@
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classics Revolution/Bin/SeriousSam.exe": [
       "LBUTTON",
       "W",
-      " ",
-      " ",
-      " ",
+      "E",
+      "E",
+      "EXSEL",
       "RBUTTON",
       "SPACE"
     ],
@@ -271,15 +271,6 @@
   },
   "mouse_press": {
     "C:/Windows/explorer.exe": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
       false,
       false,
       false,
@@ -343,6 +334,15 @@
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
       false,
       false,
       false,
@@ -420,7 +420,7 @@
       false,
       false,
       false,
-      false,
+      true,
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Serious Sam Classic/Bin/SeriousSam_Custom.exe": [
@@ -523,6 +523,15 @@
                       sleep 0.23
                       xte \"keyup R\""
     },
+    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": {
+      "SCROLL_DOWN": "#!/bin/bash
+                      xte \"keydown space\"
+                      sleep 0.1
+                      xte \"keyup space\"
+                      xte \"keydown space\"
+                      sleep 0.1
+                      xte \"keyup space\""
+    },
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": {
       "SCROLL_DOWN": "#!/bin/bash
                       xte \"keyup Shift_L\"
@@ -586,6 +595,15 @@
                     sleep 10.02
                     xte \"keyup E\""
     },
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": {
+      "XBUTTON2": "#!/bin/bash
+                   xte \"keydown R\"
+                   sleep 0.5
+                   xte \"keyup R\"
+                   xte \"keydown E\"
+                   sleep 0.1
+                   xte \"keyup E\""
+    },
     "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": {
       "XBUTTON2": "#!/bin/bash
                    xte \"keydown R\"
@@ -609,15 +627,6 @@
                    xte \"keydown F\"
                    sleep 0.5
                    xte \"keyup F\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": {
-      "SCROLL_DOWN": "#!/bin/bash
-                      xte \"keydown space\"
-                      sleep 0.1
-                      xte \"keyup space\"
-                      xte \"keydown space\"
-                      sleep 0.1
-                      xte \"keyup space\""
     }
   },
   "keyboard_script": {
@@ -763,11 +772,24 @@
               xte \"keyup E\""
       }
     },
+    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": {
+      "keys": {
+        "up": "#!/bin/bash
+               xte \"keydown Shift_L\"
+               xte \"keydown W\"
+               sleep 1.0
+               xte \"keydown space\"
+               sleep 0.1
+               xte \"keyup space\"
+               xte \"keyup W\"
+               xte \"keyup Shift_L\""
+      }
+    },
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": {
       "keys": {
         "?
-                                                                                                                     /": "#!/bin/bash
-                                                                                                                             xte \"keydown C\""
+                                                                                                                                                                  /": "#!/bin/bash
+                                                                                                                                                                          xte \"keydown C\""
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": {
@@ -3055,35 +3077,11 @@
         "Down": "#!/bin/bash
                  xte \"keyup W\""
       }
-    },
-    "/mnt/807EB5FA7EB5E954/games/Outlast Whistleblower/Binaries/Win64/OLGame.exe": {
-      "keys": {
-        "up": "#!/bin/bash
-               xte \"keydown Shift_L\"
-               xte \"keydown W\"
-               sleep 1.0
-               xte \"keydown space\"
-               sleep 0.1
-               xte \"keyup space\"
-               xte \"keyup W\"
-               xte \"keyup Shift_L\""
-      }
     }
   },
   "additional_exe": {
     "C:/Windows/explorer.exe": [
       "C:/Windows/explorer.exe"
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
-      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/CgfDump.exe",
-      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/Editor.exe",
-      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe",
-      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCryConfigurator.exe",
-      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry_WinSV.exe",
-      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/LuaCompiler.exe",
-      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/cgc.exe",
-      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/fxc.exe",
-      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/rc.exe"
     ],
     "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SPLINTERCELL3.EXE": [
       "/mnt/807EB5FA7EB5E954/games/Splinter Cell - Chaos Theory/System/SC3UpdateLauncher.exe",
@@ -3116,6 +3114,17 @@
       "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/Tomb Raider v1.1.838.0 Plus 12 Trainer.exe",
       "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe",
       "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/unins000.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/CgfDump.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/Editor.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCryConfigurator.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry_WinSV.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/LuaCompiler.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/cgc.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/fxc.exe",
+      "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/rc.exe"
     ],
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
       "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/RemoveSaves.exe",

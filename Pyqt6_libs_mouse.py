@@ -317,6 +317,34 @@ class save_dict:
     pass
    return '1 2 3 4 5 6 7 8 9'
 
+ def ensure_valid_mouse_id(self, preferred_id):  # Авто-поиск мыши: сохранённый xinput-id неустойлив между
+ # X-сессиями (после перезапуска тот же номер может принадлежать клавиатуре
+ # или исчезнуть). Тогда set-button-map молча падает («device has no
+ # buttons»), перехват не применяется и назначенные клавиши «не срабатывают».
+ # Возвращает (id, was_changed): если preferred_id ещё «мышь с кнопками» —
+ # (он, False); иначе — автоматически подобранная мышь и True.
+  try:
+   preferred = int(preferred_id)
+  except (TypeError, ValueError):
+   preferred = None
+  # get_list_ids() заново обходит устройства и обновляет кэш dict_id_values:
+  # в карту попадают только указатели с >=9 кнопками (реальные мыши).
+  try:
+   valid = self.get_list_ids()
+  except Exception:
+   valid = []  # X недоступен/ошибка обхода — не роняем старт, просто не
+   # переопределяем; дальше сработает защита «id==0 -> не выбрано».
+  if preferred is not None and preferred in valid:
+   return preferred, False
+  if not valid:
+   return preferred, False  # Подходящей мыши нет — остаётся текущий id.
+  best = max(valid, key=lambda i: len(str(self.dict_id_values.get(i, '')).split()))
+  try:
+   self.write_in_log('mouse device id %s not usable (absent or has no buttons), reselected id %s' % (preferred, best))
+  except Exception:
+   pass
+  return best, True
+
  def write_in_log(self, text=" error"):  # Запись ошибок.
   # Лог пишется в папку самой программы (не в текущий каталог запуска):
   # раньше при старте через .sh без cd файл терялся/уезжал в другое место.
@@ -1347,7 +1375,20 @@ class MouseProfileRuntime:
  MOUSE_ACTIONS = {
   'LBUTTON', 'RBUTTON', 'WHEEL_MOUSE_BUTTON', 'MBUTTON',
   'SCROLL_UP', 'SCROLL_DOWN',
-  }
+ }
+ # Физические (до-ремап) имена кнопок pynput для каждого слота. Нужны как
+ # fallback: если xinput set-button-map не применился (устаревший/неверный
+ # id устройства, нет доступа к X), кнопки остаются под нативными номерами
+ # и без этих алиасов слушатель вообще не «видит» нажатия, поэтому
+ # назначенные клавиши не срабатывают.
+ PHYSICAL_FALLBACK = {
+  1: ('Button.right',),
+  2: ('Button.middle',),
+  3: ('Button.scroll_up', 'Button.x1'),
+  4: ('Button.scroll_down', 'Button.x2'),
+  5: ('Button.button9',),
+  6: ('Button.button8',),
+ }
 
  def __init__(self, store, start_game=None, force_ui_selection=False):
   self.store = store
@@ -1413,6 +1454,30 @@ class MouseProfileRuntime:
     self.bindings[listener_name] = MouseBinding(listener_name, slot, worker)
    self.virtual_by_physical_button[physical] = virtual
 
+ def register_physical_fallbacks(self):
+  # Fallback на случай, когда xinput set-button-map НЕ применил карту (нет
+  # доступа к X / неверный id устройства / «device has no buttons»). Тогда
+  # физические кнопки сохраняют нативные номера и не подпадают под
+  # виртуальные имена (Button.button11 и т.д.), поэтому слушатель их просто
+  # не видит и назначенные клавиши не срабатывают. Регистрируем алиасы по
+  # нативным именам (PHYSICAL_FALLBACK) для тех слотов, для которых уже
+  # создан worker. При УСПЕШНОМ ремапе этот метод НЕ вызывается: кнопки
+  # приходят под виртуальными номерами, а нативные имена могли бы прийти как
+  # эхо нашей эмуляции (XTEST/UInput) и дать ложные срабатывания.
+  for slot, physical, virtual, listener_button, pass_through in self.INTERCEPTION_RULES:
+   if self.assignments[slot] in pass_through:
+    continue
+   worker = None
+   for b in self.bindings.values():
+    if b.slot == slot:
+     worker = b.worker
+     break
+   if worker is None:
+    continue
+   for name in self.PHYSICAL_FALLBACK.get(slot, ()):
+    if name not in self.bindings:
+     self.bindings[name] = MouseBinding(name, slot, worker)
+
  def apply_button_map(self):
   default_map = self.store.get_default_id_value(self.device_id).split()
   remapped_map = list(default_map)
@@ -1465,6 +1530,7 @@ class MouseProfileRuntime:
    except Exception:
     pass
 
+  return applied
  def handle_listener_event(self, button, pressed):
   """Dispatch one pynput event in listener order without a competing worker."""
   if not self.stop_requested.is_set():
@@ -1490,7 +1556,7 @@ class MouseProfileRuntime:
   binding = self.bindings.get(str(button))
   if binding is None or not binding.worker.get_hook_flag_mouse():
    return
-
+ 
   action = self.assignments[binding.slot]
   if action == ' ':
    return
@@ -2445,7 +2511,9 @@ class MouseSettingAppMethods:
    my_generation = self._runtime_generation
    runtime = MouseProfileRuntime(store, start_game, force_ui_selection)
    print(f"[PREPARE] gen={my_generation} game={runtime.game!r} enabled={runtime.enabled_profiles!r}")
-   runtime.apply_button_map()
+   applied = runtime.apply_button_map()
+   if not applied:
+    runtime.register_physical_fallbacks()
    runtime.store.set_current_path_game(runtime.game)
    self._active_runtime = runtime
 
@@ -2459,6 +2527,23 @@ class MouseSettingAppMethods:
   current_game = str(settings['current_app'])
   if not current_game:
    return
+  # АВТО-ПОИСК МЫШИ: сохранённый xinput-id может устареть после перезапуска
+  # X-сессии (номера устройств выдаются заново в порядке эnumerации USB и тот
+  # же id может оказаться у клавиатуры БЕЗ кнопок). Тогда set-button-map
+  # молча падает, перехват кнопок не применяется и «назначение клавиши не
+  # срабатывает». Переопределяем устройство автоматически и сохраняем.
+  valid_id, id_changed = store.ensure_valid_mouse_id(settings.get('id', 0))
+  if id_changed:
+   # Без всплывающего окна: исправление делаем тихо (id уже сохранён в
+   # настройках), лишь синхронизируем выпадающий список. Следующий запуск
+   # будет «чистым», т.к. валидный id теперь записан в JSON.
+   settings['id'] = valid_id
+   store.save_jnson(settings)
+   if hasattr(self, 'id_combo'):
+    try:
+     self.id_combo.setCurrentText(str(valid_id))
+    except Exception:
+     pass
   if settings['id'] == 0:
    self._show_missing_device_message()
    return
@@ -2727,7 +2812,11 @@ class MouseSettingAppMethods:
 
  def update_profile(self):  # обновить профиль (смена ID устройства мыши)
   res = dict_save.return_jnson()
-  current_value = int(self.id_combo.currentText())
+  text = self.id_combo.currentText()
+  try:
+   current_value = int(text)
+  except (TypeError, ValueError):
+   return
   if res["id"] != current_value:
    res["id"] = current_value
    dict_save.save_jnson(res)  # Сохранить новое значение для выпадающего списка
