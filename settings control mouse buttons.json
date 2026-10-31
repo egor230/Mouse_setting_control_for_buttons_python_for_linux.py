@@ -158,7 +158,7 @@
       "Q",
       "C",
       "RBUTTON",
-      "Shift_L"
+      "XBUTTON2"
     ],
     "/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/total_commander.exe": [
       "LBUTTON",
@@ -348,7 +348,7 @@
       false,
       false,
       false,
-      false,
+      true,
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
@@ -604,18 +604,6 @@
                    sleep 0.1
                    xte \"keyup E\""
     },
-    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown R\"
-                   sleep 0.5
-                   xte \"keyup R\"
-                   xte \"keydown E\"
-                   sleep 0.5
-                   xte \"keyup E\"
-                   xte \"keydown F\"
-                   sleep 0.5
-                   xte \"keyup F\""
-    },
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": {
       "XBUTTON2": "#!/bin/bash
                    xte \"keydown E\"
@@ -627,6 +615,18 @@
                    xte \"keydown F\"
                    sleep 0.5
                    xte \"keyup F\""
+    },
+    "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": {
+      "XBUTTON2": "#!/bin/bash
+                   xte \"keydown F\"
+                   sleep 0.5
+                   xte \"keyup F\"
+                   xte \"keydown R\"
+                   sleep 0.5
+                   xte \"keyup R\"
+                   xte \"keydown E\"
+                   sleep 0.5
+                   xte \"keyup E\""
     }
   },
   "keyboard_script": {
@@ -788,8 +788,8 @@
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": {
       "keys": {
         "?
-                                                                                                                                                                  /": "#!/bin/bash
-                                                                                                                                                                          xte \"keydown C\""
+                                                                                                                                                                                             /": "#!/bin/bash
+                                                                                                                                                                                                     xte \"keydown C\""
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": {

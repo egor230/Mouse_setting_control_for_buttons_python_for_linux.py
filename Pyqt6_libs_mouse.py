@@ -1437,9 +1437,18 @@ class MouseProfileRuntime:
   self.stop_requested = threading.Event()
   self._build_bindings()
 
+ def _slot_intercepted(self, slot, pass_through):
+  # Кнопка перехватывается, если назначение НЕ дефолтное ИЛИ если к слоту
+  # привязан bash-скрипт (script_mouse). Раньше скрипт на кнопке, оставленной
+  # по умолчанию (XBUTTON1/XBUTTON2), был недостижим: binding не создавался
+  # и макрос никогда не выполнялся. Теперь слот со скриптом перехватывается.
+  if self.assignments[slot] not in pass_through:
+   return True
+  return bool(self._mouse_script(slot).strip())
+
  def _build_bindings(self):
   for slot, physical, virtual, listener_button, pass_through in self.INTERCEPTION_RULES:
-   if self.assignments[slot] in pass_through:
+   if not self._slot_intercepted(slot, pass_through):
     continue
    worker = Job(self.assignments[slot])
    worker.start()
@@ -1465,7 +1474,7 @@ class MouseProfileRuntime:
   # приходят под виртуальными номерами, а нативные имена могли бы прийти как
   # эхо нашей эмуляции (XTEST/UInput) и дать ложные срабатывания.
   for slot, physical, virtual, listener_button, pass_through in self.INTERCEPTION_RULES:
-   if self.assignments[slot] in pass_through:
+   if not self._slot_intercepted(slot, pass_through):
     continue
    worker = None
    for b in self.bindings.values():
@@ -1549,6 +1558,28 @@ class MouseProfileRuntime:
   self.stop_requested.set()
   self.stop_workers()
   self.join_event_workers()
+  self._release_sticky_buttons()
+
+ def _release_sticky_buttons(self):
+  # При выходе из игры / смене профиля / выходе из приложения отпускаем
+  # залипшие правую/среднюю кнопки: иначе синтетический X-press (XTEST)
+  # остаётся «зависшим» в X-сервере, и физическая правая кнопка
+  # залипает/перестаёт работать во ВСЕХ приложениях. Циклы «Повторить»
+  # (_repeat_*_loop) отключаются тем же stop_requested: они завершаются
+  # сами и отпускают клавишу/кнопку в finally. Таймеры _release_sticky_after
+  # и _pause_worker_after видят stop_requested и больше ничего не делают.
+  if self._right_sticking:
+   self._right_sticking = False
+   try:
+    mouse_controller.release(mouse.Button.right)
+   except Exception:
+    pass
+  if self._middle_sticking:
+   self._middle_sticking = False
+   try:
+    mouse_controller.release(mouse.Button.middle)
+   except Exception:
+    pass
 
  def dispatch(self, button, pressed):
   if self.stop_requested.is_set():
@@ -1558,13 +1589,17 @@ class MouseProfileRuntime:
    return
  
   action = self.assignments[binding.slot]
-  if action == ' ':
-   return
   try:
   # Скрипт не заменяет назначение, а выполняется перед ним.
    script = self._mouse_script(binding.slot)
    if action in self.MOUSE_ACTIONS:
     self._handle_mouse_action(binding, pressed, script=script)
+   elif action in ('XBUTTON1', 'XBUTTON2') or action == ' ':
+    # Боковая кнопка, оставленная «как есть» (XBUTTON1/XBUTTON2) или с
+    # назначением «ничего», но с привязанным скриптом: выполняется только
+    # скрипт (без клавиши и без нативного клика). Скрипт без назначения
+    # кнопки здесь просто не запускается — кнопка остаётся нативной.
+    self._handle_side_button_script(binding, pressed, script=script)
    else:
     self._handle_keyboard_action(binding, pressed, script=script)
   except Exception as exc:
@@ -1676,12 +1711,38 @@ class MouseProfileRuntime:
      self._set_sticky(action, True)
      threading.Thread(target=self._release_sticky_after, args=(action, duration), daemon=True).start()
     return
-   if sticky:
-    mouse_controller.release(target_button)
-    self._set_sticky(action, False)
-   else:
-    mouse_controller.press(target_button)
-    self._set_sticky(action, True)
+    if sticky:
+     mouse_controller.release(target_button)
+     self._set_sticky(action, False)
+    else:
+     mouse_controller.press(target_button)
+     self._set_sticky(action, True)
+
+ def _handle_side_button_script(self, binding, pressed, script=None):
+  # Боковая кнопка, оставленная «как есть» (XBUTTON1/XBUTTON2) или с
+  # назначением «ничего», но с привязанным bash-скриптом. До фикса такой
+  # слот не перехватывался (pass-through) и скрипт никогда не выполнялся.
+  # Теперь выполняется ТОЛЬКО скрипт: без отправки клавиши (XBUTTON* —
+  # не ключи) и без нативного клика (кнопка уже перехвачена xinput-ремапом).
+  # «Повторить» повторяет только скрипт: без длительности — до повторного
+  # нажатия (toggle), с длительностью — на выбранный срок.
+  if not script:
+   return
+  slot = binding.slot
+  if self.repeat_flags[slot]:
+   if not pressed:
+    return
+   with self._timed_holds_lock:
+    if self._timed_holds.get(slot, False):
+     self._timed_holds[slot] = False
+    else:
+     self._timed_holds[slot] = True
+     # Цикл _repeat_mouse_loop со скриптом шлёт ТОЛЬКО скрипт
+     # (target_button не используется и отпускание не нужно).
+     threading.Thread(target=self._repeat_mouse_loop, args=(slot, None, script, self._slot_duration(slot)), daemon=True).start()
+   return
+  if pressed:
+   self._execute_bound_script(script)
 
  def _pause_worker_after(self, worker, duration):
   time.sleep(duration)
@@ -2382,7 +2443,9 @@ class MouseSettingAppMethods:
   try:
    runtime = getattr(self, '_active_runtime', None)
    if runtime is not None:
-    runtime.stop_requested.set()
+    # stop() (а не просто stop_requested.set()): отпускает залипшие
+    # кнопки и останавливает воркеры до гарантированного выхода.
+    runtime.stop()
    dict_save.set_default_id_value()
   except Exception as exc:
    try:
