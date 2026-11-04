@@ -24,6 +24,9 @@ exit;# Завершаем выполнение скрипта
 user = subprocess.run(['bash'], input=get_user_name, stdout=subprocess.PIPE, text=True).stdout.strip()  # имя пользователя.
 list_threads = []
 mouse_controller = mouse.Controller()
+# X11-номер кнопки по pynput-объекту: для UInput-эмуляции удержания
+# (см. SmartTyper.button_press/button_release, 2026-11-04).
+_X11_BY_PYNPUT_BUTTON = {mouse.Button.left: 1, mouse.Button.middle: 2, mouse.Button.right: 3}
 # Допустимые длительности повтора (секунды) для галочки «Повторить».
 allowed_repeat_durations = (5, 10, 20, 30)
 
@@ -268,6 +271,12 @@ class save_dict:
    if 'device has no buttons' in output or 'X Error of failed request:' in output:
     continue
    buttons = output.strip().split()
+   # ЗАМЕТКА (исправление 2026-11-03): если прошлый запуск программы не
+   # восстановил карту (crash/kill), здесь кэшировался СЛЕД нашего remap'а
+   # (виртуальные кнопки 11-16) как «заводская» карта, и «восстановление
+   # по умолчанию» при выходе возвращало его снова. Чистим карту от
+   # виртуальных кнопок до кэширования (см. sanitize_button_map).
+   buttons = self.sanitize_button_map(buttons)
    # Фильтр КНОПКИ: устройство без боковых кнопок (меньше 9 кнопок в карте)
    # в список не попадает — так повышаем шанс, что вернётся id именно мыши.
    if len(buttons) < min_buttons:
@@ -288,34 +297,97 @@ class save_dict:
              xinput set-button-map {0} {1}
              '''.format(id, st)
    subprocess.call(['bash', '-c', set_button_map])
-
- def reset_id_value(self):  # Сброс настроек текущего id устройства.
-  d = '1 2 3 4 5 6 7 8 9'  # print("reset_id_value")
-  devices_mouse = list(self.dict_id_values.keys())
-  for i in devices_mouse:
-   set_button_map = '''#!/bin/bash
-             xinput set-button-map {0} {1}
-             '''.format(self.id, d)
-   process = subprocess.Popen(['bash', '-c', set_button_map], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-   stdout, stderr = process.communicate()
-   if process.returncode != 0:
-    self.id = i
-   else:
-    break
-
- def get_default_id_value(self, id):  #
+  # ЗАМЕТКА (исправление 2026-11-03): раньше восстанавливались только карты
+  # из кэша dict_id_values. Кэш заполняет get_list_ids, который берёт только
+  # устройства с >= 9 кнопками — 7-кнопочная мышь (родная карта 1..7) в кэш
+  # не попадала, и при выходе программы наш remap оставался жить в X:
+  # правая кнопка была «мёртвой» до следующего запуска или перезагрузки X.
+  # Теперь текущее устройство (id из настроек) ГАРАНТИРОВАННО сбрасывается
+  # в identity, даже если его карты нет в кэше.
   try:
-   d = self.dict_id_values[id]
-   d_copy = copy.deepcopy(d)
-   return d
-  except Exception as ex1:
-   # Раньше здесь возвращался None при промахе (id нет в кэше карт), и
-   # apply_button_map падал с AttributeError. Возвращаем заводскую карту.
+   current_id = int(self.return_jnson().get('id', 0))
+  except (TypeError, ValueError):
+   current_id = 0
+  if current_id > 0 and current_id not in self.dict_id_values:
+   set_button_map = '''#!/bin/bash
+             xinput set-button-map {0} 1 2 3 4 5 6 7 8 9
+             '''.format(current_id)
+   process = subprocess.Popen(['bash', '-c', set_button_map], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+   process.communicate()
+   if process.returncode != 0:
+    try:
+     self.write_in_log('set_default_id_value: reset failed for id %s' % current_id)
+    except Exception:
+     pass
+
+ def sanitize_button_map(self, buttons):
+  # ЗАМЕТКА (исправление 2026-11-03): чистит карту кнопок от следа нашего
+  # remap'а. INTERCEPTION_RULES remапит физические кнопки в ВИРТУАЛЬНЫЕ
+  # 11-16 (Button.button11 … Button.button16). Если прошлый запуск завершился
+  # аварийно (crash/kill — closeEvent не отработал), такой remap оставался
+  # жить в X, попадал в кэш/в «заводскую» карту и возвращался «восстановлением
+  # по умолчанию» — физическая правая кнопка (3) навсегда отображалась в
+  # логическую 11 и «умирала» во всех приложениях. Карта, содержащая 11-16,
+  # заводской не является: возвращаем identity 1..N (длина сохраняется —
+  # устройство заведомо принимает N позиций). Для заводских identity-карт
+  # (1..N) замена — no-op.
+  virtual = {'11', '12', '13', '14', '15', '16'}
+  entries = [str(b) for b in buttons]
+  if any(e in virtual for e in entries):
+   return [str(i + 1) for i in range(len(entries))]
+  return entries
+
+ def reset_id_value(self, device_id=None):  # Сброс карты кнопок устройства в identity.
+  # ЗАМЕТКА (исправление 2026-11-03): раньше сброс шёл в цикле по кэшу
+  # dict_id_values, но в xinput подставлялся self.id — а это поле всегда 0
+  # (никем не синхронизируется с настройками), поэтому «xinput set-button-map
+  # 0 …» молча падал и СТАРЫЙ remap нечищенным оставался в X. Теперь
+  # сбрасывается устройство, переданное вызывающим кодом (id из настроек);
+  # без валидного id (> 0) сброс не выполняется вовсе.
+  if device_id is None:
+   device_id = self.id
+  try:
+   device_id = int(device_id)
+  except (TypeError, ValueError):
+   return
+  if device_id <= 0:
+   return
+  d = '1 2 3 4 5 6 7 8 9'  # identity: физическая кнопка N -> логическая N
+  set_button_map = '''#!/bin/bash
+            xinput set-button-map {0} {1}
+            '''.format(device_id, d)
+  process = subprocess.Popen(['bash', '-c', set_button_map], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  process.communicate()
+  if process.returncode != 0:
    try:
-    self.write_in_log('get_default_id_value: id %s not in cache, using 1..9 (%s)' % (id, ex1))
+    self.write_in_log('reset_id_value: failed for id %s' % device_id)
    except Exception:
     pass
-   return '1 2 3 4 5 6 7 8 9'
+
+ def get_default_id_value(self, id):  #
+  # ЗАМЕТКА (исправление 2026-11-03): раньше возвращалась кэшированная карта,
+  # а при промахе — жёсткий фолбэк '1 2 3 4 5 6 7 8 9'. Кэш мог содержать
+  # ПОРЧЕНУЮ карту (след remap'а после аварийного завершения — см.
+  # sanitize_button_map), и «заводская» карта навсегда превращалась в remap.
+  # Кроме того, 7-кнопочная мышь (родная карта 1..7) не проходит фильтр
+  # get_list_ids (>= 9 кнопок) и в кэш не попадала вовсе. Теперь заводская
+  # карта запрашивается у устройства напрямую, чистится от виртуальных
+  # кнопок и кэшируется — restore при выходе всегда имеет верные данные.
+  try:
+   result = subprocess.run(['xinput', 'get-button-map', str(id)],
+    capture_output=True, text=True, timeout=5)
+   buttons = result.stdout.split() if result.returncode == 0 else []
+  except Exception:
+   buttons = []
+  if buttons:
+   clean = self.sanitize_button_map(buttons)
+   self.dict_id_values[id] = ' '.join(clean)
+   return self.dict_id_values[id]
+  try:
+   self.write_in_log('get_default_id_value: id %s not readable, using 1..9' % (id,))
+  except Exception:
+   pass
+  return '1 2 3 4 5 6 7 8 9'
 
  def ensure_valid_mouse_id(self, preferred_id):  # Авто-поиск мыши: сохранённый xinput-id неустойлив между
  # X-сессиями (после перезапуска тот же номер может принадлежать клавиатуре
@@ -651,6 +723,59 @@ class SmartTyper:
   except Exception as exc:
    try:
     dict_save.write_in_log('UInput click failed: ' + str(exc))
+   except Exception:
+    pass
+   return False
+
+ def button_press(self, x11_button):
+  """Зажать кнопку мыши (1=ЛКМ, 2=СКМ, 3=ПКМ) БЕЗ отпускания — для режимов
+  «держать»/toggle/повтор. Шлёт только key-down в виртуальный указатель.
+
+  ВАЖНО (почему UInput, а не pynput XTEST): синтетический X-press
+  (XTEST_FakeInput) ЖИВЁТ В X-СЕРВЕРЕ. Если отпускание терялось (краш
+  процесса, kill -9, ошибка XTEST, гонка таймера) — X оставался в
+  состоянии «кнопка нажата» и физическая правая/средняя кнопка
+  «залипала/не работала» во всех приложениях до перезапуска X. UInput-
+  устройство принадлежит процессу: при его смерти X автоматически
+  отписывает устройство и залипание физически невозможно.
+  """
+  code = {1: ecodes.BTN_LEFT, 2: ecodes.BTN_MIDDLE, 3: ecodes.BTN_RIGHT}.get(int(x11_button))
+  if code is None:
+   return False
+  if self._ui_scroll is None:
+   self._create_scroll_device()
+  if self._ui_scroll is None:
+   return False
+  try:
+   with self._lock:
+    self._ui_scroll.write(ecodes.EV_KEY, code, 1)
+    self._ui_scroll.syn()
+   return True
+  except Exception as exc:
+   try:
+    dict_save.write_in_log('UInput button-press failed: ' + str(exc))
+   except Exception:
+    pass
+   return False
+
+ def button_release(self, x11_button):
+  """Отпустить кнопку, зажатую button_press(). Безопасен повторный/пустой
+  вызов (release без press — no-op), поэтому его можно слать «на всякий
+  случай» при смене профиля/выходе. Работает независимо от X-состояния.
+  """
+  code = {1: ecodes.BTN_LEFT, 2: ecodes.BTN_MIDDLE, 3: ecodes.BTN_RIGHT}.get(int(x11_button))
+  if code is None:
+   return False
+  if self._ui_scroll is None:
+   return True  # устройства никогда не было — зажатой кнопки тоже нет
+  try:
+   with self._lock:
+    self._ui_scroll.write(ecodes.EV_KEY, code, 0)
+    self._ui_scroll.syn()
+   return True
+  except Exception as exc:
+   try:
+    dict_save.write_in_log('UInput button-release failed: ' + str(exc))
    except Exception:
     pass
    return False
@@ -1499,7 +1624,11 @@ class MouseProfileRuntime:
    if virtual_button is not None:
     remapped_map[index] = virtual_button
 
-  self.store.reset_id_value()
+  # Сброс СТАРОЙ карты перед применением новой. ЗАМЕТКА (исправление
+  # 2026-11-03): раньше вызывался без аргумента, и внутри сброс шёл на
+  # store.id == 0 (несуществующее устройство) — старый remap нечищенным
+  # оставался в X. Передаём фактический id устройства профиля.
+  self.store.reset_id_value(self.device_id)
   # ГЛАВНЫЙ ФИКС: раньше команда шла через `sudo xinput set-button-map` с
   # заглушённым выводом (DEVNULL + check=False). После смены X-сессии
   # (lightdm) у root нет доступа к X-серверу (Invalid MIT-MAGIC-COOKIE-1),
@@ -1568,18 +1697,12 @@ class MouseProfileRuntime:
   # (_repeat_*_loop) отключаются тем же stop_requested: они завершаются
   # сами и отпускают клавишу/кнопку в finally. Таймеры _release_sticky_after
   # и _pause_worker_after видят stop_requested и больше ничего не делают.
-  if self._right_sticking:
-   self._right_sticking = False
-   try:
-    mouse_controller.release(mouse.Button.right)
-   except Exception:
-    pass
-  if self._middle_sticking:
-   self._middle_sticking = False
-   try:
-    mouse_controller.release(mouse.Button.middle)
-   except Exception:
-    pass
+   if self._right_sticking:
+    self._right_sticking = False
+    key_work.mouse_button_release(3)  # UInput + сброс legacy-XTEST залипания
+   if self._middle_sticking:
+    self._middle_sticking = False
+    key_work.mouse_button_release(2)
 
  def dispatch(self, button, pressed):
   if self.stop_requested.is_set():
@@ -1649,12 +1772,13 @@ class MouseProfileRuntime:
    if action in ('RBUTTON', 'WHEEL_MOUSE_BUTTON'):
     if not pressed:
      return
-    target_button = mouse.Button.right if action == 'RBUTTON' else mouse.Button.middle
-    with self._timed_holds_lock:
-     active = self._timed_holds.get(slot, False)
-     self._timed_holds[slot] = not active
-    if active:
-     mouse_controller.release(target_button)
+     target_button = mouse.Button.right if action == 'RBUTTON' else mouse.Button.middle
+     x11_button = _X11_BY_PYNPUT_BUTTON[target_button]
+     with self._timed_holds_lock:
+      active = self._timed_holds.get(slot, False)
+      self._timed_holds[slot] = not active
+     if active:
+      key_work.mouse_button_release(x11_button)
     else:
      threading.Thread(
       target=self._repeat_mouse_loop,
@@ -1698,25 +1822,37 @@ class MouseProfileRuntime:
   # кнопка (WHEEL_MOUSE_BUTTON) с галочкой «держать» была полностью мёртвой.
   if hold and pressed and action in ('RBUTTON', 'WHEEL_MOUSE_BUTTON'):
    target_button = mouse.Button.right if action == 'RBUTTON' else mouse.Button.middle
+   x11_button = _X11_BY_PYNPUT_BUTTON[target_button]
    if action == 'RBUTTON':
     sticky = self._right_sticking
    else:
     sticky = self._middle_sticking
    if duration is not None:
     if sticky:
-     mouse_controller.release(target_button)
+     key_work.mouse_button_release(x11_button)
      self._set_sticky(action, False)
     else:
-     mouse_controller.press(target_button)
+     key_work.mouse_button_press(x11_button)
      self._set_sticky(action, True)
      threading.Thread(target=self._release_sticky_after, args=(action, duration), daemon=True).start()
     return
-    if sticky:
-     mouse_controller.release(target_button)
-     self._set_sticky(action, False)
-    else:
-     mouse_controller.press(target_button)
-     self._set_sticky(action, True)
+   # ЗАМЕТКА (исправление 2026-11-03): ветка toggle ниже стояла ПОСЛЕ return
+   # внутри «if duration is not None:» и была недостижима — при галочке
+   # «Держать нажатой» без выбранной длительности нажатие правой/средней
+   # кнопки молча глоталось (кнопка уже перехвачена xinput-ремапом, нативного
+   # клика нет). Теперь toggle выполняется, когда длительность не выбрана:
+   # 1-е нажатие — зажать, 2-е — отпустить.
+   # ЗАМЕТКА (исправление 2026-11-04): зажатие/отпускание идут через UInput
+   # (key_work.mouse_button_press/release), а не через pynput XTEST —
+   # синтетический X-press при краше «залипал» в X-сервере и физическая
+   # правая кнопка переставала работать; UInput-устройство умирает вместе
+   # с процессом, залипание невозможно.
+   if sticky:
+    key_work.mouse_button_release(x11_button)
+    self._set_sticky(action, False)
+   else:
+    key_work.mouse_button_press(x11_button)
+    self._set_sticky(action, True)
 
  def _handle_side_button_script(self, binding, pressed, script=None):
   # Боковая кнопка, оставленная «как есть» (XBUTTON1/XBUTTON2) или с
@@ -1759,16 +1895,17 @@ class MouseProfileRuntime:
 
  def _release_sticky_after(self, action, duration):
   # Автоснятие залипания по таймеру (режим «держать» + длительность).
+  # Отпускание идёт ВСЕГДА (даже если runtime уже останавливается): release
+  # идемпотентен, а пропущенный X-press — это залипшая во всех приложениях
+  # правая/средняя кнопка.
   time.sleep(duration)
-  if self.stop_requested.is_set():
-   return
   if action == 'RBUTTON':
    if self._right_sticking:
-    mouse_controller.release(mouse.Button.right)
+    key_work.mouse_button_release(3)
     self._right_sticking = False
   elif action == 'WHEEL_MOUSE_BUTTON':
    if self._middle_sticking:
-    mouse_controller.release(mouse.Button.middle)
+    key_work.mouse_button_release(2)
     self._middle_sticking = False
 
  def _handle_keyboard_action(self, binding, pressed, script=None):
@@ -1859,6 +1996,7 @@ class MouseProfileRuntime:
   """Repeat mouse pulses for the selected duration, or until toggled off. If a
      script is bound to the slot — repeat ONLY the script, not the mouse button."""
   deadline = time.monotonic() + total_duration if total_duration is not None else None
+  x11_button = _X11_BY_PYNPUT_BUTTON.get(target_button) if target_button is not None else None
   try:
    while not self.stop_requested.is_set() and (deadline is None or time.monotonic() < deadline):
     with self._timed_holds_lock:
@@ -1867,16 +2005,18 @@ class MouseProfileRuntime:
     if script:
      self._execute_bound_script(script)
      time.sleep(0.05)
-    else:
-     mouse_controller.press(target_button)
+    elif x11_button is not None:
+     # Пульсы кнопки через UInput (press+release): залипнуть в X-сервере
+     # не могут — устройство умирает вместе с процессом.
+     key_work.mouse_button_press(x11_button)
      time.sleep(0.05)
-     mouse_controller.release(target_button)
+     key_work.mouse_button_release(x11_button)
      time.sleep(0.05)
   finally:
    with self._timed_holds_lock:
     self._timed_holds[slot] = False
-   if not script:
-    mouse_controller.release(target_button)
+   if not script and x11_button is not None:
+    key_work.mouse_button_release(x11_button)
 
  def _release_timed_key(self, slot, key_value, duration):
   """Release a non-repeat hold after its selected duration."""
@@ -1913,6 +2053,36 @@ class work_key:
  def mouse_middle_donw(self):  # Средняя кнопка мыши: UInput, fallback xdotool.
   if not smart_typer.click(2):
    subprocess.call(['xdotool', 'click', '2'])
+
+ # Удержание кнопок мыши (режимы «держать»/toggle/«повторить») через UInput,
+ # а не через pynput XTEST. XTEST-press живёт в X-сервере и при потере
+ # отпускания (краш, kill -9, ошибка XTEST) оставлял кнопку «залипшей» во
+ # всех приложениях. UInput-устройство умирает вместе с процессом — залип
+ # невозможно. pynput остался fallback'ом на случай недоступности /dev/uinput
+ # (там залипание возможно, но это старый деградированный путь).
+ def mouse_button_press(self, x11_button):
+  if smart_typer.button_press(x11_button):
+   return True
+  btn = _X11_BY_PYNPUT_BUTTON.get(int(x11_button))
+  if btn is not None:
+   try:
+    mouse_controller.press(btn)
+    return True
+   except Exception:
+    pass
+  return False
+
+ def mouse_button_release(self, x11_button):
+  ok = smart_typer.button_release(x11_button)
+  btn = _X11_BY_PYNPUT_BUTTON.get(int(x11_button))
+  if btn is not None:
+   # release-only XTEST: безвреден, если кнопка не зажата; сбрасывает
+   # залипшее состояние от старых (pynput-эпохи) синтетических нажатий.
+   try:
+    mouse_controller.release(btn)
+   except Exception:
+    pass
+  return ok
 
  def key_press(self, key, number_key):
  # Mouse-to-key assignments always go through SmartTyper/UInput.
@@ -2587,6 +2757,17 @@ class MouseSettingAppMethods:
  def start_startup_now(self, store=None, force_ui_selection=False):
   store = store or dict_save
   settings = store.return_jnson()
+  # Сброс залипших синтетических кнопок мыши (исправление 2026-11-04):
+  # старый режим «держать» работал через pynput XTEST — после краша/kill
+  # X-сервер мог остаться в состоянии «правая кнопка нажата», и физическая
+  # правая кнопка «не работала» во всех приложениях. Release-only XTEST-
+  # событие: если кнопка НЕ зажата — ничего не происходит; если залипла —
+  # сбрасывает. UInput-вариант (новый режим) залипать в принципе не может.
+  for _btn in (mouse.Button.left, mouse.Button.middle, mouse.Button.right):
+   try:
+    mouse_controller.release(_btn)
+   except Exception:
+    pass
   current_game = str(settings['current_app'])
   if not current_game:
    return

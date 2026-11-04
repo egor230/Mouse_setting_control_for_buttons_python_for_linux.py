@@ -1,0 +1,11 @@
+#!/usr/bin/env -S gio launch
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Pytq6_mouse_setting_control_for_buttons_for_linux.desktop
+Exec="/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/python_linux/Project/mouse/Pytq6_mouse_setting_control_for_buttons_for_linux.desktop"
+Path=/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/python_linux/Project/mouse
+Icon=/mnt/807EB5FA7EB5E954/soft/Virtual_machine/linux must have/python_linux/Project/mouse/X-Mouse-Button-Control-Logo.ico
+Terminal=false
+Categories=Game;
+StartupNotify=true
