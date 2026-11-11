@@ -76,6 +76,7 @@ class save_dict:
   self.id = 0  # id устройство.
   self.mouse_button_press = []  # какие кнопки должны быть удержаны.
   self.dict_id_values = {}
+  self.dict_id_names = {}  # id -> имя устройства xinput (стабильный признак мыши между сессиями).
   self.data = "settings control mouse buttons.json"  # файл настроек.
   self.path_current_app = ''  # Текущий путь к игре.
   self.process_id_active = 0  # id активного окна
@@ -248,6 +249,8 @@ class save_dict:
   # поэтому разбор названия делаем здесь, а не в bash.
   raw = subprocess.check_output(['bash', '-c', 'xinput list 2>/dev/null']).decode().splitlines()
   button_map = {}  # Словарь id -> актуальная карта кнопок.
+  id_names = {}  # id -> имя устройства: xinput-id перенумеруются между сессиями X,
+  # имя же у мыши стабильно — по нему обеспечиваем выбор устройства (id_name в JSON).
   for line in raw:
    # Ищем тип устройства: учитывается только «slave  pointer».
    m_type = re.search(r'\[\s*slave\s+pointer\b', line)
@@ -282,7 +285,9 @@ class save_dict:
    if len(buttons) < min_buttons:
     continue
    button_map[dev_id] = ' '.join(buttons)
+   id_names[dev_id] = dev_name
   self.dict_id_values = button_map  # Сохранение карты кнопок в атрибут объекта.
+  self.dict_id_names = id_names  # Сохранение имён устройств (для стабильного выбора по имени).
   id_list = sorted(button_map.keys())  # Сохранение списка идентификаторов в переменной id_list.
   return id_list  # Возвращение списка id устройств для дальнейшего использования.
 
@@ -401,15 +406,45 @@ class save_dict:
    preferred = None
   # get_list_ids() заново обходит устройства и обновляет кэш dict_id_values:
   # в карту попадают только указатели с >=9 кнопками (реальные мыши).
-  try:
-   valid = self.get_list_ids()
-  except Exception:
-   valid = []  # X недоступен/ошибка обхода — не роняем старт, просто не
-   # переопределяем; дальше сработает защита «id==0 -> не выбрано».
+  # (Исправление 2026-11-09: ретраи сканирования) Сразу после запуска
+  # X-сессии устройства ещё перечисляются: пустой valid раньше МОЛЧА
+  # оставлял устаревший id (remap не применялся — боковые кнопки
+  # оставались нативными X11 8/9 = «назад» в браузере, а не прокрутка).
+  # Теперь сканируем несколько раз; деградационный путь виден в log.txt.
+  valid = []
+  for _attempt in range(4):
+   try:
+    valid = self.get_list_ids()
+   except Exception:
+    valid = []
+   if valid:
+    break
+   time.sleep(0.5)
   if preferred is not None and preferred in valid:
    return preferred, False
   if not valid:
+   try:
+    self.write_in_log('ensure_valid_mouse_id: no usable mouse after 4 scans, keeping id %s (degraded mode: remap не применится)' % (preferred,))
+   except Exception:
+    pass
    return preferred, False  # Подходящей мыши нет — остаётся текущий id.
+  # СТАБИЛЬНЫЙ ВЫБОР ПО ИМЕНИ (исправление «сбивания настроек мыши»):
+  # xinput-id перенумеруются между сессиями X (6 -> 14 -> 6, см. log.txt),
+  # и сохранённый id к следующему запуску оказывается «чужим». Раньше тут
+  # сразу шёл legacy-выбор «самая полная карта», который при нескольких
+  # мышах/устройствах мог выбрать ДРУГОЕ устройство и перетереть ручной
+  # выбор пользователя. Теперь сначала ищем мышь по стабильному имени
+  # (ключ id_name в JSON, заполняется ensure_mouse_id_name/startup), и
+  # только при отсутствии имени — legacy (поведение прежних запусков).
+  wanted = str(self.return_jnson().get('id_name', '') or '').strip()
+  if wanted:
+   for i in valid:
+    if str(self.dict_id_names.get(i, '')).strip().lower() == wanted.lower():
+     try:
+      self.write_in_log('mouse device id %s stale after X-session renumbering, resolved by name %s -> id %s' % (preferred, wanted, i))
+     except Exception:
+      pass
+     return i, True
   best = max(valid, key=lambda i: len(str(self.dict_id_values.get(i, '')).split()))
   try:
    self.write_in_log('mouse device id %s not usable (absent or has no buttons), reselected id %s' % (preferred, best))
@@ -426,6 +461,37 @@ class save_dict:
     f.write(time.strftime("[%Y-%m-%d %H:%M:%S] ") + str(text) + "\n")
   except Exception:
    pass
+
+
+def ensure_mouse_id_name(res):
+ # Стабильный идентификатор мыши: имя устройства xinput (ключ JSON id_name),
+ # по которому ensure_valid_mouse_id находит мышь после перенумерации
+ # xinput-id в новой X-сессии. Вызывается в __init__ главного скрипта ДО
+ # save_old_data (как ensure_additional_exe) — ключ добавляется в старый и
+ # новый словари одновременно и НЕ попадает в DeepDiff closeEvent:
+ # ложного диалога «Сохранить изменения?» нет.
+ # Имя записывается ТОЛЬКО если сохранённый id сейчас валидная мышь
+ # (указатель с >=9 кнопками); для устаревшего id (устройство исчезло или
+ # стало безкнопочным) старое id_name НЕ трогаем — его всё равно
+ # перезапишет ensure_valid_mouse_id/startup для реально подобранной мыши.
+ if not isinstance(res, dict):
+  return res
+ res.setdefault('id_name', '')
+ try:
+  preferred = int(res.get('id', 0))
+ except (TypeError, ValueError):
+  preferred = 0
+ if preferred <= 0:
+  return res
+ d = save_dict()
+ try:
+  d.get_list_ids()
+ except Exception:
+  return res  # X недоступен — не трогаем id_name, старт не роняем.
+ name = str(d.dict_id_names.get(preferred, '')).strip()
+ if name:
+  res['id_name'] = name
+ return res
 
 
 class SmartTyper:
@@ -808,13 +874,24 @@ class Job(threading.Thread):
  # Клавиатурные слоты (key != SCROLL_*) тут не крутят цикл: их обработка
  # выполняется в _handle_keyboard_action напрямую, этот поток лишь ждёт.
   time.sleep(0.00001)
+  _active_since = None
   while self.__running.is_set():
    if not self.__flag.is_set():
     self.__flag.wait(0.05)  # paused: ждём resume()/stop() без нагрузки на CPU
+    _active_since = None
     continue
    params = self._scroll_params()
    if params is None:
     self.__flag.wait(0.05)  # не-скролл слот — просто не мешаем
+    continue
+   if _active_since is None:
+    _active_since = time.monotonic()
+   elif time.monotonic() - _active_since > 300:
+    # Страховка: если отпускание кнопки потеряно (реселект устройства,
+    # ошибка X-канала), прокрутка не идёт бесконечно — цикл сам стопается.
+    dict_save.write_in_log('[safety] цикл прокрутки (%s) сам остановлен по потолку 300 с' % self.key)
+    self.pause()
+    _active_since = None
     continue
    direction, interval, amount, accel = params
    self._emit(direction, amount)      # первый клик сразу
@@ -899,6 +976,11 @@ class Job(threading.Thread):
  def stop(self):
   self.__flag.set()  # Resume the thread from the suspended state, if it is already suspended
   self.__running.clear()  # Set to False
+
+ def is_active(self):
+  # Воркер «активен»: поток жив и не в паузе (идёт прокрутка/повтор).
+  # Используется для «сдачи» удержания при смене профиля (см. prepare()).
+  return self.__running.is_set() and self.__flag.is_set()
 
  def set_sw(self, value):
   self.sw = value
@@ -1027,7 +1109,31 @@ def Get_pid_and_path_window():  # Получаем идентификатор а
   
  winepath_cache = Get_pid_and_path_window._winepath_cache
  _RE_EXE_SH = Get_pid_and_path_window._RE_EXE_SH
-  
+ 
+ # Кэш результата: полный обход (psutil по ВСЕМ процессам + xdotool + BFS)
+ # стоит 50-100 мс и без кэша прогонялся десятки раз в секунду — 50-90% ядра.
+ # Быстрый путь: одно окно xdotool (дешёвое, TTL 0.5 с) + результат.
+ # Активное окно не сменилось — результат валиден до 5 с; сменилось —
+ # пересчёт немедленно (реакция на игру не хуже 1 с).
+ _now = time.monotonic()
+ _cached = getattr(Get_pid_and_path_window, "_result_cache", None)
+ _prev_win = getattr(Get_pid_and_path_window, "_prev_win_id", None)
+ try:
+  _win_cache = getattr(Get_pid_and_path_window, "_win_cache", None)
+  if _win_cache is not None and _now - _win_cache[0] < 0.5:
+   _win_id = _win_cache[1]
+  else:
+   _win_id = subprocess.check_output(
+    ['xdotool', 'getactivewindow'], stderr=subprocess.DEVNULL, timeout=1
+   ).decode().strip()
+   Get_pid_and_path_window._win_cache = (_now, _win_id)
+ except Exception:
+  _win_id = ''
+ if _cached is not None:
+  _ttl = 5.0 if (_win_id and _win_id == _prev_win) else 1.0
+  if _now - _cached[0] < _ttl:
+   return _cached[1]
+ 
  # 1. Получение пользователя
  user = (
   os.environ.get('USER')
@@ -1177,8 +1283,13 @@ def Get_pid_and_path_window():  # Получаем идентификатор а
    if resolved:
     data_dict[pid] = resolved
     try:
-     for thread in proc.threads():
-      data_dict[thread.id] = resolved
+     # Треды мапим ТОЛЬКО для wine/.exe/.sh-процессов: чужое окно может
+     # принадлежать не основному TID процесса (getwindowpid отдаёт TID).
+     # Для обычных процессов win_pid == TID основного треда — mapping всех
+     # ~2000 системных потоков стоил 60-80% времени скана (psutil).
+     if is_wine or (resolved.lower().endswith('.exe') or resolved.lower().endswith('.sh')):
+      for thread in proc.threads():
+       data_dict[thread.id] = resolved
     except Exception:
      pass
    
@@ -1226,11 +1337,18 @@ def Get_pid_and_path_window():  # Получаем идентификатор а
    return False
   return base not in WINE_SYSTEM
   
- def _is_any_exe(path):
-  """Любой .exe (включая системные) — последний fallback."""
-  if not path:
-   return False
-  return os.path.basename(path).lower().endswith('.exe')
+  def _is_any_exe(path):
+   """Любой .exe — последний fallback, но БЕЗ системных exe Wine:
+   (Исправление 2026-11-09, дооформление §15/§26) фоновые services.exe /
+   wine-системные окна не должны тянуть игровой профиль на не-игровое
+   активное окно — из-за этого профиль игры «прилипал» к браузеру бота
+   (write_text_fast.py) и макросы xte печатали в его поле ввода."""
+   if not path:
+    return False
+   base = os.path.basename(path).lower()
+   if not base.endswith('.exe'):
+    return False
+   return base not in WINE_SYSTEM
   
  def _bfs_down(start, visitor):
   """BFS вниз от start, вызывает visitor(child_pid, child_path) — True = стоп."""
@@ -1339,7 +1457,10 @@ def Get_pid_and_path_window():  # Получаем идентификатор а
  except Exception:
   pass
   
- return expanded, id_active
+ _result = (expanded, id_active)
+ Get_pid_and_path_window._result_cache = (_now, _result)
+ Get_pid_and_path_window._prev_win_id = _win_id
+ return _result
 
 def default_profile_path(store, enabled_profiles):
  """Return a valid fallback profile; prefer the explicitly named default."""
@@ -1443,17 +1564,14 @@ def check_current_active_window(dict_save, games_checkmark_paths):
    # print(f"[OK] {os.path.basename(file_path)} -> {result}")
    return result
 
-   has_portproton = any('/PortProton/data' in p and '.exe' in p for p in data_dict.values())
-   if has_portproton and id_active in data_dict:
-    # Проверяем: активное окно — часть дерева PortProton-игры?
-    # Если да, то _walk_up быстро найдёт launcher.exe (аналог Play Portal 2.exe).
-    # Если нет (desktop/файловый менеджер/etc) — пропускаем перебор,
-    # иначе фоновые services.exe затянут посторонний профиль (§26).
-    if _is_game(game_path) or _is_game(expanded.get(win_pid_int, '')) or \
-       _walk_up(id_active, lambda pid, pth: _is_game(pth)):
-     for path in data_dict.values():
-      if is_path_in_list(path, games_checkmark_paths):
-       return games_checkmark_paths[get_index_of_path(path, games_checkmark_paths)]
+  # ЗАМЕТКА (исправление 2026-11-09): здесь раньше стояла ветка §26
+  # («PortProton-gate»), но она была МЁРТВЫМ КОДОМ: недостижима (сразу
+  # после `return result` на строке выше) и ссылалась на несуществующие в
+  # этой функции переменные (game_path/expanded/win_pid_int — NameError).
+  # Гейт перенесён в Get_pid_and_path_window: стратегии 2/4 теперь не
+  # принимают WINE_SYSTEM-exe (services.exe и др.), поэтому фоновые
+  # wine-процессы больше не затягивают чужой игровой профиль на
+  # не-игровое окно (браузер бота, рабочий стол).
   return fallback
 
  except Exception as exc:
@@ -1559,6 +1677,10 @@ class MouseProfileRuntime:
   self._middle_sticking = False
   self.bindings = {}
   self.virtual_by_physical_button = {}
+  # Алиасы нативных имён, добавленные register_physical_fallbacks (режим
+  # деградации без ремапа). При успешном ремапе они чистятся: нативные
+  # имена становятся только эхом собственной эмуляции (см. prepare()).
+  self._fallback_aliases = []
   self.stop_requested = threading.Event()
   self._build_bindings()
 
@@ -1608,9 +1730,10 @@ class MouseProfileRuntime:
      break
    if worker is None:
     continue
-   for name in self.PHYSICAL_FALLBACK.get(slot, ()):
-    if name not in self.bindings:
-     self.bindings[name] = MouseBinding(name, slot, worker)
+    for name in self.PHYSICAL_FALLBACK.get(slot, ()):
+     if name not in self.bindings:
+      self.bindings[name] = MouseBinding(name, slot, worker)
+      self._fallback_aliases.append(name)  # чтобы prepare() мог почистить после успешного ремапа
 
  def apply_button_map(self):
   default_map = self.store.get_default_id_value(self.device_id).split()
@@ -1624,43 +1747,44 @@ class MouseProfileRuntime:
    if virtual_button is not None:
     remapped_map[index] = virtual_button
 
-  # Сброс СТАРОЙ карты перед применением новой. ЗАМЕТКА (исправление
-  # 2026-11-03): раньше вызывался без аргумента, и внутри сброс шёл на
-  # store.id == 0 (несуществующее устройство) — старый remap нечищенным
-  # оставался в X. Передаём фактический id устройства профиля.
-  self.store.reset_id_value(self.device_id)
-  # ГЛАВНЫЙ ФИКС: раньше команда шла через `sudo xinput set-button-map` с
-  # заглушённым выводом (DEVNULL + check=False). После смены X-сессии
-  # (lightdm) у root нет доступа к X-серверу (Invalid MIT-MAGIC-COOKIE-1),
-  # sudo-вариант молча падал, перехват кнопок не применялся — правая кнопка
-  # продолжала работать нативно, назначенная клавиша не нажималась. Теперь:
-  # 1) пробуем БЕЗ sudo (обычному пользователю set-button-map разрешён);
-  # 2) проверяем ФАКТИЧЕСКУЮ карту через xinput get-button-map;
-  # 3) если не получилось — одна попытка через sudo (старые системы);
-  # 4) если всё равно не получилось — пишем в log.txt и показываем
-  #    сообщение, чтобы ошибка никогда не была «молчаливой».
+  # (Новый подход, исправление 2026-11-09: атомарное применение без
+  # «окна нативности»). Раньше здесь сначала шёл reset_id_value (сброс
+  # карты в нативную 1 2 3 4 5 6 7 8 9), а ПОТОМ — remap. Сброс в
+  # нативное состояние означал, что боковая кнопка в этот момент — X11
+  # 8/9 = «Назад/Вперёд» в браузере; если remap после сброса не
+  # применялся (X занят, устаревший id, «device has no buttons», sudo),
+  # устройство ОСТАВАЛОСЬ в нативной карте — боковая кнопка «делала
+  # назад», а не прокрутку из профиля. Теперь целевая карта (чистая
+  # заводская + виртуальные номера профиля, полная) применяется ОДНИМ
+  # set-button-map с ретраями: нет промежуточного нативного состояния,
+  # и при сбое устройство остаётся в прежней карте (клавиши продолжают
+  # работать через physical-fallback, а не «залипают» в «назад»).
   target_map = ' '.join(remapped_map)
   error_text = ''
   applied = False
-  for use_sudo in (False, True):
-   command = (['sudo'] if use_sudo else []) + ['xinput', 'set-button-map', str(self.device_id), *remapped_map]
-   try:
-    result = subprocess.run(command, capture_output=True, text=True, timeout=5)
-   except Exception as exc:
-    error_text = str(exc)
-    continue
-   if result.returncode != 0:
-    error_text = (result.stderr or result.stdout or '').strip()
-    continue
-   # Проверяем фактическое состояние карты: X может вернуть успех, но не применить
-   try:
-    check = subprocess.run(['xinput', 'get-button-map', str(self.device_id)], capture_output=True, text=True, timeout=5)
-    if check.returncode == 0 and check.stdout.split() == [str(b) for b in remapped_map]:
-     applied = True
-   except Exception as exc:
-    error_text = str(exc)
+  for attempt in range(3):
+   for use_sudo in (False, True):
+    command = (['sudo'] if use_sudo else []) + ['xinput', 'set-button-map', str(self.device_id), *remapped_map]
+    try:
+     result = subprocess.run(command, capture_output=True, text=True, timeout=5)
+    except Exception as exc:
+     error_text = str(exc)
+     continue
+    if result.returncode != 0:
+     error_text = (result.stderr or result.stdout or '').strip()
+     continue
+    # Проверяем фактическое состояние карты: X может вернуть успех, но не применить
+    try:
+     check = subprocess.run(['xinput', 'get-button-map', str(self.device_id)], capture_output=True, text=True, timeout=5)
+     if check.returncode == 0 and check.stdout.split() == [str(b) for b in remapped_map]:
+      applied = True
+    except Exception as exc:
+     error_text = str(exc)
+    if applied:
+     break
    if applied:
     break
+   time.sleep(0.3)  # X временно недоступен/занят — подождём и повторим.
   if not applied:
    message = 'xinput set-button-map failed for id=%s map=%s: %s' % (self.device_id, target_map, error_text)
    try:
@@ -1996,6 +2120,13 @@ class MouseProfileRuntime:
   """Repeat mouse pulses for the selected duration, or until toggled off. If a
      script is bound to the slot — repeat ONLY the script, not the mouse button."""
   deadline = time.monotonic() + total_duration if total_duration is not None else None
+  capped = False
+  if deadline is None:
+   # Страховка: «повтор без длительности» идёт до повторного нажатия (toggle).
+   # Если второе нажатие/отпускание потеряно (реселект устройства, ошибка
+   # X-канала), цикл без потолка крутится вечно и жжёт ядро. Потолок — 300 с.
+   deadline = time.monotonic() + 300
+   capped = True
   x11_button = _X11_BY_PYNPUT_BUTTON.get(target_button) if target_button is not None else None
   try:
    while not self.stop_requested.is_set() and (deadline is None or time.monotonic() < deadline):
@@ -2008,10 +2139,15 @@ class MouseProfileRuntime:
     elif x11_button is not None:
      # Пульсы кнопки через UInput (press+release): залипнуть в X-сервере
      # не могут — устройство умирает вместе с процессом.
-     key_work.mouse_button_press(x11_button)
-     time.sleep(0.05)
-     key_work.mouse_button_release(x11_button)
-     time.sleep(0.05)
+      key_work.mouse_button_press(x11_button)
+      time.sleep(0.05)
+      key_work.mouse_button_release(x11_button)
+      time.sleep(0.05)
+    if capped and time.monotonic() >= deadline and not self.stop_requested.is_set():
+     with self._timed_holds_lock:
+      still_on = self._timed_holds.get(slot, False)
+     if still_on:
+      dict_save.write_in_log('[safety] повтор-цикл слота %s сам остановлен по потолку 300 с (повторное нажатие не дошло)' % slot)
   finally:
    with self._timed_holds_lock:
     self._timed_holds[slot] = False
@@ -2667,11 +2803,24 @@ class MouseSettingAppMethods:
     # (оно всегда главнее выбранного в UI профиля).
      target = active_game if active_game != runtime.game else runtime.game
     else:
-    # Игрового окна в фокусе нет: применяем профиль, выбранный
-    # в UI (current_app). Ручной выбор сохраняется до тех пор,
-    # пока не появится настоящее игровое окно.
+    # Игрового окна в фокусе нет.
+    # (Исправление 2026-11-09: игровой профиль НЕ должен «прилипать» к
+    # не-игровому активному окну: из-за этого в окне бота (write_text_fast.py)
+    # или на рабочем столе боковые/правая кнопки перестают делать колёсико
+    # вверх/вниз (активно игровое назначение), а xte/xdotool-макросы профиля
+    # начинают печатать в сфокусированное окно — скрипт мыши «мешает» боту.
+    # Игровой профиль теперь активен ТОЛЬКО когда в фокусе его окно (правило 1
+    # выше); не-игровое окно получает fallback-профиль (колесо работает как
+    # обычно). Нейгровый UI-выбор (рабочий/дефолтный профиль) применяется, как и раньше.)
      selected = str(runtime.store.get_cur_app() or '')
-     if runtime.game != selected and selected in runtime.enabled_profiles:
+     desktop_default = default_profile_path(runtime.store, runtime.enabled_profiles)
+     selected_is_game = (bool(selected) and selected in runtime.enabled_profiles
+      and selected != desktop_default)
+     if selected_is_game:
+     # current_app — игровой профиль: на не-игровом окне применяем
+     # fallback-профиль, а не игровой (макросы не уходят в чужое окно).
+      target = fallback
+     elif runtime.game != selected and selected in runtime.enabled_profiles:
       target = selected
      else:
       target = runtime.game
@@ -2685,7 +2834,8 @@ class MouseSettingAppMethods:
      runtime.join_event_workers()
      restart_game = target
      break
-    time.sleep(0.03)
+    time.sleep(0.5)  # тело цикла: ~1-2 дешёвых проверки/с (кэш
+                     # Get_pid_and_path_window); ранее 0.03 с = 50-90% CPU
   finally:
   # Determine whether we were externally replaced BEFORE any cleanup below.
    with self._runtime_lock:
@@ -2739,16 +2889,76 @@ class MouseSettingAppMethods:
   """Replace the old profile runtime atomically, apply its map, start listener."""
   store = store or dict_save
   with self._runtime_lock:
+   # (Исправление 2026-11-09: «сдача» физического удержания) Если в старом
+   # рантайме идёт прокрутка (боковая кнопка физически удерживается), то после
+   # смены профиля событие «отпускание» уйдёт в остановленный старый рантайм,
+   # а новый останется на паузе — кнопка «перестанет делать колёсико» до
+   # нового нажатия. Запоминаем активные слоты ДО остановки старого рантайма
+   # и resume-им те же слоты в новом (только режим «удержание», а не
+   # «повторить»/«держать» — у них своё toggle-состояние, его не наследуем).
+   _handover_scroll_slots = set()
+   _old_runtime = getattr(self, '_active_runtime', None)
+   if _old_runtime is not None:
+    for _b in _old_runtime.bindings.values():
+     if _b.worker.is_active() and str(_b.worker.key).startswith('SCROLL_'):
+      _s = _b.slot
+      try:
+       if _old_runtime.hold_flags[_s] or _old_runtime.repeat_flags[_s]:
+        continue
+      except IndexError:
+       continue
+      _handover_scroll_slots.add(_s)
    self._stop_active_runtime(store)
    self._runtime_generation += 1
    my_generation = self._runtime_generation
    runtime = MouseProfileRuntime(store, start_game, force_ui_selection)
    print(f"[PREPARE] gen={my_generation} game={runtime.game!r} enabled={runtime.enabled_profiles!r}")
+   # (Исправление 2026-11-09: «боковая кнопка = назад, а не прокрутка»)
+   # Хранимый xinput-id устаревает после каждого перезапуска X-сессии
+   # (устройства нумеруются заново: мышь может быть 6 в одной сессии и
+   # 14 в другой). Раньше авто-поиск мыши (ensure_valid_mouse_id) шёл
+   # ТОЛЬКО в start_startup_now; при авто-смене профиля (emunator_mouse)
+   # рантайм работал со «чужим» id → remap не применялся → боковые
+   # кнопки оставались нативными X11 8/9 = «Назад/Вперёд» в браузере,
+   # а не прокруткой из профиля. Теперь перед применением карты id
+   # перепроверяем (по стабильному имени id_name / по полноте карты),
+   # и при смене устройства применяем карту повторно.
+   try:
+    _new_id, _id_changed = store.ensure_valid_mouse_id(runtime.device_id)
+    if _id_changed and _new_id and _new_id != runtime.device_id:
+     runtime.device_id = _new_id
+     _settings_now = store.return_jnson()
+     _settings_now['id'] = _new_id
+     store.save_jnson(_settings_now)
+   except Exception:
+    _id_changed = False  # X недоступен — применяем карту на текущем id как раньше
    applied = runtime.apply_button_map()
+   if not applied and _id_changed:
+    # Первая попытка могла не успеть (X занято) — повтор один раз.
+    applied = runtime.apply_button_map()
    if not applied:
     runtime.register_physical_fallbacks()
+   else:
+    # Ремап применён: нативные имена (Button.button8/9 и т.п.) становятся
+    # лишь эхом собственной эмуляции — убираем fallback-алиасы, добавленные
+    # предыдущим неудачным применением (см. register_physical_fallbacks).
+    for _alias in getattr(runtime, '_fallback_aliases', ()):
+     runtime.bindings.pop(_alias, None)
+    runtime._fallback_aliases = []
    runtime.store.set_current_path_game(runtime.game)
    self._active_runtime = runtime
+   # Сдача удержания: возобновляем прокрутку в тех же слотах, где она шла в
+   # старом рантайме (кнопка физически не отпущена — user всё ещё держит её).
+   for _slot in _handover_scroll_slots:
+    try:
+     if runtime.hold_flags[_slot] or runtime.repeat_flags[_slot]:
+      continue
+    except IndexError:
+     continue
+    for _b in runtime.bindings.values():
+     if _b.slot == _slot:
+      _b.worker.resume()
+      break
 
   listener_thread = threading.Thread(target=self.emunator_mouse, args=(runtime, my_generation))
   runtime.store.set_thread(listener_thread)
@@ -2782,6 +2992,9 @@ class MouseSettingAppMethods:
    # настройках), лишь синхронизируем выпадающий список. Следующий запуск
    # будет «чистым», т.к. валидный id теперь записан в JSON.
    settings['id'] = valid_id
+   # Стабильное ИМЯ устройства: в следующей X-сессии xinput-id снова
+   # перенумеруются, и мышь будет найдена по имени, а не по «слетевшему» id.
+   settings['id_name'] = str(store.dict_id_names.get(valid_id, '')).strip()
    store.save_jnson(settings)
    if hasattr(self, 'id_combo'):
     try:
@@ -3063,6 +3276,11 @@ class MouseSettingAppMethods:
    return
   if res["id"] != current_value:
    res["id"] = current_value
+   # Стабильное ИМЯ выбранного устройства: после перенумерации xinput-id
+   # в новой X-сессии ручной выбор будет восстановлен по имени, а не
+   # перезаписан авто-выбором (ensure_valid_mouse_id).
+   nm = str(dict_save.dict_id_names.get(current_value, '')).strip()
+   res["id_name"] = nm if nm else res.get("id_name", "")
    dict_save.save_jnson(res)  # Сохранить новое значение для выпадающего списка
    # Раньше: change_app() без аргументов затирал current_app пустой строкой.
    # Теперь перезапускаем эмуляцию на выбранном профиле с новым устройством.

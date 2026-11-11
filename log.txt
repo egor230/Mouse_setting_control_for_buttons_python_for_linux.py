@@ -1,0 +1,104 @@
+[2026-09-08 06:52:38] xinput set-button-map failed for id=6 map=1 2 3 4 5 6 7 15 16: Invalid MIT-MAGIC-COOKIE-1 key
+Unable to connect to X server
+[2026-09-08 23:50:59] xinput set-button-map failed for id=6 map=1 2 3 4 5 6 7 15 16: 
+[2026-09-08 23:53:31] xinput set-button-map failed for id=6 map=1 2 3 4 5 6 7 15 16: 
+[2026-09-09 00:01:48] xinput set-button-map failed for id=6 map=1 2 3 4 5 6 7 15 16: 
+[2026-09-09 00:58:08] xinput set-button-map failed for id=6 map=1 2 3 4 5 6 7 15 16: 
+[2026-09-14 10:16:47] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-09-14 10:16:48] xinput set-button-map failed for id=6 map=1 2 3 4 5 6 7 15 16: device has no buttons
+[2026-10-18 09:14:50] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-18 09:14:50] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-18 09:16:26] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-18 09:16:26] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-18 12:15:07] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-18 12:15:07] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-18 12:34:21] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-18 12:34:21] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-20 15:34:38] xinput set-button-map failed for id=6 map=1 2 11 13 14 6 7 15 16: 
+[2026-10-20 15:34:52] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-20 15:34:53] xinput set-button-map failed for id=6 map=1 2 11 13 14 6 7 15 16: 
+[2026-10-20 15:35:06] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-20 15:35:29] xinput set-button-map failed for id=6 map=1 2 11 13 14 6 7 15 16: 
+[2026-10-20 15:35:52] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-20 15:50:36] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: 
+[2026-10-20 15:50:52] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-20 15:50:52] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: 
+[2026-10-20 15:50:52] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-20 15:50:53] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: 
+[2026-10-20 15:50:53] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-20 15:50:54] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: 
+[2026-10-20 15:51:10] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-20 15:51:18] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: 
+[2026-10-20 15:51:24] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: 
+[2026-10-28 03:50:25] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 03:50:25] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-10-28 03:53:33] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 03:53:33] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-10-28 05:28:32] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:28:32] xinput set-button-map failed for id=6 map=1 2 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 05:30:31] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:30:31] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-10-28 05:30:42] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:30:42] xinput set-button-map failed for id=6 map=1 2 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 05:30:42] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:30:42] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-10-28 05:30:45] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:30:45] xinput set-button-map failed for id=6 map=1 2 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 05:31:37] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:31:37] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-10-28 05:32:17] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:32:17] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 05:33:46] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:33:46] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-10-28 05:34:14] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:34:14] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 05:34:28] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:34:28] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 05:34:30] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:34:30] xinput set-button-map failed for id=6 map=1 2 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 05:34:32] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:34:33] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-10-28 05:34:57] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:34:57] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-10-28 05:35:09] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:35:09] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 05:35:10] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:35:10] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-10-28 05:35:14] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:35:14] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 05:35:59] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:35:59] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-10-28 05:36:14] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:36:14] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 05:36:28] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 05:36:28] xinput set-button-map failed for id=6 map=1 12 11 13 14 6 7 15 16: device has no buttons
+[2026-10-28 06:12:59] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:12:59] mouse device id None not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:13:19] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:13:19] mouse device id None not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:15:58] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:16:35] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:21:04] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:21:04] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 06:23:45] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:23:45] mouse device id None not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:23:45] get_default_id_value: id 6 not in cache, using 1..9 (6)
+[2026-10-28 06:23:45] xinput set-button-map failed for id=6 map=1 2 11 13 5 6 7 15 16: device has no buttons
+[2026-10-28 06:27:06] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:27:37] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:34:46] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-10-28 06:39:32] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-10-28 07:18:22] mouse device id 6 not usable (absent or has no buttons), reselected id 17
+[2026-11-08 06:14:49] mouse device id 6 not usable (absent or has no buttons), reselected id 14
+[2026-11-08 08:10:20] mouse device id 6 not usable (absent or has no buttons), reselected id 14
+[2026-11-08 14:59:16] mouse device id 14 not usable (absent or has no buttons), reselected id 6
+[2026-11-09 01:16:49] mouse device id 6 not usable (absent or has no buttons), reselected id 14
+[2026-11-09 14:37:06] mouse device id 6 not usable (absent or has no buttons), reselected id 14
+[2026-11-09 16:07:41] get_default_id_value: id 6 not readable, using 1..9
+[2026-11-09 16:07:41] reset_id_value: failed for id 6
+[2026-11-09 16:07:41] xinput set-button-map failed for id=6 map=1 12 3 4 5 6 7 15 16: device has no buttons
+[2026-11-09 17:20:30] mouse device id 6 not usable (absent or has no buttons), reselected id 14
+[2026-11-11 09:06:59] mouse device id 0 not usable (absent or has no buttons), reselected id 6
+[2026-11-11 09:14:52] mouse device id 0 not usable (absent or has no buttons), reselected id 6
+[2026-11-11 09:19:56] mouse device id 0 not usable (absent or has no buttons), reselected id 6
+[2026-11-11 09:26:18] mouse device id 0 not usable (absent or has no buttons), reselected id 6
