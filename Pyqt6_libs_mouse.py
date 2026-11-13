@@ -566,9 +566,14 @@ class SmartTyper:
   except Exception:
    self._physical_keyboard = None
   try:
+   # (Исправление 2026-11-13, §39): EV_LED намеренно НЕ заявляем. X-сервер
+   # при регистрации устройства с LED-capability пересинхронизирует
+   # индикаторы всех клавиатур и может погасить NumLock-LED физической
+   # клавиатуры (конфликт с write_text_fast/punto и другими скриптами,
+   # работающими параллельно). Для эмуляции нажатий LED не нужны; NumLock
+   # при необходимости выставляется мягко (без переключения, если уже on).
    self._ui = UInput(
-    {ecodes.EV_KEY: list(range(1, 256)),
-    ecodes.EV_LED: [ecodes.LED_NUML, ecodes.LED_CAPSL]},
+    {ecodes.EV_KEY: list(range(1, 256))},
     name='Mouse Setting Control Virtual Keyboard',
     bustype=ecodes.BUS_USB,
     vendor=0x1209,
@@ -582,7 +587,7 @@ class SmartTyper:
     dict_save.write_in_log('UInput keyboard is unavailable: ' + str(exc))
    except Exception:
     pass
-  self._force_numlock_on()
+  self._ensure_numlock_on()
 
  def _create_scroll_device(self):
  # Отдельное ВИРТУАЛЬНОЕ УСТРОЙСТВО-УКАЗАТЕЛЬ для колеса. Клавиатурное
@@ -633,26 +638,29 @@ class SmartTyper:
    pass
   return True
 
- def _force_numlock_on(self):
+ def _ensure_numlock_on(self):
+  # Мягкая, идемпотентная проверка NumLock (§39): не переключаем, если уже
+  # включён, не пишем EV_LED в виртуальное устройство (capability убрана),
+  # не трогаем LED физической клавиатуры напрямую. Это снижает конфликты с
+  # write_text_fast.py / punto.py, которые управляют NumLock/раскладкой
+  # параллельно. При необходимости делаем один toggle через виртуальную
+  # клавиатуру (XKB сам пересинхронизирует индикаторы).
   try:
-   if self._ui is not None:
-    if not self._is_numlock_on():
-     self._ui.write(ecodes.EV_KEY, ecodes.KEY_NUMLOCK, 1)
-     self._ui.syn()
-     time.sleep(0.05)
-     self._ui.write(ecodes.EV_KEY, ecodes.KEY_NUMLOCK, 0)
-     self._ui.syn()
-     time.sleep(0.1)
-    self._ui.write(ecodes.EV_LED, ecodes.LED_NUML, 1)
-    self._ui.syn()
-   if self._physical_keyboard is not None:
-    self._physical_keyboard.set_led(ecodes.LED_NUML, 1)
-   try:
-    subprocess.run(["xset", "led", "named", "Num Lock"], capture_output=True, timeout=2)
-   except Exception:
-    pass
+   if self._ui is None:
+    return
+   if self._is_numlock_on():
+    return
+   self._ui.write(ecodes.EV_KEY, ecodes.KEY_NUMLOCK, 1)
+   self._ui.syn()
+   time.sleep(0.05)
+   self._ui.write(ecodes.EV_KEY, ecodes.KEY_NUMLOCK, 0)
+   self._ui.syn()
   except Exception:
    pass
+
+ def _force_numlock_on(self):
+  # Совместимость: старое имя, теперь делегирует в мягкую версию.
+  self._ensure_numlock_on()
 
  @staticmethod
  def _ecodes_value(name):
@@ -687,14 +695,34 @@ class SmartTyper:
   return self._ecodes_value(key_name) if key_name else None
 
  def key_down(self, action):
-  """Send one UInput key-down event for a mapped mouse action."""
+  """Send one key-down event for a mapped mouse action."""
   code = self._resolve(action)
   if code is None:
    return False
+  # (Исправление 2026-11-13, §38): одиночные буквы A–Z при активной не-US
+  # раскладке XKB. UInput шлёт ФИЗИЧЕСКИЙ keycode (EV_KEY/KEY_W) — X
+  # отображает его в символ текущей группы (ru group1: W → «ц»), поэтому
+  # «W» в профиле не давало латинскую w в приложениях. xdotool keydown
+  # keysym-осознан и выдаёт именно запрошенную букву в любой раскладке
+  # (проверено вживую: keydown w → 'w' при ru group1). Для игр/Wine это
+  # тоже корректно (X-событие приходит). UInput остаётся для всего
+  # остального (F-клавиши, стрелки, модификаторы, спецклавиши, цифры),
+  # и как fallback, если xdotool недоступен.
+  if isinstance(action, str) and len(action) == 1 and action.isalpha():
+   try:
+    with self._lock:
+     if ('char', action.lower()) not in self._pressed_codes:
+      r = subprocess.run(['xdotool', 'keydown', '--clearmodifiers', action.lower()],
+       capture_output=True, timeout=2)
+      if r.returncode == 0:
+       self._pressed_codes.add(('char', action.lower()))
+       return True
+   except Exception:
+    pass
   if self._ui is None:
    self._create_device()
   if self._ui is None:
-  # Внешний процесс (xdotool) не используется — просто не эмулируем.
+  # Внешний процесс недоступен и UInput не создан — не эмулируем.
    return False
   try:
    with self._lock:
@@ -711,14 +739,26 @@ class SmartTyper:
    return False
 
  def key_up(self, action):
-  """Send one UInput key-up event for a mapped mouse action."""
+  """Send one key-up event for a mapped mouse action."""
   code = self._resolve(action)
   if code is None:
    return False
+  # Парная ветка к key_down (§38): буквы, зажатые через xdotool keydown,
+  # отпускаем тем же путём.
+  if isinstance(action, str) and len(action) == 1 and action.isalpha():
+   try:
+    with self._lock:
+     r = subprocess.run(['xdotool', 'keyup', '--clearmodifiers', action.lower()],
+      capture_output=True, timeout=2)
+     self._pressed_codes.discard(('char', action.lower()))
+     if r.returncode == 0:
+      return True
+   except Exception:
+    self._pressed_codes.discard(('char', action.lower()))
   if self._ui is None:
    self._create_device()
   if self._ui is None:
-  # Внешний процесс (xdotool) не используется — просто не эмулируем.
+  # Внешний процесс недоступен и UInput не создан — не эмулируем.
    return False
   try:
    with self._lock:
@@ -1337,19 +1377,19 @@ def Get_pid_and_path_window():  # Получаем идентификатор а
    return False
   return base not in WINE_SYSTEM
   
-  def _is_any_exe(path):
-   """Любой .exe — последний fallback, но БЕЗ системных exe Wine:
-   (Исправление 2026-11-09, дооформление §15/§26) фоновые services.exe /
-   wine-системные окна не должны тянуть игровой профиль на не-игровое
-   активное окно — из-за этого профиль игры «прилипал» к браузеру бота
-   (write_text_fast.py) и макросы xte печатали в его поле ввода."""
-   if not path:
-    return False
-   base = os.path.basename(path).lower()
-   if not base.endswith('.exe'):
-    return False
-   return base not in WINE_SYSTEM
-  
+ def _is_any_exe(path):
+  """Любой .exe — последний fallback, но БЕЗ системных exe Wine:
+  (Исправление 2026-11-09, дооформление §15/§26) фоновые services.exe /
+  wine-системные окна не должны тянуть игровой профиль на не-игровое
+  активное окно — из-за этого профиль игры «прилипал» к браузеру бота
+  (write_text_fast.py) и макросы xte печатали в его поле ввода."""
+  if not path:
+   return False
+  base = os.path.basename(path).lower()
+  if not base.endswith('.exe'):
+   return False
+  return base not in WINE_SYSTEM
+ 
  def _bfs_down(start, visitor):
   """BFS вниз от start, вызывает visitor(child_pid, child_path) — True = стоп."""
   queue = [start]
@@ -1461,6 +1501,59 @@ def Get_pid_and_path_window():  # Получаем идентификатор а
  Get_pid_and_path_window._result_cache = (_now, _result)
  Get_pid_and_path_window._prev_win_id = _win_id
  return _result
+
+_profile_running_cache = {'ts': 0.0, 'path': None, 'running': False}
+
+
+def is_profile_process_running(profile_path):
+ """Best-effort check whether a profile's target executable/script is running.
+
+ Used to auto-release a manually-held game profile after the game exits so the
+ runtime can return to the default/fallback profile and restore the button map."""
+ global _profile_running_cache
+ if not profile_path:
+  return False
+ now = time.monotonic()
+ cache = _profile_running_cache or {}
+ if cache.get('path') == profile_path and (now - cache.get('ts', 0.0)) < 2.0:
+  return bool(cache.get('running'))
+ running = False
+ try:
+  base = os.path.basename(str(profile_path)).lower()
+  norm = os.path.normpath(str(profile_path)).lower()
+  if not base:
+   running = True
+  else:
+   for proc in psutil.process_iter(['exe', 'cmdline', 'name']):
+    try:
+     exe = str(proc.info.get('exe') or '').replace('\\', '/')
+     if exe:
+      exe_norm = os.path.normpath(exe).lower()
+      if exe_norm == norm or os.path.basename(exe_norm) == base:
+       running = True
+       break
+     name = str(proc.info.get('name') or '').lower()
+     if name == base:
+      running = True
+      break
+     for arg in (proc.info.get('cmdline') or []):
+      a = str(arg).replace('\\', '/').strip('"')
+      if not a:
+       continue
+      a_norm = os.path.normpath(a).lower()
+      if a_norm == norm or os.path.basename(a_norm) == base:
+       running = True
+       break
+     if running:
+      break
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+     continue
+ except Exception:
+  # Fail-open: on scan errors do not drop an active profile unexpectedly.
+  running = True
+ _profile_running_cache = {'ts': now, 'path': profile_path, 'running': running}
+ return running
+
 
 def default_profile_path(store, enabled_profiles):
  """Return a valid fallback profile; prefer the explicitly named default."""
@@ -1658,6 +1751,12 @@ class MouseProfileRuntime:
   else:
    _active = check_current_active_window(store, self.enabled_profiles)
    self.game = str(_active) if _active else (selected if selected else fallback_profile_path(store, self.enabled_profiles))
+  # (Исправление 2026-11-13, §36): «ручной выбор не должен откатываться».
+  # force_ui_selection=True ставит флаг manual_ui_pick, и emunator_mouse
+  # пропускает откат игрового профиля на fallback, пока пользователь не
+  # выберет другой профиль или реальное игровое окно не станет активным.
+  self.manual_ui_pick = bool(force_ui_selection and self.game == selected
+   and selected in self.enabled_profiles)
   self.device_id = self.settings['id']
   self.assignments = list(self.settings['key_value'][self.game])
   self.hold_flags = list(self.settings['mouse_press'][self.game])
@@ -1708,6 +1807,25 @@ class MouseProfileRuntime:
     listener_names.update({'Button.x2', 'Button.button8', 'Button.button15'})
    for listener_name in listener_names:
     self.bindings[listener_name] = MouseBinding(listener_name, slot, worker)
+   # (Исправление 2026-11-13, §37): pynput 1.8.1 слушает XRecord
+   # (device_events), и какое имя кнопки придёт, зависит от устройства и
+   # от того, применился ли xinput-remap:
+   #  * реальная мышь при УСПЕШНОМ ремапе → ЛОГИЧЕСКИЕ имена
+   #    (правая = Button.button11, колесо = Button.button13/14);
+   #  * XTEST (xdotool) идёт через отдельное устройство с identity-картой
+   #    → ФИЗИЧЕСКИЕ имена (Button.right и т.п.);
+   #  * если ремап НЕ применился (нет доступа к X, сменился id) → тоже
+   #    ФИЗИЧЕСКИЕ имена.
+   # Раньше при успешном ремапе физические алиасы удалялись, поэтому любое
+   # событие с физическим именем (XTEST-эмуляция, сбой ремапа) не
+   # перехватывалось — правая кнопка не давала W. Теперь для
+   # назначений-клавиш слушаем ОБА набора имён (эхо здесь невозможно:
+   # эмулируются только клавиши, а не кнопки мыши). Для мышиных действий
+   # (MOUSE_ACTIONS) оставляем прежнюю схему, чтобы не поймать эхо
+   # собственной UInput-эмуляции кнопок.
+   if self.assignments[slot] not in self.MOUSE_ACTIONS:
+    for name in self.PHYSICAL_FALLBACK.get(slot, ()):
+     self.bindings.setdefault(name, MouseBinding(name, slot, worker))
    self.virtual_by_physical_button[physical] = virtual
 
  def register_physical_fallbacks(self):
@@ -1730,10 +1848,10 @@ class MouseProfileRuntime:
      break
    if worker is None:
     continue
-    for name in self.PHYSICAL_FALLBACK.get(slot, ()):
-     if name not in self.bindings:
-      self.bindings[name] = MouseBinding(name, slot, worker)
-      self._fallback_aliases.append(name)  # чтобы prepare() мог почистить после успешного ремапа
+   for name in self.PHYSICAL_FALLBACK.get(slot, ()):
+    if name not in self.bindings:
+     self.bindings[name] = MouseBinding(name, slot, worker)
+     self._fallback_aliases.append(name)  # чтобы prepare() мог почистить после успешного ремапа
 
  def apply_button_map(self):
   default_map = self.store.get_default_id_value(self.device_id).split()
@@ -1811,9 +1929,41 @@ class MouseProfileRuntime:
   self.stop_requested.set()
   self.stop_workers()
   self.join_event_workers()
-  self._release_sticky_buttons()
+  self._release_all_emulated_inputs()
 
- def _release_sticky_buttons(self):
+ def _release_all_emulated_inputs(self):
+  """Best-effort release of any inputs this runtime may have left pressed.
+
+  On profile switch / game exit / app close we must not leave synthetic key
+  downs or mouse holds behind, otherwise buttons appear "stuck" and the mouse
+  glitches in other apps. Releases are idempotent/safe to repeat."""
+  try:
+   with self._timed_holds_lock:
+    self._timed_holds.clear()
+  except Exception:
+   pass
+  # Release keyboard keys assigned to intercepted slots (covers held/toggled
+  # states that have no explicit release event during runtime teardown).
+  for binding in list(getattr(self, 'bindings', {}).values()):
+   try:
+    slot = binding.slot
+    action = self.assignments[slot]
+    if action in self.MOUSE_ACTIONS or str(binding.worker.key).startswith('SCROLL_'):
+     continue
+    key_value = str(KEYS.get(action, ''))
+    if key_value:
+     key_work.key_release(key_value, slot)
+   except Exception:
+    pass
+  # Release emulated mouse buttons (sticky/toggle/pulses) as a safety net.
+  self._release_sticky_buttons(force=True)
+  for x11b in (1, 2, 3):
+   try:
+    key_work.mouse_button_release(x11b)
+   except Exception:
+    pass
+
+ def _release_sticky_buttons(self, force=False):
   # При выходе из игры / смене профиля / выходе из приложения отпускаем
   # залипшие правую/среднюю кнопки: иначе синтетический X-press (XTEST)
   # остаётся «зависшим» в X-сервере, и физическая правая кнопка
@@ -1821,12 +1971,18 @@ class MouseProfileRuntime:
   # (_repeat_*_loop) отключаются тем же stop_requested: они завершаются
   # сами и отпускают клавишу/кнопку в finally. Таймеры _release_sticky_after
   # и _pause_worker_after видят stop_requested и больше ничего не делают.
-   if self._right_sticking:
-    self._right_sticking = False
+  if self._right_sticking or force:
+   self._right_sticking = False
+   try:
     key_work.mouse_button_release(3)  # UInput + сброс legacy-XTEST залипания
-   if self._middle_sticking:
-    self._middle_sticking = False
+   except Exception:
+    pass
+  if self._middle_sticking or force:
+   self._middle_sticking = False
+   try:
     key_work.mouse_button_release(2)
+   except Exception:
+    pass
 
  def dispatch(self, button, pressed):
   if self.stop_requested.is_set():
@@ -2157,11 +2313,16 @@ class MouseProfileRuntime:
  def _release_timed_key(self, slot, key_value, duration):
   """Release a non-repeat hold after its selected duration."""
   time.sleep(duration)
+  should_release = False
   with self._timed_holds_lock:
-   if not self._timed_holds.get(slot, False) or self.stop_requested.is_set():
-    return
-   self._timed_holds[slot] = False
-  key_work.key_release(key_value, slot)
+   if self._timed_holds.get(slot, False):
+    self._timed_holds[slot] = False
+    should_release = True
+  if should_release:
+   try:
+    key_work.key_release(key_value, slot)
+   except Exception:
+    pass
 
 
 class work_key:
@@ -2816,10 +2977,32 @@ class MouseSettingAppMethods:
      desktop_default = default_profile_path(runtime.store, runtime.enabled_profiles)
      selected_is_game = (bool(selected) and selected in runtime.enabled_profiles
       and selected != desktop_default)
-     if selected_is_game:
+     # (Исправление 2026-11-13, §36): если профиль был выбран ВРУЧНУЮ через
+     # GUI (флаг manual_ui_pick), и current_app всё ещё на нём (runtime.game),
+     # не откатываемся на fallback — игровые назначения (правая→W и т.п.)
+     # должны работать в любом окне. Откат происходит только когда:
+     #  - пользователь выбрал другой профиль (prepare() создаст новый
+     #    runtime без manual_ui_pick), или
+     #  - реальное игровое окно в фокусе (правило 1 сработало раньше).
+     manual_hold = (getattr(runtime, 'manual_ui_pick', False)
+      and selected == runtime.game and selected in runtime.enabled_profiles)
+     # Ручной выбор игрового профиля держим «везде», но если сама игра/цель
+     # профиля уже не запущена — возвращаемся на fallback и снимаем ручной
+     # захват (иначе после выхода из игры профиль и ремап «залипают»).
+     if manual_hold and not is_profile_process_running(runtime.game):
+      manual_hold = False
+      try:
+       runtime.manual_ui_pick = False
+      except Exception:
+       pass
+     if manual_hold:
+      target = runtime.game
+     elif selected_is_game:
      # current_app — игровой профиль: на не-игровом окне применяем
      # fallback-профиль, а не игровой (макросы не уходят в чужое окно).
-      target = fallback
+     # Но если процесс игры уже не запущен (игра закрыта), возвращаемся на
+     # безопасный fallback вместо «залипания» на мёртвом профиле.
+      target = runtime.game if is_profile_process_running(runtime.game) else fallback
      elif runtime.game != selected and selected in runtime.enabled_profiles:
       target = selected
      else:
@@ -2857,7 +3040,19 @@ class MouseSettingAppMethods:
     listener.join(timeout=1.0)
    except (AttributeError, RuntimeError, OSError):
     pass
-   runtime.stop_workers()
+   # Полная остановка рантайма: снимаем залипшие/эмулированные кнопки и клавиши
+   # (иначе при смене профиля или выходе из игры ввод остаётся «зажатым»).
+   try:
+    runtime.stop()
+   except Exception:
+    try:
+     runtime.stop_workers()
+    except Exception:
+     pass
+    try:
+     runtime._release_all_emulated_inputs()
+    except Exception:
+     pass
    if is_current and is_same_generation:
     self._active_runtime = None
     runtime.store.set_thread(0)

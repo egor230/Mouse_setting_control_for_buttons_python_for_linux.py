@@ -142,7 +142,7 @@
       "R",
       "Q",
       "RBUTTON",
-      "SCROLL_DOWN"
+      "F"
     ],
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
       "LBUTTON",
@@ -615,15 +615,6 @@
                     sleep 10.02
                     xte \"keyup E\""
     },
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown R\"
-                   sleep 0.5
-                   xte \"keyup R\"
-                   xte \"keydown E\"
-                   sleep 0.1
-                   xte \"keyup E\""
-    },
     "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": {
       "XBUTTON2": "#!/bin/bash
                    xte \"keydown F\"
@@ -665,6 +656,18 @@
                    xte \"keydown space\"
                    sleep 0.5
                    xte \"keyup space\"
+                   xte \"keydown E\"
+                   sleep 0.5
+                   xte \"keyup E\""
+    },
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": {
+      "XBUTTON2": "#!/bin/bash
+                   xte \"keydown F\"
+                   sleep 0.5
+                   xte \"keyup F\"
+                   xte \"keydown R\"
+                   sleep 0.5
+                   xte \"keyup R\"
                    xte \"keydown E\"
                    sleep 0.5
                    xte \"keyup E\""
@@ -829,8 +832,8 @@
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": {
       "keys": {
         "?
-                                                                                                                                                                                                               /": "#!/bin/bash
-                                                                                                                                                                                                                       xte \"keydown C\""
+                                                                                                                                                                                                                                                   /": "#!/bin/bash
+                                                                                                                                                                                                                                                           xte \"keydown C\""
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": {
@@ -3273,5 +3276,6 @@
     "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe": [
       "/mnt/807EB5FA7EB5E954/games/Need for Speed - Most Wanted/speed.exe"
     ]
-  }
+  },
+  "id_name": "USB OPTICAL MOUSE"
 }
