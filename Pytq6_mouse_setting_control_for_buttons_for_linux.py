@@ -22,6 +22,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     res = json.load(json_file, strict=False)
     res = scripts_to_text(res)  # убрать отступы продолжения строк из скриптов (нормализация)
     res = ensure_additional_exe(res)  # дозаполнить ключ additional_exe (все .exe директорий путей)
+    res = ensure_mouse_id_name(res)  # дозаполнить ключ id_name (стабильное имя мыши — выдерживает перенумерацию xinput-id)
     dict_save.save_old_data(res)
    dict_save.save_jnson(res)
   else:
@@ -33,6 +34,7 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
     "id": 0,
     "current_app": 'C:/Windows/explorer.exe'}
    res = ensure_additional_exe(res)
+   res = ensure_mouse_id_name(res)  # дозаполнить ключ id_name (стабильное имя мыши)
    know_id = '''#!/bin/bash
                input_list=$(xinput list)
                mouse_line=$(echo "$input_list" | head -n 1)
@@ -45,6 +47,9 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
   dict_save.save_jnson(res)
   dict_save.set_cur_app(res["current_app"])
   dict_save.set_prev_game(res["current_app"])
+  # Ручной/сохранённый выбор профиля (синяя строка) — к нему будем
+  # возвращаться после сворачивания/выхода из игры (2026-11-16).
+  dict_save.set_user_profile(res["current_app"])
   dict_save.set_current_app_path(res['current_app'])
   devices = [InputDevice(path) for path in list_devices()]
   # Надёжный выбор физической клавиатуры: старый фильтр ("Keyboard\"" + ' phys ')
@@ -130,35 +135,111 @@ class MouseSettingApp(QMainWindow, MouseSettingAppMethods):
  # Макросы клавиатуры должны совпадать с целью эмуляции (активное окно),
  # а не с выбранным в UI профилем — иначе они расходятся после разделения
  # current_app (выбор) и live-цели эмуляции.
-  current_app = None
-  _rt = getattr(self, "_active_runtime", None)
-  if _rt is not None and getattr(_rt, "game", None):
-   current_app = _rt.game
-  if not current_app:
-   _res = dict_save.return_jnson()
-   _enabled = [p for p, e in _res.get("games_checkmark", {}).items() if e]
-   current_app = check_current_active_window(dict_save, _enabled) or dict_save.get_cur_app()
-  res = dict_save.return_jnson()
-  if "keyboard_script" not in res or current_app not in res["keyboard_script"]:
-   return
-  if "keys" not in res["keyboard_script"][current_app]:
-   return
-  keys_active = res["keyboard_script"][current_app]["keys"].keys()
-  key = key_label.lower().replace(" ", "_")  # 'Caps Lock' -> 'caps_lock' и т.п.
-  for i in list(keys_active):
-   i = str(i).replace(" ", "_")
-   k = key
+  try:
+   current_app = None
+   _rt = getattr(self, "_active_runtime", None)
+   if _rt is not None and getattr(_rt, "game", None):
+    current_app = _rt.game
+   res = dict_save.return_jnson()
+   if not current_app:
+    _enabled = [p for p, e in res.get("games_checkmark", {}).items() if e]
+    try:
+     current_app = check_current_active_window(dict_save, _enabled) or dict_save.get_cur_app()
+    except Exception:
+     # При сбое определения окна/профиля — безопасный откат на профиль по умолчанию.
+     _enabled = [p for p, e in res.get("games_checkmark", {}).items() if e]
+     current_app = fallback_profile_path(dict_save, _enabled) or dict_save.get_cur_app()
+
+   keys_map = res.get("keyboard_script", {}).get(current_app, {}).get("keys", {})
+   if not keys_map:
+    # Если у целевого профиля нет макросов (или профиль битый) — пробуем дефолтный.
+    _enabled = [p for p, e in res.get("games_checkmark", {}).items() if e]
+    fb = fallback_profile_path(dict_save, _enabled)
+    if fb and fb != current_app:
+     keys_map = res.get("keyboard_script", {}).get(fb, {}).get("keys", {})
+     if keys_map:
+      current_app = fb
+   if not keys_map:
+    return
+
+   def _norm_key_name(name):
+    # Нормализация имён клавиш: убираем мусорные пробелы/переносы,
+    # приводим к нижнему регистру и выравниваем распространённые алиасы.
+    s = str(name).replace("\r", " ").replace("\n", " ").strip().lower()
+    s = "_".join(s.split())
+    aliases = {
+     "ctrl_r": "control_r", "ctrl_l": "control_l",
+     "rctrl": "control_r", "lctrl": "control_l",
+     "rshift": "shift_r", "lshift": "shift_l",
+     "ralt": "alt_r", "lalt": "alt_l",
+     "esc": "esc", "escape": "esc",
+     "return": "enter", "kp_enter": "enter", "kpenter": "enter",
+     "capslock": "caps_lock", "numlock": "num_lock",
+     "pageup": "page_up", "pagedown": "page_down",
+     "printscreen": "print", "prt_sc": "print",
+    }
+    return aliases.get(s, s)
+
+   key = _norm_key_name(key_label)
    # Перевод русской БУКВЫ в английскую. Символы (+, -, ,, . и т.п.) НЕ трогаем:
    # в ru_to_en есть '+' -> ',' и '-' -> '.', что ломало сопоставление с макросами
    # "+"/"-" (физическая клавиша уже дана в нейтральном виде).
-   if k.isalpha() and k in ru_to_en.keys():
-    k = ru_to_en[k]
-   if k == i.lower():
-    script = res["keyboard_script"][current_app]["keys"][i]
-    t = threading.Thread(target=lambda s=script: subprocess.call(["bash", "-c", s]))
-    t.start()
-    t.join()
-    break
+   if key.isalpha() and key in ru_to_en.keys():
+    key = ru_to_en[key]
+
+   # Предвычисляем нормализованные имена сохранённых макросов один раз.
+   for raw_name, script in list(keys_map.items()):
+    if _norm_key_name(raw_name) == key:
+     if not isinstance(script, str) or not script.strip():
+      return
+
+     def _run_macro(s):
+      # Межпроцессная координация с punto.py / write_text_fast.py:
+      # берём тот же flock, чтобы xte-макросы не вклинивались в их печать
+      # (best-effort: если lock недоступен, макрос всё равно выполняется).
+      lock_fd = None
+      try:
+       try:
+        import fcntl as _fcntl
+        lock_fd = open("/tmp/kb_scripts_typing.lock", "a+")
+        deadline = time.time() + 1.0
+        while True:
+         try:
+          _fcntl.flock(lock_fd, _fcntl.LOCK_EX | _fcntl.LOCK_NB)
+          break
+         except OSError:
+          if time.time() >= deadline:
+           break
+          time.sleep(0.02)
+       except Exception:
+        lock_fd = None
+       subprocess.call(["bash", "-c", s])
+      except Exception as e:
+       try:
+        dict_save.write_in_log('keyboard macro error: ' + str(e))
+       except Exception:
+        pass
+      finally:
+       if lock_fd is not None:
+        try:
+         import fcntl as _fcntl
+         _fcntl.flock(lock_fd, _fcntl.LOCK_UN)
+        except Exception:
+         pass
+        try:
+         lock_fd.close()
+        except Exception:
+         pass
+
+     t = threading.Thread(target=_run_macro, args=(script,), daemon=True)
+     t.start()
+     t.join()
+     break
+  except Exception as e:
+   try:
+    dict_save.write_in_log('handle_keyboard_macro error: ' + str(e))
+   except Exception:
+    pass
   
   def eventFilter(self, watched, event):
    if watched is self.scroll_area.viewport():

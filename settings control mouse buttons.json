@@ -7,9 +7,9 @@
     "/mnt/807EB5FA7EB5E954/games/Crysis 2/bin32/Crysis2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": true,
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": true,
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": true,
     "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": true,
@@ -34,9 +34,9 @@
     "/mnt/807EB5FA7EB5E954/games/Crysis 2/bin32/Crysis2.exe": "Crysis2",
     "/mnt/807EB5FA7EB5E954/games/Portal Reloaded/Play Portal 2.exe": "Portal Reloaded",
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": " Entropy Zero 2",
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": "FarCry",
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": "Assassins Creed IV Black Flag",
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": "Tomb Raider",
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": "FarCry",
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": "mafia 2",
     "/mnt/807EB5FA7EB5E954/games/Portal 2 community edition/portal2.exe": "Portal 2 community edition",
     "/mnt/807EB5FA7EB5E954/games/Grand Theft Auto V/GTAVLauncher.exe": "GTA V",
@@ -117,6 +117,15 @@
       "RBUTTON",
       "E"
     ],
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
+      "LBUTTON",
+      "W",
+      " ",
+      "R",
+      "Q",
+      "RBUTTON",
+      "F"
+    ],
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": [
       "LBUTTON",
       "W",
@@ -134,15 +143,6 @@
       "C",
       "RBUTTON",
       "SPACE"
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
-      "LBUTTON",
-      "W",
-      " ",
-      "R",
-      "Q",
-      "RBUTTON",
-      "F"
     ],
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
       "LBUTTON",
@@ -344,6 +344,15 @@
       false,
       false
     ],
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": [
       false,
       false,
@@ -360,15 +369,6 @@
       false,
       false,
       false,
-      false
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      true,
       false
     ],
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
@@ -552,6 +552,27 @@
                       sleep 0.1
                       xte \"keyup space\""
     },
+    "/mnt/807EB5FA7EB5E954/games/Crysis 2/bin32/Crysis2.exe": {
+      "XBUTTON2": "#!/bin/bash
+                   xte \"keydown F\"
+                   sleep 0.5
+                   xte \"keyup F\"
+                   xte \"keydown E\"
+                   sleep 0.5
+                   xte \"keyup E\"
+                   xte \"keydown R\"
+                   sleep 0.5
+                   xte \"keyup R\""
+    },
+    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": {
+      "XBUTTON2": "#!/bin/bash
+                   xte \"keydown F\"
+                   sleep 0.5
+                   xte \"keyup F\"
+                   xte \"keydown R\"
+                   sleep 0.5
+                   xte \"keyup R\""
+    },
     "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": {
       "SCROLL_DOWN": "#!/bin/bash
                       xte \"keyup Shift_L\"
@@ -627,6 +648,15 @@
                    sleep 0.5
                    xte \"keyup E\""
     },
+    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": {
+      "XBUTTON2": "#!/bin/bash
+                   xte \"keydown space\"
+                   sleep 0.5
+                   xte \"keyup space\"
+                   xte \"keydown E\"
+                   sleep 0.5
+                   xte \"keyup E\""
+    },
     "/mnt/807EB5FA7EB5E954/games/Quantum Break/dx11/QuantumBreak.exe": {
       "XBUTTON2": "#!/bin/bash
                    xte \"keydown E\"
@@ -639,38 +669,17 @@
                    sleep 0.5
                    xte \"keyup F\""
     },
-    "/mnt/807EB5FA7EB5E954/games/Crysis 2/bin32/Crysis2.exe": {
+    "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": {
       "XBUTTON2": "#!/bin/bash
-                   xte \"keydown F\"
-                   sleep 0.5
-                   xte \"keyup F\"
                    xte \"keydown E\"
                    sleep 0.5
                    xte \"keyup E\"
                    xte \"keydown R\"
                    sleep 0.5
-                   xte \"keyup R\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Oblivion Gold/Oblivion.exe": {
-      "XBUTTON2": "#!/bin/bash
-                   xte \"keydown space\"
-                   sleep 0.5
-                   xte \"keyup space\"
-                   xte \"keydown E\"
-                   sleep 0.5
-                   xte \"keyup E\""
-    },
-    "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": {
-      "XBUTTON2": "#!/bin/bash
+                   xte \"keyup R\"
                    xte \"keydown F\"
                    sleep 0.5
-                   xte \"keyup F\"
-                   xte \"keydown R\"
-                   sleep 0.5
-                   xte \"keyup R\"
-                   xte \"keydown E\"
-                   sleep 0.5
-                   xte \"keyup E\""
+                   xte \"keyup F\""
     }
   },
   "keyboard_script": {
@@ -832,8 +841,12 @@
     "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe": {
       "keys": {
         "?
-                                                                                                                                                                                                                                                   /": "#!/bin/bash
-                                                                                                                                                                                                                                                           xte \"keydown C\""
+                                                                                                                                                                                                                                                                                                         /": "#!/bin/bash
+                                                                                                                                                                                                                                                                                                                 xte \"keydown C\"",
+        "Ctrl_r": "#!/bin/bash
+                   xte \"keydown C\"
+                   sleep 6.5
+                   xte \"keyup C\""
       }
     },
     "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": {
@@ -3155,15 +3168,6 @@
       "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/hl2.exe",
       "/mnt/807EB5FA7EB5E954/games/Entropy Zero 2/unins000.exe"
     ],
-    "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": [
-      "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe",
-      "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/unins000.exe"
-    ],
-    "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": [
-      "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/Tomb Raider v1.1.838.0 Plus 12 Trainer.exe",
-      "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe",
-      "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/unins000.exe"
-    ],
     "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/FarCry.exe": [
       "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/CgfDump.exe",
       "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/Editor.exe",
@@ -3174,6 +3178,15 @@
       "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/cgc.exe",
       "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/fxc.exe",
       "/mnt/807EB5FA7EB5E954/games/Far Cry/Bin32/rc.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/AC4BFSP.exe",
+      "/mnt/807EB5FA7EB5E954/games/Assassins Creed IV Black Flag/unins000.exe"
+    ],
+    "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe": [
+      "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/Tomb Raider v1.1.838.0 Plus 12 Trainer.exe",
+      "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/TombRaider.exe",
+      "/mnt/807EB5FA7EB5E954/games/Tomb Raider Game of The Year Edition/unins000.exe"
     ],
     "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/mafia2.exe": [
       "/mnt/807EB5FA7EB5E954/games/Mafia II/pc/RemoveSaves.exe",

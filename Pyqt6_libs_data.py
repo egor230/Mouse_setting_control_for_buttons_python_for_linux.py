@@ -75,11 +75,28 @@ mouse_map = {  "Левая": ("mousedown 1", "mouseup 1"), "Правая": ("mou
 # ==== ЧИСТЫЕ ФУНКЦИИ ====
 
 # Простые проверки путей из настроек.
+def _path_key(path):
+ # Ключ сравнения путей: без различий регистра и типа слэшей.
+ # Linux-ФС регистрозависима, но профиль мог быть сохранён как
+ # "games/Entropy Zero 2/hl2.exe", а процесс реально запущен из
+ # "games/entropy zero 2/hl2.exe". Раньше сравнение было подстрокой с
+ # учётом регистра → профиль не находился, игра «не переключалась».
+ text = str(path or '').strip().replace('\\', '/')
+ if not text:
+  return ''
+ return os.path.normpath(text).lower()
+
 def is_path_in_list(path, path_list):  # проверяет, содержится ли путь в списке путей.
- return any(path in item for item in path_list)
+ key = _path_key(path)
+ if not key:
+  return False
+ return any(_path_key(item) == key for item in path_list)
 def get_index_of_path(path, path_list):
- index = next(index for index, item in enumerate(path_list) if path in item)
- return index  # находит индекс пути в списке путей и возвращает соответствующий элемент списка.
+ key = _path_key(path)
+ for index, item in enumerate(path_list):
+  if _path_key(item) == key:
+   return index
+ raise ValueError('path not found in list: %r' % (path,))
 
 # Очистка и нормализация настроек (JSON читается через json.load(strict=False)).
 def cleanup_empty_script_entries(data):

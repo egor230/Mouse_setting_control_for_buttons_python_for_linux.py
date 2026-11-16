@@ -86,6 +86,16 @@ class save_dict:
   self.thr = 0
   self.thread_exit=False  # это флаг выхода из потоков
   self.prev_game = ""  # Добавляем отсутствующий атрибут
+  # Профиль, который пользователь выбрал ВРУЧНУЮ (синяя строка в списке).
+  # Авто-переключение по активному окну игры его НЕ перезаписывает: именно к
+  # нему нужно возвращаться, когда игра свернута/закрыта (запрос 2026-11-16).
+  self.user_profile = ""
+
+ def get_user_profile(self):
+  return self.user_profile
+
+ def set_user_profile(self, profile):
+  self.user_profile = str(profile or '')
 
  def get_last_key_keyboard_script(self): #
   return self.last_key_keyboard_script
@@ -184,6 +194,10 @@ class save_dict:
  def set_cur_app(self, cur_app):  # установить текущего игру
   self.cur_app = str(cur_app)
   self.jnson["current_app"] = self.cur_app
+  # «Синяя» строка и профиль возврата всегда совпадают с current_app.
+  # Авто-переключение по окну игры current_app больше не трогает, поэтому
+  # здесь остаётся именно выбор пользователя (2026-11-16).
+  self.user_profile = self.cur_app
 
  def get_cur_app(self):
   return str(self.jnson["current_app"])
@@ -523,8 +537,23 @@ class SmartTyper:
   }
 
  def __init__(self):
-  self._lock = threading.RLock()
-  self._pressed_codes = set()
+  # Раздельные блокировки: клавиатура и «указатель» (колесо/кнопки мыши)
+  # — независимые UInput-устройства, чтобы удержание клавиши (напр. ПКМ->W)
+  # и одновременный клик боковой кнопки (напр. боковая->ПКМ) не блокировали
+  # друг друга (исправление одновременной работы, 2026-11-15).
+  self._kb_lock = threading.RLock()
+  self._ptr_lock = threading.RLock()
+  self._lock = self._kb_lock  # совместимость со старым именем
+  # Счётчики активных нажатий (ref-count), а не просто факт "зажата": это
+  # позволяет эмулировать несколько кнопок одновременно. Реальный key-up /
+  # button-release отправляется только когда счётчик опускается до 0, поэтому
+  # отпускание одной кнопки/слота не прерывает удержание той же клавиши или
+  # той же кнопки мыши, инициированное другим слотом.
+  self._pressed_codes = {}
+  # Зажатые кнопки виртуального указателя (BTN_LEFT/MIDDLE/RIGHT) —
+  # ref-count по коду кнопки, чтобы button_release отпускал физически только
+  # когда все источники удержания отпущены (безопасен повторный/пустой вызов).
+  self._pressed_mouse_buttons = {}
   self._ui = None
   self._ui_scroll = None
   self._physical_keyboard = None
@@ -650,11 +679,12 @@ class SmartTyper:
     return
    if self._is_numlock_on():
     return
-   self._ui.write(ecodes.EV_KEY, ecodes.KEY_NUMLOCK, 1)
-   self._ui.syn()
-   time.sleep(0.05)
-   self._ui.write(ecodes.EV_KEY, ecodes.KEY_NUMLOCK, 0)
-   self._ui.syn()
+   with self._kb_lock:
+    self._ui.write(ecodes.EV_KEY, ecodes.KEY_NUMLOCK, 1)
+    self._ui.syn()
+    time.sleep(0.05)
+    self._ui.write(ecodes.EV_KEY, ecodes.KEY_NUMLOCK, 0)
+    self._ui.syn()
   except Exception:
    pass
 
@@ -709,14 +739,27 @@ class SmartTyper:
   # остального (F-клавиши, стрелки, модификаторы, спецклавиши, цифры),
   # и как fallback, если xdotool недоступен.
   if isinstance(action, str) and len(action) == 1 and action.isalpha():
+   char_key = ('char', action.lower())
+   # Блокировку клавиатуры НЕ держим во время subprocess.run, иначе
+   # долгое выполнение xdotool блокирует прочие клавиатурные действия и
+   # (раньше, при общем _lock) мешало параллельным кликам мыши.
    try:
-    with self._lock:
-     if ('char', action.lower()) not in self._pressed_codes:
-      r = subprocess.run(['xdotool', 'keydown', '--clearmodifiers', action.lower()],
-       capture_output=True, timeout=2)
-      if r.returncode == 0:
-       self._pressed_codes.add(('char', action.lower()))
-       return True
+    with self._kb_lock:
+     count = int(self._pressed_codes.get(char_key, 0))
+     if count > 0:
+      self._pressed_codes[char_key] = count + 1
+      return True
+     # Если буква уже удерживается через UInput-fallback (evdev code),
+     # увеличиваем его счётчик, чтобы не потерять источник удержания.
+     if code is not None and int(self._pressed_codes.get(code, 0)) > 0:
+      self._pressed_codes[code] = int(self._pressed_codes.get(code, 0)) + 1
+      return True
+    r = subprocess.run(['xdotool', 'keydown', '--clearmodifiers', action.lower()],
+     capture_output=True, timeout=2)
+    if r.returncode == 0:
+     with self._kb_lock:
+      self._pressed_codes[char_key] = int(self._pressed_codes.get(char_key, 0)) + 1
+     return True
    except Exception:
     pass
   if self._ui is None:
@@ -725,11 +768,12 @@ class SmartTyper:
   # Внешний процесс недоступен и UInput не создан — не эмулируем.
    return False
   try:
-   with self._lock:
-    if code not in self._pressed_codes:
+   with self._kb_lock:
+    count = int(self._pressed_codes.get(code, 0))
+    if count <= 0:
      self._ui.write(ecodes.EV_KEY, code, 1)
      self._ui.syn()
-     self._pressed_codes.add(code)
+    self._pressed_codes[code] = count + 1
    return True
   except Exception as exc:
    try:
@@ -744,27 +788,50 @@ class SmartTyper:
   if code is None:
    return False
   # Парная ветка к key_down (§38): буквы, зажатые через xdotool keydown,
-  # отпускаем тем же путём.
+  # отпускаем тем же путём. Если удержание шло через UInput-fallback (evdev),
+  # отпускаем evdev-код, чтобы не оставлять клавишу «залипшей».
   if isinstance(action, str) and len(action) == 1 and action.isalpha():
-   try:
-    with self._lock:
-     r = subprocess.run(['xdotool', 'keyup', '--clearmodifiers', action.lower()],
-      capture_output=True, timeout=2)
-     self._pressed_codes.discard(('char', action.lower()))
-     if r.returncode == 0:
-      return True
-   except Exception:
-    self._pressed_codes.discard(('char', action.lower()))
+   char_key = ('char', action.lower())
+   with self._kb_lock:
+    char_count = int(self._pressed_codes.get(char_key, 0))
+    uinput_count = int(self._pressed_codes.get(code, 0))
+   if char_count > 0:
+    try:
+     if char_count == 1:
+      subprocess.run(['xdotool', 'keyup', '--clearmodifiers', action.lower()],
+       capture_output=True, timeout=2)
+    except Exception:
+     pass
+    with self._kb_lock:
+     count = int(self._pressed_codes.get(char_key, 0)) - 1
+     if count > 0:
+      self._pressed_codes[char_key] = count
+     else:
+      self._pressed_codes.pop(char_key, None)
+    return True
+   # Удержание могло быть через UInput-fallback — отпустим его ниже по evdev-коду.
+   if uinput_count <= 0:
+    with self._kb_lock:
+     self._pressed_codes.pop(char_key, None)
+    # Нет активного удержания — ничего отпускать не нужно.
+    return True
   if self._ui is None:
    self._create_device()
   if self._ui is None:
   # Внешний процесс недоступен и UInput не создан — не эмулируем.
    return False
   try:
-   with self._lock:
+   with self._kb_lock:
+    count = int(self._pressed_codes.get(code, 0))
+    if count > 1:
+     self._pressed_codes[code] = count - 1
+     return True
+    if count <= 0:
+     self._pressed_codes.pop(code, None)
+     return True
     self._ui.write(ecodes.EV_KEY, code, 0)
     self._ui.syn()
-    self._pressed_codes.discard(code)
+    self._pressed_codes.pop(code, None)
    return True
   except Exception as exc:
    try:
@@ -792,7 +859,7 @@ class SmartTyper:
   if self._ui_scroll is None:
    return False
   try:
-   with self._lock:
+   with self._ptr_lock:
     self._ui_scroll.write(ecodes.EV_REL, ecodes.REL_WHEEL, direction * int(amount))
     self._ui_scroll.syn()
    return True
@@ -809,6 +876,11 @@ class SmartTyper:
     x11_button: 1=левая, 2=средняя, 3=правая, 4=колесо вверх, 5=колесо вниз
     (нумерация X11). Один вызов = press+release без процессов. Если UInput
     недоступен — возвращаем False, вызывающий код откатывается на xdotool.
+
+    ВАЖНО: клик НЕ должен отпускать кнопки, которые были зажаты через
+    button_press (toggle-режим «Держать» / несколько одновременных нажатий).
+    Если у кнопки есть активные удержания (ref-count > 0), физический release
+    не шлём, чтобы не перебить удержание и не остановить параллельную эмуляцию.
     """
   button_map = {1: ecodes.BTN_LEFT, 2: ecodes.BTN_MIDDLE, 3: ecodes.BTN_RIGHT}
   code = button_map.get(int(x11_button))
@@ -819,12 +891,17 @@ class SmartTyper:
   if self._ui_scroll is None:
    return False
   try:
-   with self._lock:
-    self._ui_scroll.write(ecodes.EV_KEY, code, 1)
-    self._ui_scroll.syn()
+   with self._ptr_lock:
+    held = int(self._pressed_mouse_buttons.get(code, 0)) > 0
+    # Press: если кнопка уже удерживается — X уже в состоянии "нажата".
+    if not held:
+     self._ui_scroll.write(ecodes.EV_KEY, code, 1)
+     self._ui_scroll.syn()
     time.sleep(0.01)
-    self._ui_scroll.write(ecodes.EV_KEY, code, 0)
-    self._ui_scroll.syn()
+    # Release: отпускаем физически только если нет активных удержаний.
+    if not held:
+     self._ui_scroll.write(ecodes.EV_KEY, code, 0)
+     self._ui_scroll.syn()
    return True
   except Exception as exc:
    try:
@@ -835,7 +912,9 @@ class SmartTyper:
 
  def button_press(self, x11_button):
   """Зажать кнопку мыши (1=ЛКМ, 2=СКМ, 3=ПКМ) БЕЗ отпускания — для режимов
-  «держать»/toggle/повтор. Шлёт только key-down в виртуальный указатель.
+  «держать»/toggle/повтор и для нескольких ОДНОВРЕМЕННЫХ нажатий (например,
+  ПКМ->W удерживается, а боковая кнопка эмулирует ПКМ, колёсико крутится).
+  Использует ref-count: физический press шлётся один раз при переходе 0->1.
 
   ВАЖНО (почему UInput, а не pynput XTEST): синтетический X-press
   (XTEST_FakeInput) ЖИВЁТ В X-СЕРВЕРЕ. Если отпускание терялось (краш
@@ -853,9 +932,12 @@ class SmartTyper:
   if self._ui_scroll is None:
    return False
   try:
-   with self._lock:
-    self._ui_scroll.write(ecodes.EV_KEY, code, 1)
-    self._ui_scroll.syn()
+   with self._ptr_lock:
+    count = int(self._pressed_mouse_buttons.get(code, 0))
+    if count <= 0:
+     self._ui_scroll.write(ecodes.EV_KEY, code, 1)
+     self._ui_scroll.syn()
+    self._pressed_mouse_buttons[code] = count + 1
    return True
   except Exception as exc:
    try:
@@ -865,9 +947,8 @@ class SmartTyper:
    return False
 
  def button_release(self, x11_button):
-  """Отпустить кнопку, зажатую button_press(). Безопасен повторный/пустой
-  вызов (release без press — no-op), поэтому его можно слать «на всякий
-  случай» при смене профиля/выходе. Работает независимо от X-состояния.
+  """Отпустить кнопку, зажатую button_press(). Ref-count: физический release
+  шлётся только при переходе 1->0. Безопасен повторный/пустой вызов.
   """
   code = {1: ecodes.BTN_LEFT, 2: ecodes.BTN_MIDDLE, 3: ecodes.BTN_RIGHT}.get(int(x11_button))
   if code is None:
@@ -875,9 +956,17 @@ class SmartTyper:
   if self._ui_scroll is None:
    return True  # устройства никогда не было — зажатой кнопки тоже нет
   try:
-   with self._lock:
+   with self._ptr_lock:
+    count = int(self._pressed_mouse_buttons.get(code, 0))
+    if count > 1:
+     self._pressed_mouse_buttons[code] = count - 1
+     return True
+    if count <= 0:
+     self._pressed_mouse_buttons.pop(code, None)
+     return True
     self._ui_scroll.write(ecodes.EV_KEY, code, 0)
     self._ui_scroll.syn()
+    self._pressed_mouse_buttons.pop(code, None)
    return True
   except Exception as exc:
    try:
@@ -1567,10 +1656,13 @@ def default_profile_path(store, enabled_profiles):
 
 
 def fallback_profile_path(store, enabled_profiles):
- """Return the saved prior profile, or a valid default if none is saved."""
- previous = store.get_prev_game()
- if previous in enabled_profiles:
-  return previous
+ """Return a SAFE non-game profile (the default one).
+
+ (Исправление 2026-11-16, analysis п.22): раньше здесь возвращался
+ `prev_game`, который мог оказаться игровым профилем. Из-за этого после
+ выхода из игры «безопасный» fallback сам был игрой, и профиль не
+ переключался. Возврат к ручному выбору пользователя делает emunator_mouse
+ через store.user_profile, а fallback — только страховка."""
  fallback = default_profile_path(store, enabled_profiles)
  if fallback:
   store.set_prev_game(fallback)
@@ -1604,10 +1696,26 @@ def build_profile_dir_map(games_checkmark_paths, force=False):
   if not d:
    continue
   dirs.add(os.path.normpath(d).lower())
+  # Папка в настройках может отличаться регистром от реальной
+  # ("Entropy Zero 2" vs "entropy zero 2"). Linux-ФС регистрозависима,
+  # поэтому ищем реальную папку без учёта регистра (2026-11-16).
+  d_actual = d
+  if not os.path.isdir(d_actual):
+   try:
+    _parent = os.path.dirname(d)
+    _base = os.path.basename(d).lower()
+    for _name in os.listdir(_parent):
+     if _name.lower() == _base:
+      _cand = os.path.join(_parent, _name)
+      if os.path.isdir(_cand):
+       d_actual = _cand
+       break
+   except OSError:
+    pass
   try:
    # Собираем exe в самой папке профиля (без под папок)
-   exes = [f for f in os.listdir(d)
-    if f.lower().endswith('.exe') and os.path.isfile(os.path.join(d, f))]
+   exes = [f for f in os.listdir(d_actual)
+    if f.lower().endswith('.exe') and os.path.isfile(os.path.join(d_actual, f))]
   except OSError:
    continue # папка недоступна (в т.ч. Windows-пути вида C:/...)
   if len(exes) > 25:
@@ -1616,7 +1724,7 @@ def build_profile_dir_map(games_checkmark_paths, force=False):
    exe_map[os.path.normpath(profile_path).lower()] = profile_path
    continue
   for f in exes:
-   full = os.path.normpath(os.path.join(d, f)).lower()
+   full = os.path.normpath(os.path.join(d_actual, f)).lower()
    if full not in exe_map: # два профиля в одной папке: выигрывает первый в списке
     exe_map[full] = profile_path
  build_profile_dir_map._cache = {"key": key, "ts": now, "exe_map": exe_map, "dirs": dirs}
@@ -1644,8 +1752,13 @@ def canonicalize_pid_paths(data_dict, games_checkmark_paths):
 
 
 def check_current_active_window(dict_save, games_checkmark_paths):
- """Return the game profile for the active window, otherwise a safe fallback."""
- fallback = fallback_profile_path(dict_save, games_checkmark_paths)
+ """Return the game profile for the focused window, or '' if no game is focused.
+
+ ВАЖНО (2026-11-16): раньше при отсутствии игрового окна возвращался fallback-
+ профиль, из-за чего вызывающий код не мог отличить «игра в фокусе» от «игры
+ нет» (особенно когда fallback сам был игровым). Теперь явный признак «игры
+ нет» — пустая строка; решение, какой профиль включить, принимает вызывающий
+ код (emunator_mouse → профиль, выбранный пользователем вручную)."""
  try:
   data_dict, id_active = Get_pid_and_path_window()
   # Канонизация: exe из папки профиля приравнивается к пути профиля (§27)
@@ -1665,11 +1778,11 @@ def check_current_active_window(dict_save, games_checkmark_paths):
   # принимают WINE_SYSTEM-exe (services.exe и др.), поэтому фоновые
   # wine-процессы больше не затягивают чужой игровой профиль на
   # не-игровое окно (браузер бота, рабочий стол).
-  return fallback
+  return ''
 
  except Exception as exc:
   pass
- return fallback
+ return ''
 
 def show_list_id_callback():
  show_list_id = f'''#!/bin/bash
@@ -1677,13 +1790,59 @@ def show_list_id_callback():
    read;   exec bash' '''  # показать список устройств в терминале
  subprocess.run(['bash', '-c', show_list_id])
 
-@dataclass
 class MouseBinding:
  """One intercepted physical mouse control and its runtime state."""
 
- listener_button: str
- slot: int
- worker: Job
+ def __init__(self, listener_button, slot, worker):
+  self.listener_button = listener_button
+  self.slot = slot
+  self.worker = worker
+  # Последовательная обработка событий конкретной кнопки в отдельном потоке,
+  # чтобы обработчик pynput не блокировался (xdotool/скрипты) и можно было
+  # одновременно нажимать/держать несколько разных кнопок.
+  self._queue = []
+  self._cond = threading.Condition()
+  self._dispatch_stop = False
+  self._dispatch_thread = threading.Thread(target=self._dispatch_loop, daemon=True)
+  self._dispatch_thread.start()
+
+ def enqueue(self, runtime, pressed):
+  with self._cond:
+   self._queue.append((runtime, pressed))
+   self._cond.notify()
+
+ def stop_dispatch(self):
+  with self._cond:
+   self._dispatch_stop = True
+   self._cond.notify_all()
+
+ def join_dispatch(self, timeout=1.0):
+  try:
+   self._dispatch_thread.join(timeout=timeout)
+  except Exception:
+   pass
+
+ def _dispatch_loop(self):
+  while True:
+   with self._cond:
+    while not self._queue and not self._dispatch_stop:
+     self._cond.wait(timeout=0.2)
+    if self._dispatch_stop and not self._queue:
+     return
+    if not self._queue:
+     continue
+    runtime, pressed = self._queue.pop(0)
+   try:
+    if runtime is not None and not runtime.stop_requested.is_set():
+     runtime._dispatch_binding(self, pressed)
+   except Exception as exc:
+    try:
+     if runtime is not None:
+      runtime.store.write_in_log('binding dispatch error: ' + str(exc))
+    except Exception:
+     pass
+   except BaseException:
+    pass
 
 
 class MouseProfileRuntime:
@@ -1770,8 +1929,27 @@ class MouseProfileRuntime:
   self.hold_durations = self.hold_durations[:7]
   self._timed_holds = {}
   self._timed_holds_lock = threading.RLock()
+  # Какие физические кнопки сейчас считаются нажатыми (по слотам). Заполняется
+  # из событий listener, проверяется сторожевым потоком по РЕАЛЬНОМУ состоянию
+  # устройства (xinput query-state). Если событие отпускания потерялось
+  # (XRecord/ремap/ошибка X), сторож всё равно снимет эмуляцию — «одно
+  # нажатие» никогда не станет бесконечным (2026-11-16).
+  self._slot_pressed = {}
+  self._slot_pressed_lock = threading.RLock()
+  # Слоты, у которых есть активная эмуляция (нужно проверять сторожем).
+  self._watch_slots = set()
+  self._watch_stop = threading.Event()
+  self._watch_thread = None
   # Залипания кнопок — per-runtime: глобальный флаг не сбрасывался при
   # смене профиля и «перетаскивался» между играми (analysis §4).
+  # (Исправление 2026-11-15, §40.4): _right/_middle_sticking — это состояния
+  # TOGGLE-режима «Держать» (нажать — зажать, нажать снова — отпустить).
+  # Их НЕЛЬЗЯ сбрасывать при каждом отпускании физической кнопки, иначе
+  # залипание будет отключаться сразу после физического отпускания и
+  # удержание (например, ПКМ->W) не «перекрывалось» бы другими кнопками.
+  # Физическое отпускание кнопки НЕ сбрасывает toggle; toggle снимается
+  # повторным нажатием (toggle), таймером (duration), stop() или
+  # _release_sticky_buttons(force=True) при смене профиля/выходе.
   self._right_sticking = False
   self._middle_sticking = False
   self.bindings = {}
@@ -1780,6 +1958,12 @@ class MouseProfileRuntime:
   # деградации без ремапа). При успешном ремапе они чистятся: нативные
   # имена становятся только эхом собственной эмуляции (см. prepare()).
   self._fallback_aliases = []
+  # Нативные алиасы для клавиатурных назначений, добавленные в _build_bindings
+  # (чтобы ловить нажатия, если ремап не сработал/XTEST). При УСПЕШНОМ ремапе
+  # их нужно убрать: иначе чужие/синтетические события по физическому имени
+  # (например, xdotool/UInput клик правой кнопки из другого слота) попадают
+  # в биндинг и сбивают удерживаемую эмуляцию (напр. ПКМ->W отпускается).
+  self._keyboard_fallback_aliases = []
   self.stop_requested = threading.Event()
   self._build_bindings()
 
@@ -1825,7 +2009,9 @@ class MouseProfileRuntime:
    # собственной UInput-эмуляции кнопок.
    if self.assignments[slot] not in self.MOUSE_ACTIONS:
     for name in self.PHYSICAL_FALLBACK.get(slot, ()):
-     self.bindings.setdefault(name, MouseBinding(name, slot, worker))
+     if name not in self.bindings:
+      self.bindings[name] = MouseBinding(name, slot, worker)
+      self._keyboard_fallback_aliases.append(name)
    self.virtual_by_physical_button[physical] = virtual
 
  def register_physical_fallbacks(self):
@@ -1912,21 +2098,58 @@ class MouseProfileRuntime:
 
   return applied
  def handle_listener_event(self, button, pressed):
-  """Dispatch one pynput event in listener order without a competing worker."""
-  if not self.stop_requested.is_set():
-   self.dispatch(button, pressed)
+  """Принять событие pynput и передать в очередь нужной привязки (без
+  блокировки callback'а слушателя), чтобы разные кнопки обрабатывались
+  параллельно и можно было удерживать/нажимать несколько одновременно."""
+  if self.stop_requested.is_set():
+   return
+  binding = self.bindings.get(str(button))
+  if binding is None or not binding.worker.get_hook_flag_mouse():
+   return
+  try:
+   binding.enqueue(self, pressed)
+  except Exception:
+   # Фолбэк: синхронная обработка, если очередь недоступна.
+   try:
+    self._dispatch_binding(binding, pressed)
+   except Exception:
+    pass
 
  def join_event_workers(self):
- # Listener events are now handled synchronously, so no detached event
- # thread can lose a key-down/key-up pair during a profile change.
-  return
+  # Дождаться обработки уже поставленных в очередь событий кнопок.
+  seen = set()
+  for binding in list(getattr(self, 'bindings', {}).values()):
+   w = getattr(binding, '_dispatch_thread', None)
+   if w is None:
+    continue
+   wid = id(w)
+   if wid in seen:
+    continue
+   seen.add(wid)
+   try:
+    # Даём время на завершение текущего (в т.ч. скрипта), но не зависаем.
+    binding.join_dispatch(timeout=2.0)
+   except Exception:
+    pass
 
  def stop_workers(self):
-  for binding in self.bindings.values():
-   binding.worker.stop()
+  for binding in list(getattr(self, 'bindings', {}).values()):
+   try:
+    binding.worker.stop()
+   except Exception:
+    pass
+   try:
+    if hasattr(binding, 'stop_dispatch'):
+     binding.stop_dispatch()
+   except Exception:
+    pass
 
  def stop(self):
   self.stop_requested.set()
+  try:
+   self._watch_stop.set()
+  except Exception:
+   pass
   self.stop_workers()
   self.join_event_workers()
   self._release_all_emulated_inputs()
@@ -1955,6 +2178,31 @@ class MouseProfileRuntime:
      key_work.key_release(key_value, slot)
    except Exception:
     pass
+  # Дополнительно отпускаем ВСЕ клавиши, которые SmartTyper считает зажатыми
+  # (включая те, что могли остаться из-за гонок key_down/key_up), чтобы при
+  # выходе из игры/смене профиля не оставались «залипшие» клавиши.
+  try:
+   _pc = getattr(smart_typer, '_pressed_codes', {})
+   _pressed = list(_pc.keys()) if isinstance(_pc, dict) else list(_pc)
+   for code in _pressed:
+    if isinstance(code, tuple) and len(code) == 2 and code[0] == 'char':
+     try:
+      subprocess.run(['xdotool', 'keyup', '--clearmodifiers', code[1]],
+       capture_output=True, timeout=2)
+     except Exception:
+      pass
+    else:
+     try:
+      with smart_typer._kb_lock:
+       if smart_typer._ui is not None:
+        smart_typer._ui.write(ecodes.EV_KEY, code, 0)
+        smart_typer._ui.syn()
+     except Exception:
+      pass
+   with smart_typer._kb_lock:
+    smart_typer._pressed_codes.clear()
+  except Exception:
+   pass
   # Release emulated mouse buttons (sticky/toggle/pulses) as a safety net.
   self._release_sticky_buttons(force=True)
   for x11b in (1, 2, 3):
@@ -1962,6 +2210,27 @@ class MouseProfileRuntime:
     key_work.mouse_button_release(x11b)
    except Exception:
     pass
+  # Дополнительно сбрасываем локальное состояние зажатых кнопок виртуального
+  # указателя (SmartTyper), чтобы при смене профиля/выходе не оставались
+  # «залипшие» BTN_LEFT/MIDDLE/RIGHT (ref-count обнуляется принудительно).
+  try:
+   _pmb = getattr(smart_typer, '_pressed_mouse_buttons', {})
+   _codes = list(_pmb.keys()) if isinstance(_pmb, dict) else list(_pmb)
+   for code in _codes:
+    try:
+     with smart_typer._ptr_lock:
+      if smart_typer._ui_scroll is not None:
+       smart_typer._ui_scroll.write(ecodes.EV_KEY, code, 0)
+       smart_typer._ui_scroll.syn()
+    except Exception:
+     pass
+   with smart_typer._ptr_lock:
+    if isinstance(_pmb, dict):
+     _pmb.clear()
+    else:
+     _pmb.clear()
+  except Exception:
+   pass
 
  def _release_sticky_buttons(self, force=False):
   # При выходе из игры / смене профиля / выходе из приложения отпускаем
@@ -1971,6 +2240,12 @@ class MouseProfileRuntime:
   # (_repeat_*_loop) отключаются тем же stop_requested: они завершаются
   # сами и отпускают клавишу/кнопку в finally. Таймеры _release_sticky_after
   # и _pause_worker_after видят stop_requested и больше ничего не делают.
+  #
+  # ВАЖНО (исправление 2026-11-15, §40.4): force=False отпускает ТОЛЬКО
+  # кнопки, реально зажатые в toggle-режиме (sticky-состояния True). Это
+  # НЕ сбрасывает toggle-состояние при физическом отпускании — toggle
+  # управляется повторным нажатием / таймером duration / stop(). force=True
+  # (стоп рантайма, смена профиля, выход) всегда снимает все удержания.
   if self._right_sticking or force:
    self._right_sticking = False
    try:
@@ -1990,8 +2265,27 @@ class MouseProfileRuntime:
   binding = self.bindings.get(str(button))
   if binding is None or not binding.worker.get_hook_flag_mouse():
    return
- 
+  self._dispatch_binding(binding, pressed)
+
+ def _dispatch_binding(self, binding, pressed):
+  if self.stop_requested.is_set():
+   return
   action = self.assignments[binding.slot]
+  # (2026-11-16) Отслеживаем реальное нажатие по слоту и держим включённым
+  # сторожевой поток: он независимо от событий listener проверяет физическое
+  # состояние кнопки и снимает эмуляцию, если отпускание потерялось.
+  try:
+   with self._slot_pressed_lock:
+    if pressed:
+     self._slot_pressed[binding.slot] = True
+     self._watch_slots.add(binding.slot)
+    else:
+     self._slot_pressed[binding.slot] = False
+     self._watch_slots.discard(binding.slot)
+   if pressed:
+    self._ensure_watchdog()
+  except Exception:
+   pass
   try:
   # Скрипт не заменяет назначение, а выполняется перед ним.
    script = self._mouse_script(binding.slot)
@@ -2026,113 +2320,128 @@ class MouseProfileRuntime:
  def _handle_mouse_action(self, binding, pressed, script=None):
   slot = binding.slot
   action = self.assignments[slot]
+
+  # DEBUG: логирование для диагностики (2026-11-15)
   hold = self.hold_flags[slot]
   duration = self._slot_duration(slot)
   repeat = bool(self.repeat_flags[slot])
-  # «Повторить» для действий мыши: одно нажатие запускает цикл. Длительность
-  # не выбрана — цикл идёт до повторного нажатия (toggle). Если на слот
-  # привязан скрипт — повторяется ТОЛЬКО скрипт, а не кнопка/прокрутка.
+  try:
+   _st = '_R' if self._right_sticking else ''
+   _st += '_M' if self._middle_sticking else ''
+   dict_save.write_in_log('[DEBUG] mouse_action slot=%s action=%r pressed=%s hold=%s dur=%s repeat=%s sticky=%s' % (slot, action, pressed, hold, duration, repeat, _st))
+  except Exception:
+   pass
+  # «Повторить» для действий мыши. ВАЖНО (2026-11-16): отпускание физической
+  # кнопки ОСТАНАВЛИВАЕТ повтор — раньше цикл продолжался «бесконечно» до
+  # повторного нажатия, из-за чего одно нажатие ПКМ давало вечное движение.
   if repeat:
-   # Прокрутка: непрерывно весь срок (или до повторного нажатия без срока).
+   if not pressed:
+    self._stop_slot_emulation(binding)
+    return
+   # Прокрутка: непрерывно, пока кнопка нажата (или до истечения срока).
    if action in {'SCROLL_UP', 'SCROLL_DOWN'}:
-    if duration is None:
-     if pressed:
-      if binding.worker.get_sw():
-       binding.worker.set_sw(False)
-       binding.worker.pause()
-      else:
-       binding.worker.set_sw(True)
-       binding.worker.resume()
-    else:
-     if pressed:
-      binding.worker.set_sw(True)
-      binding.worker.resume()
-      threading.Thread(target=self._pause_worker_after, args=(binding.worker, duration), daemon=True).start()
+    binding.worker.set_sw(True)
+    binding.worker.resume()
+    if duration is not None:
+     threading.Thread(target=self._pause_worker_after, args=(binding.worker, duration), daemon=True).start()
     return
    if action in ('RBUTTON', 'WHEEL_MOUSE_BUTTON'):
-    if not pressed:
-     return
-     target_button = mouse.Button.right if action == 'RBUTTON' else mouse.Button.middle
-     x11_button = _X11_BY_PYNPUT_BUTTON[target_button]
-     with self._timed_holds_lock:
-      active = self._timed_holds.get(slot, False)
-      self._timed_holds[slot] = not active
-     if active:
-      key_work.mouse_button_release(x11_button)
-    else:
+    target_button = mouse.Button.right if action == 'RBUTTON' else mouse.Button.middle
+    with self._timed_holds_lock:
+     already = bool(self._timed_holds.get(slot, False))
+     self._timed_holds[slot] = True
+    if not already:
      threading.Thread(
       target=self._repeat_mouse_loop,
       args=(slot, target_button, script, duration),
       daemon=True,
       ).start()
     return
+   # Клавиатурное назначение с «Повторить» обрабатывается в
+   # _handle_keyboard_action (сюда попадают только действия мыши).
+   self._execute_bound_script(script) if script else None
+   return
 
   if pressed and script:
    self._execute_bound_script(script)
 
-  if hold and action in {'SCROLL_UP', 'SCROLL_DOWN'} and pressed:
-   if duration is None:
-    if binding.worker.get_sw():
-     binding.worker.set_sw(False)
-     binding.worker.pause()
-    else:
-     binding.worker.set_sw(True)
-     binding.worker.resume()
-   else:
+  # Прокрутка: нажата — крутим, отпущена — стоп.
+  if action in {'SCROLL_UP', 'SCROLL_DOWN'}:
+   if pressed:
     binding.worker.set_sw(True)
     binding.worker.resume()
-    threading.Thread(target=self._pause_worker_after, args=(binding.worker, duration), daemon=True).start()
-   return
-
-  if not hold and action in {'SCROLL_UP', 'SCROLL_DOWN'}:
-   if pressed:
-    binding.worker.resume()
+    if duration is not None:
+     threading.Thread(target=self._pause_worker_after, args=(binding.worker, duration), daemon=True).start()
    else:
+    binding.worker.set_sw(False)
     binding.worker.pause()
    return
 
-  if not hold and pressed:
-   if action == 'RBUTTON':
-    key_work.mouse_right_donw()
-   elif action == 'WHEEL_MOUSE_BUTTON':
-    key_work.mouse_middle_donw()
+  if not pressed:
+   # Кнопка отпущена: снимаем удержание/залипание и останавливаем таймеры.
+   self._stop_slot_emulation(binding)
    return
 
-  # Режим «держать» для кнопок мыши. Раньше работал только RBUTTON, средняя
-  # кнопка (WHEEL_MOUSE_BUTTON) с галочкой «держать» была полностью мёртвой.
-  if hold and pressed and action in ('RBUTTON', 'WHEEL_MOUSE_BUTTON'):
-   target_button = mouse.Button.right if action == 'RBUTTON' else mouse.Button.middle
-   x11_button = _X11_BY_PYNPUT_BUTTON[target_button]
-   if action == 'RBUTTON':
-    sticky = self._right_sticking
-   else:
-    sticky = self._middle_sticking
-   if duration is not None:
-    if sticky:
-     key_work.mouse_button_release(x11_button)
-     self._set_sticky(action, False)
-    else:
-     key_work.mouse_button_press(x11_button)
-     self._set_sticky(action, True)
-     threading.Thread(target=self._release_sticky_after, args=(action, duration), daemon=True).start()
-    return
-   # ЗАМЕТКА (исправление 2026-11-03): ветка toggle ниже стояла ПОСЛЕ return
-   # внутри «if duration is not None:» и была недостижима — при галочке
-   # «Держать нажатой» без выбранной длительности нажатие правой/средней
-   # кнопки молча глоталось (кнопка уже перехвачена xinput-ремапом, нативного
-   # клика нет). Теперь toggle выполняется, когда длительность не выбрана:
-   # 1-е нажатие — зажать, 2-е — отпустить.
-   # ЗАМЕТКА (исправление 2026-11-04): зажатие/отпускание идут через UInput
-   # (key_work.mouse_button_press/release), а не через pynput XTEST —
-   # синтетический X-press при краше «залипал» в X-сервере и физическая
-   # правая кнопка переставала работать; UInput-устройство умирает вместе
-   # с процессом, залипание невозможно.
-   if sticky:
-    key_work.mouse_button_release(x11_button)
-    self._set_sticky(action, False)
-   else:
+  if action in ('RBUTTON', 'WHEEL_MOUSE_BUTTON'):
+   x11_button = 3 if action == 'RBUTTON' else 2
+   if not hold:
+    # Обычный клик: одиночный импульс press+release.
     key_work.mouse_button_press(x11_button)
-    self._set_sticky(action, True)
+    key_work.mouse_button_release(x11_button)
+    return
+   # «Держать нажатой»: кнопка мыши зажата, пока держат физическую кнопку.
+   with self._timed_holds_lock:
+    self._timed_holds[slot] = True
+   key_work.mouse_button_press(x11_button)
+   self._set_sticky(action, True)
+   if duration is not None:
+    threading.Thread(target=self._release_sticky_after, args=(action, duration), daemon=True).start()
+   return
+
+  # Прочие действия мыши (MBUTTON/LBUTTON и т.п.) — одиночный клик.
+  if action == 'LBUTTON':
+   key_work.mouse_button_press(1)
+   key_work.mouse_button_release(1)
+
+ def _stop_slot_emulation(self, binding):
+  """Полностью снять эмуляцию слота: остановить повтор, отпустить удержания.
+
+  Вызывается при отпускании физической кнопки (а также при потере фокуса/
+  остановке рантайма) — гарантия, что «одно нажатие» никогда не превращается
+  в бесконечную эмуляцию."""
+  slot = binding.slot
+  with self._slot_pressed_lock:
+   self._slot_pressed[slot] = False
+   self._watch_slots.discard(slot)
+  try:
+   with self._timed_holds_lock:
+    self._timed_holds[slot] = False
+  except Exception:
+   pass
+  try:
+   binding.worker.set_sw(False)
+   binding.worker.pause()
+  except Exception:
+   pass
+  action = self.assignments[slot]
+  if action in ('RBUTTON', 'WHEEL_MOUSE_BUTTON'):
+   x11_button = 3 if action == 'RBUTTON' else 2
+   try:
+    key_work.mouse_button_release(x11_button)
+   except Exception:
+    pass
+   self._set_sticky(action, False)
+  elif action == 'LBUTTON':
+   try:
+    key_work.mouse_button_release(1)
+   except Exception:
+    pass
+  elif action not in self.MOUSE_ACTIONS:
+   # Клавиатурное назначение: отпустить клавишу (идемпотентно).
+   try:
+    key_work.key_release(str(KEYS.get(action, '')), slot)
+   except Exception:
+    pass
 
  def _handle_side_button_script(self, binding, pressed, script=None):
   # Боковая кнопка, оставленная «как есть» (XBUTTON1/XBUTTON2) или с
@@ -2140,22 +2449,23 @@ class MouseProfileRuntime:
   # слот не перехватывался (pass-through) и скрипт никогда не выполнялся.
   # Теперь выполняется ТОЛЬКО скрипт: без отправки клавиши (XBUTTON* —
   # не ключи) и без нативного клика (кнопка уже перехвачена xinput-ремапом).
-  # «Повторить» повторяет только скрипт: без длительности — до повторного
-  # нажатия (toggle), с длительностью — на выбранный срок.
+  # «Повторить» повторяет только скрипт (на срок; без срока — пока кнопка нажата).
   if not script:
    return
   slot = binding.slot
   if self.repeat_flags[slot]:
    if not pressed:
+    # Отпускание кнопки останавливает повтор скрипта (2026-11-16): раньше
+    # цикл шёл «бесконечно» до повторного нажатия.
+    self._stop_slot_emulation(binding)
     return
    with self._timed_holds_lock:
-    if self._timed_holds.get(slot, False):
-     self._timed_holds[slot] = False
-    else:
-     self._timed_holds[slot] = True
-     # Цикл _repeat_mouse_loop со скриптом шлёт ТОЛЬКО скрипт
-     # (target_button не используется и отпускание не нужно).
-     threading.Thread(target=self._repeat_mouse_loop, args=(slot, None, script, self._slot_duration(slot)), daemon=True).start()
+    already = bool(self._timed_holds.get(slot, False))
+    self._timed_holds[slot] = True
+   if not already:
+    # Цикл _repeat_mouse_loop со скриптом шлёт ТОЛЬКО скрипт
+    # (target_button не используется и отпускание не нужно).
+    threading.Thread(target=self._repeat_mouse_loop, args=(slot, None, script, self._slot_duration(slot)), daemon=True).start()
    return
   if pressed:
    self._execute_bound_script(script)
@@ -2173,74 +2483,167 @@ class MouseProfileRuntime:
   elif action == 'WHEEL_MOUSE_BUTTON':
    self._middle_sticking = value
 
+ def _physical_button_state(self):
+  """Реальное состояние кнопок мыши по данным X: {X11-номер: bool}.
+
+  Нужно как независимая проверка «кнопка ещё нажата?» — используется
+  сторожевым потоком, чтобы гарантированно завершить эмуляцию, даже если
+  событие отпускания потерялось (XRecord/remap/ошибка X-канала)."""
+  try:
+   result = subprocess.run(['xinput', 'query-state', str(self.device_id)],
+    capture_output=True, text=True, timeout=2)
+  except Exception:
+   return None
+  if result.returncode != 0 or not result.stdout:
+   return None
+  state = {}
+  for m in re.finditer(r'button\[(\d+)\]=(\w+)', result.stdout):
+   try:
+    state[int(m.group(1))] = (m.group(2).lower() == 'down')
+   except ValueError:
+    continue
+  return state or None
+
+ def _ensure_watchdog(self):
+  """Запустить сторожевой поток (если ещё не запущен)."""
+  if self._watch_thread is not None and self._watch_thread.is_alive():
+   return
+  self._watch_stop.clear()
+  self._watch_thread = threading.Thread(target=self._watchdog_loop, daemon=True)
+  self._watch_thread.start()
+
+ def _watchdog_loop(self):
+  """Сторож: если физическая кнопка уже НЕ нажата, а эмуляция ещё активна —
+  принудительно завершить её. Это страховка от потерянного события отпускания
+  (из-за remap, XRecord, ошибки X): «одно нажатие» никогда не превращается в
+  бесконечное движение (исправление 2026-11-16).
+
+  ВАЖНО: слот «вооружается» только после того, как состояние «нажата» реально
+  наблюдалось. Это исключает ложное снятие эмуляции для колёсика (его кнопка
+  в X фиксируется мгновенно и может не попасть в выборку)."""
+  slot_to_physical = {}
+  for slot, physical, virtual, listener_button, pass_through in self.INTERCEPTION_RULES:
+   slot_to_physical[slot] = physical
+  armed = set()
+  while not self._watch_stop.is_set() and not self.stop_requested.is_set():
+   with self._slot_pressed_lock:
+    watched = set(self._watch_slots)
+   if not watched:
+    armed.clear()
+    # Нечего сторожить: ждём появления работы, не жгём CPU.
+    self._watch_stop.wait(0.25)
+    continue
+   state = self._physical_button_state()
+   if state is not None:
+    for slot in list(watched):
+     physical = slot_to_physical.get(slot)
+     if physical is None:
+      continue
+     virtual = self.virtual_by_physical_button.get(physical)
+     try:
+      virt_num = int(virtual) if virtual is not None else None
+     except (TypeError, ValueError):
+      virt_num = None
+     # X может показать кнопку либо под физическим, либо под виртуальным номером.
+     down = bool(state.get(physical, False))
+     if not down and virt_num is not None:
+      down = bool(state.get(virt_num, False))
+     if down:
+      armed.add(slot)  # кнопка реально нажата — эмуляция законна
+      continue
+     if slot not in armed:
+      continue  # ещё ни разу не видели нажатия (напр. колёсико) — не трогаем
+     # Кнопка была нажата и уже отпущена, а эмуляция ещё висит — снимаем.
+     binding = self._binding_for_slot(slot)
+     armed.discard(slot)
+     if binding is None:
+      with self._slot_pressed_lock:
+       self._watch_slots.discard(slot)
+      continue
+     self.store.write_in_log('[watchdog] slot %s: физическая кнопка отпущена — принудительное завершение эмуляции' % slot)
+     try:
+      self._stop_slot_emulation(binding)
+     except Exception:
+      pass
+   self._watch_stop.wait(0.25)
+
+ def _binding_for_slot(self, slot):
+  for binding in list(getattr(self, 'bindings', {}).values()):
+   if binding.slot == slot:
+    return binding
+  return None
+
  def _release_sticky_after(self, action, duration):
   # Автоснятие залипания по таймеру (режим «держать» + длительность).
   # Отпускание идёт ВСЕГДА (даже если runtime уже останавливается): release
   # идемпотентен, а пропущенный X-press — это залипшая во всех приложениях
   # правая/средняя кнопка.
+  # (Исправление 2026-11-15, §40.4): таймер отпускает ТОЛЬКО физическую
+  # кнопку мыши (UInput/XTEST), но НЕ сбрасывает toggle-флаг
+  # _right/_middle_sticking. Toggle остаётся активным: повторное нажатие
+  # кнопки мыши снова зажимает её (как и в режиме без длительности).
   time.sleep(duration)
   if action == 'RBUTTON':
-   if self._right_sticking:
-    key_work.mouse_button_release(3)
-    self._right_sticking = False
+   key_work.mouse_button_release(3)
   elif action == 'WHEEL_MOUSE_BUTTON':
-   if self._middle_sticking:
-    key_work.mouse_button_release(2)
-    self._middle_sticking = False
+   key_work.mouse_button_release(2)
 
  def _handle_keyboard_action(self, binding, pressed, script=None):
   slot = binding.slot
   key_value = str(KEYS[self.assignments[slot]])
   duration = self._slot_duration(slot)
-  # «Повторять» — одно нажатие запускает цикл: на выбранный срок, а без срока —
-  # до повторного нажатия (toggle). Если на слот привязан скрипт — повторяется
-  # ТОЛЬКО скрипт, а не клавиша. Отпускание физической кнопки цикл не прерывает.
+  # «Повторить» — одно нажатие запускает цикл (на выбранный срок; без срока —
+  # пока физическая кнопка нажата). Если на слот привязан скрипт — повторяется
+  # ТОЛЬКО скрипт, а не клавиша. (2026-11-16) Отпускание физической кнопки
+  # ОСТАНАВЛИВАЕТ цикл — раньше он шёл «бесконечно» до повторного нажатия.
   repeat_mode = bool(self.repeat_flags[slot])
   if script and pressed and not repeat_mode:
   # Для одиночного действия Bash завершается до key-down.
    self._execute_bound_script(script)
-  if repeat_mode:
-   if not pressed:
-    return
+  # ГЛАВНОЕ ПРАВИЛО (исправление 2026-11-16): эмуляция живёт ТОЛЬКО пока
+  # физическая кнопка нажата. Как только пришло событие «отпущено» —
+  # немедленно снимаем эмуляцию (клавишу, повтор, залипание, таймер).
+  # Раньше в режимах «Держать нажатой»/«Повторить» отпускание игнорировалось,
+  # и эмуляция продолжалась «бесконечно» до повторного нажатия кнопки.
+  if not pressed:
+   # Остановить цикл повтора (если он был запущен этим слотом).
    with self._timed_holds_lock:
-    if self._timed_holds.get(slot, False):
-     self._timed_holds[slot] = False
-     key_work.key_release(key_value, slot)
-    else:
+    self._timed_holds[slot] = False
+   # Снять удержание/toggle и отпустить клавишу.
+   try:
+    binding.worker.set_sw(False)
+   except Exception:
+    pass
+   key_work.key_release(key_value, slot)
+   return
+
+  if repeat_mode:
+   with self._timed_holds_lock:
+    already = bool(self._timed_holds.get(slot, False))
+    if not already:
      self._timed_holds[slot] = True
-     threading.Thread(
-      target=self._repeat_key_loop,
-      args=(slot, key_value, script, duration),
-      daemon=True,
-      ).start()
+   if not already:
+    threading.Thread(
+     target=self._repeat_key_loop,
+     args=(slot, key_value, script, duration),
+     daemon=True,
+     ).start()
    return
 
   if not self.hold_flags[slot]:
-   if pressed:
-    key_work.key_press(key_value, slot)
-   else:
-    key_work.key_release(key_value, slot)
+   key_work.key_press(key_value, slot)
    return
 
   if duration is not None:
-   if not pressed:
-    return
    with self._timed_holds_lock:
-    active = self._timed_holds.get(slot, False)
-    self._timed_holds[slot] = not active
-   if active:
-    key_work.key_release(key_value, slot)
-   else:
-    key_work.key_press(key_value, slot)
-    threading.Thread(target=self._release_timed_key, args=(slot, key_value, duration), daemon=True).start()
+    self._timed_holds[slot] = True
+   key_work.key_press(key_value, slot)
+   threading.Thread(target=self._release_timed_key, args=(slot, key_value, duration), daemon=True).start()
    return
 
-  if pressed and binding.worker.get_sw():
-   binding.worker.set_sw(False)
-   key_work.key_press(key_value, slot)
-  elif pressed:
-   binding.worker.set_sw(True)
-   key_work.key_release(key_value, slot)
+  # «Держать нажатой» без длительности — держим клавишу, пока держат кнопку.
+  binding.worker.set_sw(True)
+  key_work.key_press(key_value, slot)
 
  def _execute_bound_script(self, script):
  # Выполняем Bash синхронно, чтобы следующая клавиша шла после него.
@@ -2959,61 +3362,35 @@ class MouseSettingAppMethods:
       return
     fallback = fallback_profile_path(runtime.store, runtime.enabled_profiles)
     active_game = check_current_active_window(runtime.store, runtime.enabled_profiles)
-    if active_game != fallback:
-    # В фокусе реальное игровое окно: применяем его профиль
-    # (оно всегда главнее выбранного в UI профиля).
-     target = active_game if active_game != runtime.game else runtime.game
+    if active_game and active_game in runtime.enabled_profiles:
+     # В фокусе реальное игровое окно: его профиль всегда главнее.
+     target = active_game
     else:
-    # Игрового окна в фокусе нет.
-    # (Исправление 2026-11-09: игровой профиль НЕ должен «прилипать» к
-    # не-игровому активному окну: из-за этого в окне бота (write_text_fast.py)
-    # или на рабочем столе боковые/правая кнопки перестают делать колёсико
-    # вверх/вниз (активно игровое назначение), а xte/xdotool-макросы профиля
-    # начинают печатать в сфокусированное окно — скрипт мыши «мешает» боту.
-    # Игровой профиль теперь активен ТОЛЬКО когда в фокусе его окно (правило 1
-    # выше); не-игровое окно получает fallback-профиль (колесо работает как
-    # обычно). Нейгровый UI-выбор (рабочий/дефолтный профиль) применяется, как и раньше.)
-     selected = str(runtime.store.get_cur_app() or '')
-     desktop_default = default_profile_path(runtime.store, runtime.enabled_profiles)
-     selected_is_game = (bool(selected) and selected in runtime.enabled_profiles
-      and selected != desktop_default)
-     # (Исправление 2026-11-13, §36): если профиль был выбран ВРУЧНУЮ через
-     # GUI (флаг manual_ui_pick), и current_app всё ещё на нём (runtime.game),
-     # не откатываемся на fallback — игровые назначения (правая→W и т.п.)
-     # должны работать в любом окне. Откат происходит только когда:
-     #  - пользователь выбрал другой профиль (prepare() создаст новый
-     #    runtime без manual_ui_pick), или
-     #  - реальное игровое окно в фокусе (правило 1 сработало раньше).
-     manual_hold = (getattr(runtime, 'manual_ui_pick', False)
-      and selected == runtime.game and selected in runtime.enabled_profiles)
-     # Ручной выбор игрового профиля держим «везде», но если сама игра/цель
-     # профиля уже не запущена — возвращаемся на fallback и снимаем ручной
-     # захват (иначе после выхода из игры профиль и ремап «залипают»).
-     if manual_hold and not is_profile_process_running(runtime.game):
-      manual_hold = False
-      try:
-       runtime.manual_ui_pick = False
-      except Exception:
-       pass
-     if manual_hold:
-      target = runtime.game
-     elif selected_is_game:
-     # current_app — игровой профиль: на не-игровом окне применяем
-     # fallback-профиль, а не игровой (макросы не уходят в чужое окно).
-     # Но если процесс игры уже не запущен (игра закрыта), возвращаемся на
-     # безопасный fallback вместо «залипания» на мёртвом профиле.
-      target = runtime.game if is_profile_process_running(runtime.game) else fallback
-     elif runtime.game != selected and selected in runtime.enabled_profiles:
+     # Игрового окна в фокусе нет (свернуто, закрыто, другое окно).
+     #
+     # (Запрос 2026-11-16): возвращаемся к профилю, который пользователь
+     # выбрал ВРУЧНУЮ — это «синяя» строка в списке. Он хранится отдельно
+     # (store.user_profile) и НЕ перезаписывается авто-переключением по окну
+     # игры. Поэтому после сворачивания/выхода из игры снова активен именно
+     # тот профиль, который был выбран пользователем, а не случайный
+     # fallback/prev_game (который мог «застрять» на игровом профиле).
+     selected = str(runtime.store.get_user_profile() or runtime.store.get_cur_app() or '')
+     if selected in runtime.enabled_profiles:
       target = selected
+     elif fallback:
+      target = fallback
      else:
       target = runtime.game
     if target != runtime.game:
-    # print(f"[SWITCH] {runtime.game!r} -> {target!r}")
-     remember_fallback_before_game(
-      runtime.store, runtime.game, target, runtime.enabled_profiles
-      )
-     # Не перезаписываем current_app (это выбранный/дефолтный профиль UI);
-     # цель берётся из target при перезапуске рантайма.
+     # (2026-11-16) current_app / user_profile здесь НЕ перезаписываем:
+     # это выбор пользователя (синяя строка), и именно к нему мы вернёмся,
+     # когда игровое окно потеряет фокус. Раньше здесь current_app
+     # принудительно менялся на fallback, из-за чего «синий» профиль
+     # терялся и возврат шёл не туда.
+     try:
+      runtime.store.write_in_log('[profile] switch %r -> %r (active_game=%r)' % (runtime.game, target, active_game))
+     except Exception:
+      pass
      runtime.join_event_workers()
      restart_game = target
      break
@@ -3091,8 +3468,19 @@ class MouseSettingAppMethods:
    # нового нажатия. Запоминаем активные слоты ДО остановки старого рантайма
    # и resume-им те же слоты в новом (только режим «удержание», а не
    # «повторить»/«держать» — у них своё toggle-состояние, его не наследуем).
+   # (Исправление 2026-11-15, §42: «сдача» toggle-состояний «Держать»)
+   # Если в старом рантайме активно toggle-залипание ПКМ/СКМ (режим «Держать»
+   # без длительности, т.е. 1-е нажатие зажимает, 2-е отпускает), то после
+   # смены профиля (выход из игры) новое рантайм НЕ наследует это состояние —
+   # и кнопки остаются «залипшими» (X-состояние «нажата» сохраняется в
+   # виртуальном указателе, а новое рантайм не знает, что их нужно отпустить).
+   # Запоминаем toggle-состояния ДО остановки старого рантайма и сбрасываем
+   # их в новом (полный release, а не «сдача» — т.к. после выхода из игры
+   # пользователь ожидает «чистое» состояние, а не продолжение залипания).
    _handover_scroll_slots = set()
    _old_runtime = getattr(self, '_active_runtime', None)
+   _old_right_sticking = False
+   _old_middle_sticking = False
    if _old_runtime is not None:
     for _b in _old_runtime.bindings.values():
      if _b.worker.is_active() and str(_b.worker.key).startswith('SCROLL_'):
@@ -3103,6 +3491,11 @@ class MouseSettingAppMethods:
       except IndexError:
        continue
       _handover_scroll_slots.add(_s)
+    # Запоминаем toggle-состояния «Держать» (они будут сброшены в новом
+    # рантайме, т.к. после выхода из игры/смены профиля пользователь
+    # ожидает «чистое» состояние, а не продолжение залипания).
+    _old_right_sticking = bool(getattr(_old_runtime, '_right_sticking', False))
+    _old_middle_sticking = bool(getattr(_old_runtime, '_middle_sticking', False))
    self._stop_active_runtime(store)
    self._runtime_generation += 1
    my_generation = self._runtime_generation
@@ -3134,12 +3527,18 @@ class MouseSettingAppMethods:
    if not applied:
     runtime.register_physical_fallbacks()
    else:
-    # Ремап применён: нативные имена (Button.button8/9 и т.п.) становятся
-    # лишь эхом собственной эмуляции — убираем fallback-алиасы, добавленные
-    # предыдущим неудачным применением (см. register_physical_fallbacks).
+    # Ремап применён: нативные имена (Button.button8/9/left/right/...) 
+    # становятся эхом (в т.ч. от xdotool/UInput эмуляции других слотов),
+    # поэтому убираем все физические fallback-алиасы. Они нужны только когда
+    # xinput-remap не сработал; иначе события уже приходят под виртуальными
+    # именами (Button.button11..16) и дополнительные физические имена дают
+    # ложные срабатывания, сбивая удержание других кнопок.
     for _alias in getattr(runtime, '_fallback_aliases', ()):
      runtime.bindings.pop(_alias, None)
     runtime._fallback_aliases = []
+    for _alias in getattr(runtime, '_keyboard_fallback_aliases', ()):
+     runtime.bindings.pop(_alias, None)
+    runtime._keyboard_fallback_aliases = []
    runtime.store.set_current_path_game(runtime.game)
    self._active_runtime = runtime
    # Сдача удержания: возобновляем прокрутку в тех же слотах, где она шла в
@@ -3154,6 +3553,27 @@ class MouseSettingAppMethods:
      if _b.slot == _slot:
       _b.worker.resume()
       break
+    # (Исправление 2026-11-15, §42: полный сброс toggle-залипания при смене
+    # профиля / выходе из игры). Если в старом рантайме было активно
+    # toggle-залипание ПКМ/СКМ (режим «Держать» без длительности), то после
+    # смены профиля (например, выход из игры) новое рантайм НЕ наследует это
+    # состояние — кнопки остаются «залипшими» в виртуальном указателе.
+    # _stop_active_runtime() → runtime.stop() → _release_all_emulated_inputs()
+    # уже отпустил зажатые кнопки (EV_KEY=0) в X, но toggle-флаги нового
+    # рантайма (_right_sticking/_middle_sticking) по умолчанию False — что
+    # корректно: после выхода из игры пользователь ожидает «чистое» состояние,
+    # а не продолжение залипания. Дополнительный safety-net: принудительно
+    # отпускаем 1/2/3 ещё раз (идемпотентно) и логируем, если залипание было.
+    if _old_right_sticking or _old_middle_sticking:
+     try:
+      store.write_in_log('[profile-switch] old runtime had sticking RMB=%s MMB=%s — full release on new runtime' % (_old_right_sticking, _old_middle_sticking))
+     except Exception:
+      pass
+     try:
+      for _x11b in (1, 2, 3):
+       key_work.mouse_button_release(_x11b)
+     except Exception:
+      pass
 
   listener_thread = threading.Thread(target=self.emunator_mouse, args=(runtime, my_generation))
   runtime.store.set_thread(listener_thread)
@@ -3289,6 +3709,9 @@ class MouseSettingAppMethods:
    button.setCurrentText(value)
    button.blockSignals(False)
   dict_save.set_cur_app(game)
+  # Запоминаем ручной выбор («синюю» строку): к нему вернёмся после
+  # сворачивания/выхода из игры (см. emunator_mouse, 2026-11-16).
+  dict_save.set_user_profile(game)
   dict_save.save_jnson(res)
   # The blue profile must also become the active emulation context.
   # КЛЮЧЕВОЕ: force_ui_selection=True гарантирует, что ручной выбор применится
@@ -3351,6 +3774,7 @@ class MouseSettingAppMethods:
    return
   if game != dict_save.get_cur_app():
    dict_save.set_cur_app(game)
+   dict_save.set_user_profile(game)
    res = dict_save.return_jnson()
    res['current_app'] = game
    dict_save.save_jnson(res)
@@ -3614,6 +4038,7 @@ class MouseSettingAppMethods:
 
   res['current_app'] = path_to_file  # Выбранная игра.
   dict_save.set_cur_app(path_to_file)
+  dict_save.set_user_profile(path_to_file)
   dict_save.set_current_path_game(path_to_file)
   dict_save.save_jnson(res)
 
